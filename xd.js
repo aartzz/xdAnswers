@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         xdAnswers
 // @namespace    http://tampermonkey.net/
-// @version      4.7
+// @version      4.10
 // @description  A script, that helps in tests.
 // @author       aartzz
 // @match        *://naurok.com.ua/test/testing/*
@@ -27,13 +27,12 @@
         activeService: 'MistralAI',
         Ollama: { host: '', model: '' },
         OpenAI: { apiKey: '', model: 'gpt-4o' },
-        Gemini: { apiKey: '', model: 'gemini-2.0-flash' }, // Forced default as requested
-        MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-large-2411' }, // Forced default as requested
+        Gemini: { apiKey: '', model: 'gemini-1.5-pro-latest' },
+        MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-base' },
         promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.'
     };
 
     let settings = JSON.parse(GM_getValue('xdAnswers_settings', JSON.stringify(DEFAULT_SETTINGS)));
-    // Ensure all service settings structures exist based on DEFAULT_SETTINGS after loading
     for (const serviceKey in DEFAULT_SETTINGS) {
         if (serviceKey !== 'activeService' && serviceKey !== 'promptPrefix') {
             if (!settings[serviceKey]) {
@@ -99,6 +98,8 @@
         }
         .ollama-header-buttons button:hover { background-color: var(--futuristic-border); color: var(--futuristic-bg); }
         .ollama-helper-content { padding: 15px; overflow-y: auto; flex-grow: 1; white-space: pre-wrap; word-wrap: break-word; }
+        .ollama-helper-content ul { margin-left: 20px; padding-left: 10px; list-style-type: disc; } /* Basic list styling */
+        .ollama-helper-content li { margin-bottom: 4px; }
         .ollama-helper-content::-webkit-scrollbar { width: 8px; }
         .ollama-helper-content::-webkit-scrollbar-track { background: var(--futuristic-bg); }
         .ollama-helper-content::-webkit-scrollbar-thumb { background-color: var(--futuristic-border); border-radius: 10px; border: 2px solid var(--futuristic-bg); }
@@ -112,27 +113,19 @@
         .ollama-settings-panel label { display: block; margin-bottom: 5px; }
         .info-icon {
             cursor: pointer; margin-left: 8px; font-style: normal;
-            /* border: 1px solid var(--futuristic-text); REMOVED BORDER */
             color: var(--futuristic-text);
-            /* border-radius: 50%; REMOVED BORDER RADIUS */
-            padding: 1px 3px; font-size: 0.9em; display: inline-block;
-            background-color: transparent; /* Make it just text or use a background if preferred */
+            padding: 1px 5px; font-size: 0.9em; display: inline-block;
             line-height: 1; vertical-align: middle;
         }
-        .info-icon:hover {
-            color: var(--futuristic-border); /* Change color on hover for feedback */
-        }
+        .info-icon:hover { color: var(--futuristic-border); }
         #refresh-models-icon {
             cursor: pointer; margin-left: 10px; display: inline-block;
             transition: transform 0.5s ease;
-            /* border: 1px solid #003f7f; REMOVED BORDER */
             padding: 1px 4px; line-height: 1; vertical-align: middle;
-            font-style: normal; background-color: transparent; color: var(--futuristic-text); font-size: 0.9em;
+            font-style: normal; color: var(--futuristic-text); font-size: 0.9em;
         }
         #refresh-models-icon.spinning { animation: spin 1s linear infinite; }
-        #refresh-models-icon:hover {
-             color: var(--futuristic-border);
-        }
+        #refresh-models-icon:hover { color: var(--futuristic-border); }
         .ollama-settings-panel input, .ollama-settings-panel select, .ollama-settings-panel textarea {
             width: 100%; padding: 8px; background-color: #001f3f; border: 1px solid var(--futuristic-border);
             color: var(--futuristic-text); border-radius: 5px; box-sizing: border-box; font-family: var(--futuristic-font);
@@ -152,7 +145,6 @@
             display: inline-block; margin-left: 5px; vertical-align: middle; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Modal Styles */
         .xdanswers-info-modal-container {
             display: none; position: fixed; z-index: 10001;
             left: 0; top: 0; width: 100%; height: 100%;
@@ -293,7 +285,6 @@
         if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
     };
 
-
     // --- UI LOGIC (common) ---
     const serviceTypeSelect = document.getElementById('service-type');
     const ollamaSettingsDiv = document.getElementById('ollama-settings');
@@ -312,7 +303,6 @@
     const refreshModelsIcon = document.getElementById('refresh-models-icon');
     const answerContentDiv = document.getElementById('ollama-answer-content');
 
-    // Modal elements and logic
     const infoModal = document.getElementById('xdAnswers-info-modal');
     const modalTitleEl = document.getElementById('xdAnswers-info-modal-title');
     const modalTextEl = document.getElementById('xdAnswers-info-modal-text');
@@ -324,7 +314,7 @@
         infoModal.style.display = 'block';
     }
     modalCloseBtn.onclick = function() { infoModal.style.display = 'none'; }
-    window.addEventListener('click', function(event) { // Use addEventListener for window events
+    window.addEventListener('click', function(event) {
         if (event.target == infoModal) { infoModal.style.display = 'none'; }
     });
      window.addEventListener('keydown', function(event) {
@@ -332,8 +322,6 @@
             infoModal.style.display = 'none';
         }
     });
-
-
     document.getElementById('service-type-info-icon-btn').onclick = function() {
         showInfoModal('Позначення типів сервісів',
             "💬 - підтримка тексту\n" +
@@ -348,7 +336,6 @@
             "Це поле призначено для коригування запиту до ШІ, щоб він розумів, що від нього хочуть. Цей промпт додається на початку."
         );
     };
-
 
     resizeHelperBtn.onclick = () => {
         isHelperWindowMaximized = !isHelperWindowMaximized;
@@ -365,9 +352,8 @@
             }
         }
     };
-
     copyAnswerBtn.onclick = () => {
-        const textToCopy = answerContentDiv.innerText;
+        const textToCopy = answerContentDiv.innerText; // Use innerText to get just the text content
         if (textToCopy && textToCopy !== 'Очікую на запитання...' && !answerContentDiv.querySelector('.loader')) {
             GM_setClipboard(textToCopy);
             copyAnswerBtn.textContent = '✅';
@@ -377,7 +363,6 @@
             setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
         }
     };
-
     openSettingsBtn.onclick = () => {
         settingsPanelElement.style.display = 'block';
         populateSettings();
@@ -416,7 +401,7 @@
     };
     serviceTypeSelect.onchange = () => {
         const selectedService = serviceTypeSelect.value;
-        if (!settings[selectedService]) { // Initialize if switching to a service for the first time in session
+        if (!settings[selectedService]) {
             settings[selectedService] = { ...(DEFAULT_SETTINGS[selectedService] || { apiKey: '', model: '' }) };
         }
         toggleSettingsVisibility();
@@ -457,15 +442,15 @@
 
     function toggleSettingsVisibility() {
         const selectedService = serviceTypeSelect.value;
-        // Values are populated by populateSettings or when serviceTypeSelect changes
+        const currentServiceSettings = settings[selectedService] || DEFAULT_SETTINGS[selectedService] || { apiKey: '', model: '' };
+
         if (selectedService === 'Ollama') {
             ollamaSettingsDiv.style.display = 'block';
             apiSettingsDiv.style.display = 'none';
             document.getElementById('ollama-host').value = settings.Ollama.host;
-        } else { // For OpenAI, Gemini, MistralAI
+        } else {
             ollamaSettingsDiv.style.display = 'none';
             apiSettingsDiv.style.display = 'block';
-            const currentServiceSettings = settings[selectedService] || DEFAULT_SETTINGS[selectedService] || { apiKey: '', model: '' };
             apiKeyInput.value = currentServiceSettings.apiKey;
             apiModelInput.value = currentServiceSettings.model;
         }
@@ -475,13 +460,11 @@
         serviceTypeSelect.value = settings.activeService;
         promptPrefixTextarea.value = settings.promptPrefix;
         document.getElementById('ollama-host').value = settings.Ollama.host || DEFAULT_SETTINGS.Ollama.host;
-
         const currentActiveServiceSettings = settings[settings.activeService] || DEFAULT_SETTINGS[settings.activeService];
         if (settings.activeService !== 'Ollama' && currentActiveServiceSettings) {
             apiKeyInput.value = currentActiveServiceSettings.apiKey;
             apiModelInput.value = currentActiveServiceSettings.model;
         }
-
         updateModelDropdown();
         toggleSettingsVisibility();
     }
@@ -536,6 +519,37 @@
             onerror: (e) => { console.error("GM_xmlhttpRequest error for image", url, e); callback(null); }
         });
     }
+    // --- FORMATTING AI RESPONSE ---
+    function formatAIResponse(text) {
+        if (typeof text !== 'string' || !text) return "";
+        let lines = text.split('\n');
+        let htmlOutput = '';
+        let inList = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i];
+            if (line.match(/^#{1,3}\s+.*/)) { continue; } // Hide Headings
+
+            const listItemMatch = line.match(/^\*\s+(.*)/);
+            if (listItemMatch) {
+                if (!inList) { htmlOutput += '<ul>'; inList = true; }
+                let itemContent = listItemMatch[1].trim();
+                itemContent = itemContent.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                itemContent = itemContent.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '<i>$1</i>');
+                itemContent = itemContent.replace(/_(.+?)_/g, '<i>$1</i>');
+                htmlOutput += `<li>${itemContent}</li>`;
+            } else {
+                if (inList) { htmlOutput += '</ul>'; inList = false; }
+                let regularLine = line;
+                regularLine = regularLine.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                regularLine = regularLine.replace(/(?<!\*)\*(?!\*)([^*]+)\*(?!\*)/g, '<i>$1</i>');
+                regularLine = regularLine.replace(/_(.+?)_/g, '<i>$1</i>');
+                htmlOutput += regularLine + (i < lines.length - 1 && line.trim() !== '' ? '<br>' : '');
+            }
+        }
+        if (inList) { htmlOutput += '</ul>'; }
+        return htmlOutput.trim();
+    }
 
     // --- MAIN DISPATCHER ---
     async function getAnswer(questionData) {
@@ -565,10 +579,10 @@
             console.error(`Error getting answer from ${service}:`, error);
             responseText = `Помилка сервісу ${service}.`;
         }
-        return responseText;
+        return responseText; // Raw text, formatting will be applied before display
     }
 
-    // --- SERVICE-SPECIFIC API HANDLERS (returning Promises) ---
+    // --- SERVICE-SPECIFIC API HANDLERS (returning Promises with raw text) ---
     function getAnswerFromOllama(instruction, questionText, optionsText, base64Images) {
         return new Promise((resolve) => {
             if (!settings.Ollama.model) { resolve("Модель Ollama не обрана."); return; }
@@ -695,11 +709,13 @@
     function handlePageContentChange() {
         if (observerDebounceTimeout) clearTimeout(observerDebounceTimeout);
         observerDebounceTimeout = setTimeout(() => {
+            if (isProcessing && !location.hostname.includes('docs.google.com')) { // GForms handles its own isProcessing for sequence
+                console.log("xdAnswers: Still processing (Naurok), skipping new trigger.");
+                return;
+            }
             if (location.hostname.includes('docs.google.com')) {
-                if (isProcessing) { return; }
                 processGFormQuestionsSequentially();
             } else if (location.hostname.includes('naurok.com.ua')) {
-                if (isProcessing) { return; }
                 processNaurokQuestion();
             }
         }, 1000);
@@ -745,24 +761,40 @@
                 isMultiQuiz: isMultiQuiz, questionType: isMultiQuiz ? "checkbox" : "radio"
             };
             getAnswer(questionData).then(answer => {
-                answerContentDiv.textContent = answer;
+                answerContentDiv.innerHTML = formatAIResponse(answer);
                 isProcessing = false;
             });
         }).catch(err => {
             isProcessing = false;
-            answerContentDiv.textContent = "Помилка обробки зображень (Naurok).";
+            answerContentDiv.innerHTML = formatAIResponse("Помилка обробки зображень (Naurok).");
         });
     }
 
     async function processGFormQuestionsSequentially() {
-        if (isProcessing) return;
-        isProcessing = true;
+        if (isProcessing) { // If a sequence is already running, just return.
+            console.log("GForms: Sequential processing already in progress.");
+            return;
+        }
+        isProcessing = true; // Mark that a GForm sequence is starting.
 
         const questionBlocks = document.querySelectorAll('div.Qr7Oae');
-        if (!questionBlocks.length) { isProcessing = false; return; }
+        if (!questionBlocks.length) {
+            isProcessing = false;
+            console.log("GForms: No question blocks found.");
+            if(answerContentDiv.innerHTML.trim() === '' || answerContentDiv.innerHTML.includes('<div class="loader"></div>') || answerContentDiv.innerHTML === 'Оновлення...') {
+                 answerContentDiv.innerHTML = 'Питань не знайдено на сторінці.';
+            }
+            return;
+        }
 
-        let accumulatedAnswersHTML = "";
-        let newQuestionsFoundThisRun = false;
+        let accumulatedAnswersHTML = answerContentDiv.innerText; // Get text to preserve it as plain text
+        if (accumulatedAnswersHTML === 'Оновлення...' || accumulatedAnswersHTML === 'Очікую на запитання Google Forms...' || accumulatedAnswersHTML.includes('Питань не знайдено') || accumulatedAnswersHTML.includes('Всі питання вже оброблені')) {
+            accumulatedAnswersHTML = ""; // Start fresh if placeholder text
+        }
+
+
+        let newQuestionsFoundThisRun = 0;
+        let questionNumberForDisplay = 0; // This will be the visual 1, 2, 3...
 
         for (let i = 0; i < questionBlocks.length; i++) {
             const questionBlock = questionBlocks[i];
@@ -783,12 +815,25 @@
             if (!uniqueId) uniqueId = currentQuestionText;
 
             if (currentQuestionText === '' || uniqueId === '') continue;
-            if (processedGFormQuestionIds.has(uniqueId)) continue;
 
-            newQuestionsFoundThisRun = true;
+            if (processedGFormQuestionIds.has(uniqueId)) {
+                // If already processed, ensure its previous answer line is in accumulatedAnswersHTML
+                // (This assumes forceProcessQuestion correctly clears processedGFormQuestionIds and answerContentDiv)
+                const answerLineRegex = new RegExp(`^${questionNumberForDisplay + 1}: .*\\n`, "m");
+                if (!accumulatedAnswersHTML.match(answerLineRegex) && !isProcessing) { // if it's not in accumulated and we are not in a fresh run
+                    // This case is tricky, usually means a previous run was interrupted.
+                    // For now, if it's processed, we skip. `forceProcessQuestion` handles full refresh.
+                }
+                 questionNumberForDisplay++; // Still increment to keep numbering consistent with display
+                continue;
+            }
+
+            newQuestionsFoundThisRun++;
+            questionNumberForDisplay++;
+
             answerContentDiv.innerHTML = accumulatedAnswersHTML +
-                                      (accumulatedAnswersHTML ? "\n" : "") +
-                                      `Обробка питання ${i + 1}... <div class="loader-inline"></div>\n`;
+                                      (accumulatedAnswersHTML.endsWith('\n') || accumulatedAnswersHTML === "" ? "" : "\n") +
+                                      `Обробка питання ${questionNumberForDisplay}... <div class="loader-inline"></div>\n`;
             answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
 
             const mainImageElement = questionBlock.querySelector('img.HxhGpf');
@@ -829,25 +874,27 @@
                 isMultiQuiz: isCheckboxQuiz, questionType: questionType
             };
 
-            const aiResponse = await getAnswer(questionData);
+            const aiResponseText = await getAnswer(questionData); // This is raw text
 
-            const processingTextRegex = new RegExp(`Обробка питання ${i + 1}\\.\\.\\. <div class="loader-inline"></div>\\n?`);
+            const processingTextRegex = new RegExp(`Обробка питання ${questionNumberForDisplay}\\.\\.\\. <div class="loader-inline"></div>\\n?`);
             accumulatedAnswersHTML = answerContentDiv.innerHTML.replace(processingTextRegex, "");
 
-            accumulatedAnswersHTML += `${i + 1}: ${aiResponse}\n`;
+            accumulatedAnswersHTML += `${questionNumberForDisplay}: ${formatAIResponse(aiResponseText)}\n`; // Format here
             answerContentDiv.innerHTML = accumulatedAnswersHTML;
             answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
             processedGFormQuestionIds.add(uniqueId);
         }
-         if (answerContentDiv.innerHTML.includes("loader-inline")) {
+
+        if (answerContentDiv.innerHTML.includes("loader-inline")) {
              answerContentDiv.innerHTML = answerContentDiv.innerHTML.replace(/Обробка питання \d+\.\.\. <div class="loader-inline"><\/div>\n?/g, "");
         }
-        if (!newQuestionsFoundThisRun && questionBlocks.length > 0 && processedGFormQuestionIds.size === 0) { // No new Qs AND nothing was ever processed
-            answerContentDiv.innerHTML = 'Не знайдено нових питань для обробки. Спробуйте оновити відповідь (🔄).';
-        } else if (!newQuestionsFoundThisRun && questionBlocks.length > 0 && processedGFormQuestionIds.size > 0) {
-            // All questions on page were already processed, keep existing content
-            if(accumulatedAnswersHTML.trim() === "") answerContentDiv.innerHTML = "Всі питання вже оброблені."
-            else answerContentDiv.innerHTML = accumulatedAnswersHTML + "\nВсі питання на сторінці оброблено.";
+
+        if (!newQuestionsFoundThisRun && questionBlocks.length > 0) {
+            if (accumulatedAnswersHTML.trim() === '' || accumulatedAnswersHTML.trim() === 'Оновлення...') {
+                 answerContentDiv.innerHTML = 'Всі питання на сторінці вже оброблені. Натисніть 🔄 для повторної обробки.';
+            } else if (!accumulatedAnswersHTML.includes("Всі питання на сторінці вже оброблені")) {
+                answerContentDiv.innerHTML = accumulatedAnswersHTML + (accumulatedAnswersHTML.endsWith("\n") ? "" : "\n") + "Всі питання на сторінці вже оброблені.";
+            }
         } else if (questionBlocks.length === 0) {
              answerContentDiv.innerHTML = 'Питань не знайдено на сторінці.';
         }
