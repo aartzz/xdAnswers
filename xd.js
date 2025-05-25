@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         xdAnswers
 // @namespace    http://tampermonkey.net/
-// @version      4.10.2
+// @version      4.10.3
 // @description  A script, that helps in tests.
 // @author       aartzz
 // @match        *://naurok.com.ua/test/testing/*
@@ -133,15 +133,19 @@
         .xdanswers-info-modal-content p { white-space: pre-wrap; line-height: 1.6; }
     `);
 
-    // --- UI ELEMENTS ---
-    // These will be populated by createUI()
+    // --- UI ELEMENT VARIABLES ---
+    // These will be assigned in createUI() after elements are in the DOM
     let serviceTypeSelect, ollamaSettingsDiv, apiSettingsDiv, showRequestBtn, refreshAnswerBtn,
         resizeHelperBtn, copyAnswerBtn, openSettingsBtn, ollamaModelSelect, apiKeyInput,
-        apiModelInput, promptPrefixTextarea, /*outputLanguageSelect,*/ saveSettingsBtn, // outputLanguageSelect removed
+        apiModelInput, promptPrefixTextarea, /*outputLanguageSelect,*/ saveSettingsBtn,
         settingsPanelElement, refreshModelsIcon, answerContentDiv, dragHeader,
         infoModal, modalTitleEl, modalTextEl, modalCloseBtn;
 
+    const helperContainer = document.createElement('div'); // Define helperContainer globally
+
+    // --- UI CREATION AND INITIALIZATION ---
     function createUI() {
+        helperContainer.className = 'ollama-helper-container';
         helperContainer.innerHTML = `
             <div class="ollama-helper-header" id="ollama-helper-drag-header">
                 <span class="ollama-header-title">xdAnswers</span>
@@ -156,7 +160,7 @@
             <div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>`;
         document.body.appendChild(helperContainer);
 
-        settingsPanelElement = document.createElement('div'); // Create if not exists
+        settingsPanelElement = document.createElement('div');
         settingsPanelElement.className = 'ollama-settings-panel';
         settingsPanelElement.innerHTML = `
             <span class="close-btn" id="close-settings-btn">&times;</span>
@@ -203,7 +207,7 @@
             <button id="save-settings-btn">Save</button>`;
         document.body.appendChild(settingsPanelElement);
 
-        infoModal = document.createElement('div'); // Create if not exists
+        infoModal = document.createElement('div');
         infoModal.id = 'xdAnswers-info-modal';
         infoModal.className = 'xdanswers-info-modal-container';
         infoModal.innerHTML = `
@@ -246,6 +250,7 @@
 
     // --- DRAGGING LOGIC ---
     function attachDragLogic() {
+        if (!dragHeader) return;
         dragHeader.onmousedown = function(event) {
             if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
             isDragging = true;
@@ -291,6 +296,7 @@
 
     // --- UI LOGIC (common) ---
     function attachHelperEventListeners() {
+        if (!resizeHelperBtn) return;
         attachDragLogic();
         resizeHelperBtn.onclick = () => {
             isHelperWindowMaximized = !isHelperWindowMaximized;
@@ -358,6 +364,8 @@
     }
 
     function attachSettingsPanelEventListeners() {
+        if (!document.getElementById('close-settings-btn')) return;
+
         document.getElementById('close-settings-btn').onclick = () => { settingsPanelElement.style.display = 'none'; };
         serviceTypeSelect.onchange = () => {
             const selectedService = serviceTypeSelect.value;
@@ -421,6 +429,7 @@
     }
 
     function attachModalEventListeners(){
+        if (!modalCloseBtn) return;
         modalCloseBtn.onclick = function() { infoModal.style.display = 'none'; }
         window.addEventListener('click', function(event) {
             if (event.target == infoModal) { infoModal.style.display = 'none'; }
@@ -431,7 +440,6 @@
             }
         });
     }
-
 
     function toggleSettingsVisibility() {
         const selectedService = serviceTypeSelect.value;
@@ -550,7 +558,7 @@
         let responseText = "";
         let instruction = settings.promptPrefix;
 
-        // AI Response Language instruction is removed. AI will respond in the language of the prompt.
+        // AI Response Language instruction is removed. AI will try to respond in the language of the prompt.
 
         if (questionData.questionType === "short_text" || questionData.questionType === "paragraph") {
             instruction = "Дай розгорнуту відповідь на наступне відкрите питання:";
@@ -781,15 +789,13 @@
         }
 
         let accumulatedAnswersHTML = answerContentDiv.innerHTML;
-        // If it's placeholder or error message, clear it to start fresh for this batch
         if (accumulatedAnswersHTML.includes('Updating...') ||
             accumulatedAnswersHTML.includes('Waiting for question...') ||
             accumulatedAnswersHTML.includes('No questions found on page.') ||
-            accumulatedAnswersHTML.includes('All questions on this page have been processed') // Check for the old message too
+            accumulatedAnswersHTML.includes('All questions on this page have been processed.')
            ) {
             accumulatedAnswersHTML = "";
         }
-        // Clean up any stray loaders from a previous interrupted run
         accumulatedAnswersHTML = accumulatedAnswersHTML.replace(/Processing question \d+\.\.\. <div class="loader-inline"><\/div>\n?/g, "");
 
 
@@ -839,14 +845,15 @@
             if (mainImageElement && mainImageElement.src) allImageUrls.push(mainImageElement.src);
             let optionLabels = [];
             if (isRadioQuiz || isCheckboxQuiz) {
-                const gformOptionContainers = questionBlock.querySelectorAll('.nWQGrd.zwllIb, .Y6Myld .eBFwI');
+                // Updated selectors for GForm options to be more specific
+                const gformOptionContainers = questionBlock.querySelectorAll('div[role="radiogroup"] .docssharedWizToggleLabeledContainer, div[role="listbox"] .docssharedWizToggleLabeledContainer, .Y6Myld div[role="list"] .docssharedWizToggleLabeledContainer, .UHZXDe');
                  gformOptionContainers.forEach((optContainer, optIdx) => {
                     const textEl = optContainer.querySelector('span.aDTYNe, span.snByac');
                     const imgEl = optContainer.querySelector('img.QU5LQc');
                     if (imgEl && imgEl.src) {
                         allImageUrls.push(imgEl.src);
                         let lblText = `Option ${optIdx + 1} (image ${allImageUrls.length})`;
-                        if (textEl && textEl.innerText.trim() && optContainer.closest('.UHZXDe')) {
+                        if (textEl && textEl.innerText.trim()) { // Check if image option has associated text
                            lblText = `${textEl.innerText.trim()} (labeled as Option ${optIdx + 1}, is image ${allImageUrls.length})`;
                         }
                         optionLabels.push(lblText);
@@ -879,10 +886,11 @@
              answerContentDiv.innerHTML = answerContentDiv.innerHTML.replace(/Processing question \d+\.\.\. <div class="loader-inline"><\/div>\n?/g, "");
         }
 
-        if (!newQuestionsFoundThisRun && questionBlocks.length > 0 && accumulatedAnswersHTML.trim() === '') {
-             // If no new Qs were found and display is empty, THEN it means all were processed or none were suitable
-             // but we avoid adding the "All questions processed..." message as requested
-             console.log("All questions on page seem to be processed, or no new processable questions found.");
+        if (!newQuestionsFoundThisRun && questionBlocks.length > 0) {
+            if (accumulatedAnswersHTML.trim() === '') {
+                answerContentDiv.innerHTML = 'All questions on this page have been processed. Press 🔄 to reprocess all.';
+            }
+            // If there's content, do not append "All questions processed" message.
         } else if (questionBlocks.length === 0 && accumulatedAnswersHTML.trim() === '') {
              answerContentDiv.innerHTML = 'No questions found on the page.';
         }
@@ -897,7 +905,9 @@
     }
 
     // Initial load
-    createUI();
-    populateSettings();
-    if (settings.activeService === 'Ollama') fetchModels();
+    createUI(); // Create UI elements and assign to global vars
+    populateSettings(); // Populate settings fields
+    if (settings.activeService === 'Ollama') {
+        fetchModels();
+    }
 })();
