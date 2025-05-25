@@ -8,6 +8,6 @@ A script, that helps in tests.
 
 ## Supported sites
 - [🇺🇦NaUrok](https://naurok.com.ua)
-- [🌐Google Forms](https://docs.google.com/forms)
+- [🌐Google Forms [BETA]](https://docs.google.com/forms)
 
 
