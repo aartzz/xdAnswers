@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         xdAnswers
 // @namespace    http://tampermonkey.net/
-// @version      4.10.1
+// @version      4.10.2
 // @description  A script, that helps in tests.
 // @author       aartzz
 // @match        *://naurok.com.ua/test/testing/*
+// @match        *://naurok.ua/test/testing/*
 // @match        *://docs.google.com/forms/d/e/*/viewform*
 // @connect      localhost
 // @connect      api.openai.com
@@ -27,8 +28,8 @@
         activeService: 'MistralAI',
         Ollama: { host: '', model: '' },
         OpenAI: { apiKey: '', model: 'gpt-4o' },
-        Gemini: { apiKey: '', model: 'gemini-2.0-flash' }, // Forced as requested by user
-        MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-large-2411' }, // Forced as requested by user
+        Gemini: { apiKey: '', model: 'gemini-2.0-flash' }, // User requested
+        MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-large-2411' }, // User requested
         promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.'
         // outputLanguage setting removed
     };
@@ -36,7 +37,7 @@
     let settings = JSON.parse(GM_getValue('xdAnswers_settings', JSON.stringify(DEFAULT_SETTINGS)));
     // Ensure all service settings structures exist based on DEFAULT_SETTINGS after loading
     for (const serviceKey in DEFAULT_SETTINGS) {
-        if (!['activeService', 'promptPrefix'].includes(serviceKey)) { // Removed outputLanguage from here
+        if (!['activeService', 'promptPrefix'].includes(serviceKey)) { // outputLanguage removed
             if (!settings[serviceKey]) {
                 settings[serviceKey] = { ...DEFAULT_SETTINGS[serviceKey] };
             } else {
@@ -47,7 +48,9 @@
     // Remove outputLanguage from settings if it exists from older versions
     if (settings.hasOwnProperty('outputLanguage')) {
         delete settings.outputLanguage;
+        GM_setValue('xdAnswers_settings', JSON.stringify(settings)); // Persist removal
     }
+
 
     const validServices = ['Ollama', 'OpenAI', 'Gemini', 'MistralAI'];
     if (!validServices.includes(settings.activeService)) {
@@ -101,6 +104,7 @@
             color: var(--futuristic-text);
             padding: 1px 5px; font-size: 0.9em; display: inline-block;
             line-height: 1; vertical-align: middle;
+            /* border removed */
         }
         .info-icon:hover { color: var(--futuristic-border); }
         #refresh-models-icon {
@@ -108,6 +112,7 @@
             transition: transform 0.5s ease;
             padding: 1px 4px; line-height: 1; vertical-align: middle;
             font-style: normal; color: var(--futuristic-text); font-size: 0.9em;
+             /* border removed */
         }
         #refresh-models-icon.spinning { animation: spin 1s linear infinite; }
         #refresh-models-icon:hover { color: var(--futuristic-border); }
@@ -129,286 +134,304 @@
     `);
 
     // --- UI ELEMENTS ---
-    const helperContainer = document.createElement('div');
-    helperContainer.className = 'ollama-helper-container';
-    helperContainer.innerHTML = `
-        <div class="ollama-helper-header" id="ollama-helper-drag-header">
-            <span class="ollama-header-title">xdAnswers</span>
-            <div class="ollama-header-buttons">
-                <button id="resize-helper-btn" title="Resize">➕</button>
-                <button id="copy-answer-btn" title="Copy Answer">📋</button>
-                <button id="show-request-btn" title="Show AI Request">ℹ️</button>
-                <button id="refresh-answer-btn" title="Refresh Answer">🔄</button>
-                <button id="open-settings-btn" title="Settings">⚙️</button>
-            </div>
-        </div>
-        <div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>
-    `;
-    document.body.appendChild(helperContainer);
+    // These will be populated by createUI()
+    let serviceTypeSelect, ollamaSettingsDiv, apiSettingsDiv, showRequestBtn, refreshAnswerBtn,
+        resizeHelperBtn, copyAnswerBtn, openSettingsBtn, ollamaModelSelect, apiKeyInput,
+        apiModelInput, promptPrefixTextarea, /*outputLanguageSelect,*/ saveSettingsBtn, // outputLanguageSelect removed
+        settingsPanelElement, refreshModelsIcon, answerContentDiv, dragHeader,
+        infoModal, modalTitleEl, modalTextEl, modalCloseBtn;
 
-    const settingsPanelElement = document.createElement('div');
-    settingsPanelElement.className = 'ollama-settings-panel';
-    settingsPanelElement.innerHTML = `
-        <span class="close-btn" id="close-settings-btn">&times;</span>
-        <h3>Settings</h3>
-        <div class="form-group">
-            <label for="service-type">Service Type:
-                <span class="info-icon" id="service-type-info-icon-btn">ℹ️</span>
-            </label>
-            <select id="service-type">
-                <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
-                <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
-                <option value="Gemini">Google 💬🖼️ 💰</option>
-                <option value="Ollama">Ollama 🏠</option>
-            </select>
-        </div>
-        <div id="ollama-settings" class="service-specific-settings">
-            <div class="form-group">
-                <label for="ollama-host">Ollama Host:</label>
-                <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
+    function createUI() {
+        helperContainer.innerHTML = `
+            <div class="ollama-helper-header" id="ollama-helper-drag-header">
+                <span class="ollama-header-title">xdAnswers</span>
+                <div class="ollama-header-buttons">
+                    <button id="resize-helper-btn" title="Resize">➕</button>
+                    <button id="copy-answer-btn" title="Copy Answer">📋</button>
+                    <button id="show-request-btn" title="Show AI Request">ℹ️</button>
+                    <button id="refresh-answer-btn" title="Refresh Answer">🔄</button>
+                    <button id="open-settings-btn" title="Settings">⚙️</button>
+                </div>
             </div>
+            <div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>`;
+        document.body.appendChild(helperContainer);
+
+        settingsPanelElement = document.createElement('div'); // Create if not exists
+        settingsPanelElement.className = 'ollama-settings-panel';
+        settingsPanelElement.innerHTML = `
+            <span class="close-btn" id="close-settings-btn">&times;</span>
+            <h3>Settings</h3>
             <div class="form-group">
-                <label for="ollama-model">
-                    Local Model: <span id="refresh-models-icon" title="Refresh model list">🔄</span>
+                <label for="service-type">Service Type:
+                    <span class="info-icon" id="service-type-info-icon-btn">ℹ️</span>
                 </label>
-                <select id="ollama-model"></select>
+                <select id="service-type">
+                    <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
+                    <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
+                    <option value="Gemini">Google 💬🖼️ 💰</option>
+                    <option value="Ollama">Ollama 🏠</option>
+                </select>
             </div>
-        </div>
-        <div id="api-settings" class="service-specific-settings">
-             <div class="form-group">
-                <label for="api-key">API Key:</label>
-                <input type="password" id="api-key">
+            <div id="ollama-settings" class="service-specific-settings">
+                <div class="form-group">
+                    <label for="ollama-host">Ollama Host:</label>
+                    <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
+                </div>
+                <div class="form-group">
+                    <label for="ollama-model">
+                        Local Model: <span id="refresh-models-icon" title="Refresh model list">🔄</span>
+                    </label>
+                    <select id="ollama-model"></select>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="api-model">Model Name:</label>
-                <input type="text" id="api-model">
+            <div id="api-settings" class="service-specific-settings">
+                 <div class="form-group">
+                    <label for="api-key">API Key:</label>
+                    <input type="password" id="api-key">
+                </div>
+                <div class="form-group">
+                    <label for="api-model">Model Name:</label>
+                    <input type="text" id="api-model">
+                </div>
             </div>
-        </div>
-        <div class="form-group" style="border-top: 1px solid var(--futuristic-border); padding-top: 15px; margin-top: 15px;">
-            <label for="prompt-prefix">Prompt:
-                 <span class="info-icon" id="prompt-prefix-info-icon-btn">ℹ️</span>
-            </label>
-            <textarea id="prompt-prefix"></textarea>
-        </div>
-        <button id="save-settings-btn">Save</button>
-    `;
-    document.body.appendChild(settingsPanelElement);
+            <div class="form-group" style="border-top: 1px solid var(--futuristic-border); padding-top: 15px; margin-top: 15px;">
+                <label for="prompt-prefix">Prompt:
+                     <span class="info-icon" id="prompt-prefix-info-icon-btn">ℹ️</span>
+                </label>
+                <textarea id="prompt-prefix"></textarea>
+            </div>
+            <button id="save-settings-btn">Save</button>`;
+        document.body.appendChild(settingsPanelElement);
 
-    const infoModal = document.createElement('div');
-    infoModal.id = 'xdAnswers-info-modal';
-    infoModal.className = 'xdanswers-info-modal-container';
-    infoModal.innerHTML = `
-        <div class="xdanswers-info-modal-content">
-            <span class="xdanswers-info-modal-close-btn" id="xdAnswers-modal-close-btn">&times;</span>
-            <h4 id="xdAnswers-info-modal-title"></h4>
-            <p id="xdAnswers-info-modal-text"></p>
-        </div>`;
-    document.body.appendChild(infoModal);
+        infoModal = document.createElement('div'); // Create if not exists
+        infoModal.id = 'xdAnswers-info-modal';
+        infoModal.className = 'xdanswers-info-modal-container';
+        infoModal.innerHTML = `
+            <div class="xdanswers-info-modal-content">
+                <span class="xdanswers-info-modal-close-btn" id="xdAnswers-modal-close-btn">&times;</span>
+                <h4 id="xdAnswers-info-modal-title"></h4>
+                <p id="xdAnswers-info-modal-text"></p>
+            </div>`;
+        document.body.appendChild(infoModal);
 
-    // Assign variables AFTER elements are in DOM
-    const serviceTypeSelect = document.getElementById('service-type');
-    const ollamaSettingsDiv = document.getElementById('ollama-settings');
-    const apiSettingsDiv = document.getElementById('api-settings');
-    const showRequestBtn = document.getElementById('show-request-btn');
-    const refreshAnswerBtn = document.getElementById('refresh-answer-btn');
-    const resizeHelperBtn = document.getElementById('resize-helper-btn');
-    const copyAnswerBtn = document.getElementById('copy-answer-btn');
-    const openSettingsBtn = document.getElementById('open-settings-btn');
-    const ollamaModelSelect = document.getElementById('ollama-model');
-    const apiKeyInput = document.getElementById('api-key');
-    const apiModelInput = document.getElementById('api-model');
-    const promptPrefixTextarea = document.getElementById('prompt-prefix');
-    // const outputLanguageSelect = document.getElementById('output-language'); // Removed
-    const saveSettingsBtn = document.getElementById('save-settings-btn');
-    const refreshModelsIcon = document.getElementById('refresh-models-icon');
-    const answerContentDiv = document.getElementById('ollama-answer-content');
-    const modalTitleEl = document.getElementById('xdAnswers-info-modal-title');
-    const modalTextEl = document.getElementById('xdAnswers-info-modal-text');
-    const modalCloseBtn = document.getElementById('xdAnswers-modal-close-btn');
-    const dragHeader = document.getElementById('ollama-helper-drag-header');
+        // Assign variables AFTER elements are in DOM
+        answerContentDiv = document.getElementById('ollama-answer-content');
+        dragHeader = document.getElementById('ollama-helper-drag-header');
+        resizeHelperBtn = document.getElementById('resize-helper-btn');
+        copyAnswerBtn = document.getElementById('copy-answer-btn');
+        showRequestBtn = document.getElementById('show-request-btn');
+        refreshAnswerBtn = document.getElementById('refresh-answer-btn');
+        openSettingsBtn = document.getElementById('open-settings-btn');
+
+        serviceTypeSelect = document.getElementById('service-type');
+        ollamaSettingsDiv = document.getElementById('ollama-settings');
+        apiSettingsDiv = document.getElementById('api-settings');
+        ollamaModelSelect = document.getElementById('ollama-model');
+        apiKeyInput = document.getElementById('api-key');
+        apiModelInput = document.getElementById('api-model');
+        promptPrefixTextarea = document.getElementById('prompt-prefix');
+        // outputLanguageSelect = document.getElementById('output-language'); // Removed
+        saveSettingsBtn = document.getElementById('save-settings-btn');
+        refreshModelsIcon = document.getElementById('refresh-models-icon');
+
+        modalTitleEl = document.getElementById('xdAnswers-info-modal-title');
+        modalTextEl = document.getElementById('xdAnswers-info-modal-text');
+        modalCloseBtn = document.getElementById('xdAnswers-modal-close-btn');
+
+        attachHelperEventListeners();
+        attachSettingsPanelEventListeners();
+        attachModalEventListeners();
+    }
 
 
     // --- DRAGGING LOGIC ---
-    dragHeader.onmousedown = function(event) {
-        if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
-        isDragging = true;
-        dragOffsetX = event.clientX - helperContainer.offsetLeft;
-        dragOffsetY = event.clientY - helperContainer.offsetTop;
-        document.body.style.userSelect = 'none';
-    };
-    document.onmousemove = function(event) {
-        if (isDragging) {
-            let newHelperLeft = event.clientX - dragOffsetX;
-            let newHelperTop = event.clientY - dragOffsetY;
-            helperContainer.style.left = newHelperLeft + 'px';
-            helperContainer.style.top = newHelperTop + 'px';
-            helperContainer.style.right = 'auto'; helperContainer.style.bottom = 'auto';
-        }
-    };
-    document.onmouseup = function() {
-        if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
-    };
-    dragHeader.ontouchstart = function(event) {
-        if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
-        isDragging = true;
-        const touch = event.touches[0];
-        dragOffsetX = touch.clientX - helperContainer.offsetLeft;
-        dragOffsetY = touch.clientY - helperContainer.offsetTop;
-        document.body.style.userSelect = 'none';
-        event.preventDefault();
-    };
-    document.ontouchmove = function(event) {
-        if (isDragging) {
+    function attachDragLogic() {
+        dragHeader.onmousedown = function(event) {
+            if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
+            isDragging = true;
+            dragOffsetX = event.clientX - helperContainer.offsetLeft;
+            dragOffsetY = event.clientY - helperContainer.offsetTop;
+            document.body.style.userSelect = 'none';
+        };
+        document.onmousemove = function(event) {
+            if (isDragging) {
+                let newHelperLeft = event.clientX - dragOffsetX;
+                let newHelperTop = event.clientY - dragOffsetY;
+                helperContainer.style.left = newHelperLeft + 'px';
+                helperContainer.style.top = newHelperTop + 'px';
+                helperContainer.style.right = 'auto'; helperContainer.style.bottom = 'auto';
+            }
+        };
+        document.onmouseup = function() {
+            if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
+        };
+        dragHeader.ontouchstart = function(event) {
+            if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
+            isDragging = true;
             const touch = event.touches[0];
-            let newHelperLeft = touch.clientX - dragOffsetX;
-            let newHelperTop = touch.clientY - dragOffsetY;
-            helperContainer.style.left = newHelperLeft + 'px';
-            helperContainer.style.top = newHelperTop + 'px';
-            helperContainer.style.right = 'auto'; helperContainer.style.bottom = 'auto';
-        }
-    };
-    document.ontouchend = function() {
-        if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
-    };
+            dragOffsetX = touch.clientX - helperContainer.offsetLeft;
+            dragOffsetY = touch.clientY - helperContainer.offsetTop;
+            document.body.style.userSelect = 'none';
+            event.preventDefault();
+        };
+        document.ontouchmove = function(event) {
+            if (isDragging) {
+                const touch = event.touches[0];
+                let newHelperLeft = touch.clientX - dragOffsetX;
+                let newHelperTop = touch.clientY - dragOffsetY;
+                helperContainer.style.left = newHelperLeft + 'px';
+                helperContainer.style.top = newHelperTop + 'px';
+                helperContainer.style.right = 'auto'; helperContainer.style.bottom = 'auto';
+            }
+        };
+        document.ontouchend = function() {
+            if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
+        };
+    }
 
     // --- UI LOGIC (common) ---
-    function showInfoModal(title, text) {
-        modalTitleEl.textContent = title;
-        modalTextEl.textContent = text;
-        infoModal.style.display = 'block';
-    }
-    modalCloseBtn.onclick = function() { infoModal.style.display = 'none'; }
-    window.addEventListener('click', function(event) {
-        if (event.target == infoModal) { infoModal.style.display = 'none'; }
-    });
-     window.addEventListener('keydown', function(event) {
-        if (event.key === "Escape" && infoModal.style.display === 'block') {
-            infoModal.style.display = 'none';
-        }
-    });
-    document.getElementById('service-type-info-icon-btn').onclick = function() {
-        showInfoModal('Service Type Legend',
-            "💬 - Text support\n" +
-            "🖼️ - Image support\n" +
-            "💰 - Usage limits (requests/words per day)\n" +
-            "🏠 - Self-hosted (requires your own server)\n" +
-            "🆓 - Free tier provided out-of-the-box"
-        );
-    };
-    document.getElementById('prompt-prefix-info-icon-btn').onclick = function() {
-        showInfoModal('Prompt Field Information',
-            "This field is for adjusting the request to the AI so it understands what is expected. This prompt is added at the beginning."
-        );
-    };
-
-    resizeHelperBtn.onclick = () => {
-        isHelperWindowMaximized = !isHelperWindowMaximized;
-        const targetState = isHelperWindowMaximized ? maximizedHelperState : defaultHelperState;
-        Object.keys(targetState).forEach(key => helperContainer.style[key] = targetState[key]);
-        resizeHelperBtn.textContent = isHelperWindowMaximized ? '➖' : '➕';
-        if (!isHelperWindowMaximized) {
-            const currentBounds = helperContainer.getBoundingClientRect();
-            const defaultRightNum = parseFloat(defaultHelperState.right);
-            const defaultBottomNum = parseFloat(defaultHelperState.bottom);
-            if (helperContainer.style.left !== 'auto' && helperContainer.style.top !== 'auto' &&
-                !(Math.abs(window.innerWidth - currentBounds.left - parseFloat(defaultHelperState.width) - defaultRightNum) < 50 &&
-                  Math.abs(window.innerHeight - currentBounds.top - parseFloat(defaultHelperState.maxHeight) - defaultBottomNum) < 50)) {
-            } else {
-                 Object.keys(defaultHelperState).forEach(key => helperContainer.style[key] = defaultHelperState[key]);
-            }
-        }
-    };
-    copyAnswerBtn.onclick = () => {
-        const textToCopy = answerContentDiv.innerText;
-        if (textToCopy && textToCopy !== 'Waiting for question...' && !answerContentDiv.querySelector('.loader')) {
-            GM_setClipboard(textToCopy);
-            copyAnswerBtn.textContent = '✅';
-            setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
-        } else {
-            copyAnswerBtn.textContent = '❌';
-            setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
-        }
-    };
-    openSettingsBtn.onclick = () => {
-        settingsPanelElement.style.display = 'block';
-        populateSettings();
-    };
-    document.getElementById('close-settings-btn').onclick = () => { settingsPanelElement.style.display = 'none'; };
-    refreshAnswerBtn.onclick = () => forceProcessQuestion();
-    showRequestBtn.onclick = () => {
-        let requestToShow = null;
-        if (lastRequestBody) {
-            if (lastRequestBody.prompt) { requestToShow = lastRequestBody.prompt; }
-            else if (lastRequestBody.messages && lastRequestBody.messages.length > 0) {
-                 let contentToDisplay = "System: " + lastRequestBody.messages[0].content + "\n\nUser: ";
-                 const userMessageContent = lastRequestBody.messages[1].content;
-                 if (Array.isArray(userMessageContent)) {
-                     userMessageContent.forEach(item => {
-                         if (item.type === "text") contentToDisplay += item.text + "\n";
-                         if (item.type === "image_url") contentToDisplay += "[IMAGE]\n";
-                     });
-                 } else { contentToDisplay += userMessageContent; }
-                 requestToShow = contentToDisplay;
-            } else if (lastRequestBody.contents && lastRequestBody.contents.length > 0 && lastRequestBody.contents[0].parts) {
-                let contentToDisplay = "";
-                 if(lastRequestBody.systemInstruction && lastRequestBody.systemInstruction.parts && lastRequestBody.systemInstruction.parts[0].text) {
-                    contentToDisplay += "System: " + lastRequestBody.systemInstruction.parts[0].text + "\n\n";
+    function attachHelperEventListeners() {
+        attachDragLogic();
+        resizeHelperBtn.onclick = () => {
+            isHelperWindowMaximized = !isHelperWindowMaximized;
+            const targetState = isHelperWindowMaximized ? maximizedHelperState : defaultHelperState;
+            Object.keys(targetState).forEach(key => helperContainer.style[key] = targetState[key]);
+            resizeHelperBtn.textContent = isHelperWindowMaximized ? '➖' : '➕';
+            if (!isHelperWindowMaximized) {
+                const currentBounds = helperContainer.getBoundingClientRect();
+                const defaultRightNum = parseFloat(defaultHelperState.right);
+                const defaultBottomNum = parseFloat(defaultHelperState.bottom);
+                 if (helperContainer.style.left !== 'auto' && helperContainer.style.top !== 'auto' &&
+                    !(Math.abs(window.innerWidth - currentBounds.left - parseFloat(defaultHelperState.width) - defaultRightNum) < 50 &&
+                      Math.abs(window.innerHeight - currentBounds.top - parseFloat(defaultHelperState.maxHeight) - defaultBottomNum) < 50)) {
+                } else {
+                     Object.keys(defaultHelperState).forEach(key => helperContainer.style[key] = defaultHelperState[key]);
                 }
-                contentToDisplay += "User: ";
-                lastRequestBody.contents[0].parts.forEach(part => {
-                    if (part.text) contentToDisplay += part.text + "\n";
-                    if (part.inline_data) contentToDisplay += "[IMAGE]\n";
-                });
-                requestToShow = contentToDisplay;
             }
-        }
-        if (requestToShow) alert('Request sent to AI:\n\n' + requestToShow);
-        else alert('No request has been sent yet, or format is unknown.');
-    };
-    serviceTypeSelect.onchange = () => {
-        const selectedService = serviceTypeSelect.value;
-        if (!settings[selectedService]) {
-            settings[selectedService] = { ...(DEFAULT_SETTINGS[selectedService] || { apiKey: '', model: '' }) };
-        }
-        toggleSettingsVisibility();
-    };
-    saveSettingsBtn.onclick = () => {
-        const activeService = serviceTypeSelect.value;
-        const oldActiveService = settings.activeService;
-        const oldPromptPrefix = settings.promptPrefix;
-        let modelChanged = false;
-
-        settings.activeService = activeService;
-        settings.promptPrefix = promptPrefixTextarea.value;
-        // settings.outputLanguage = outputLanguageSelect.value; // outputLanguage select removed
-
-        if (activeService === 'Ollama') {
-            const oldOllamaModel = settings.Ollama.model;
-            settings.Ollama.host = document.getElementById('ollama-host').value;
-            settings.Ollama.model = ollamaModelSelect.value;
-            if (oldOllamaModel !== settings.Ollama.model) modelChanged = true;
-        } else {
-            if (!settings[activeService]) {
-                 settings[activeService] = { ...(DEFAULT_SETTINGS[activeService] || { apiKey: '', model: '' }) };
+        };
+        copyAnswerBtn.onclick = () => {
+            const textToCopy = answerContentDiv.innerText;
+            if (textToCopy && textToCopy !== 'Waiting for question...' && !answerContentDiv.querySelector('.loader')) {
+                GM_setClipboard(textToCopy);
+                copyAnswerBtn.textContent = '✅';
+                setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
+            } else {
+                copyAnswerBtn.textContent = '❌';
+                setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
             }
-            const oldApiModel = settings[activeService].model;
-            settings[activeService].apiKey = apiKeyInput.value;
-            settings[activeService].model = apiModelInput.value;
-            if (oldApiModel !== settings[activeService].model) modelChanged = true;
-        }
-        GM_setValue('xdAnswers_settings', JSON.stringify(settings));
-        console.log('Settings saved!');
-        settingsPanelElement.style.display = 'none';
+        };
+        openSettingsBtn.onclick = () => {
+            settingsPanelElement.style.display = 'block';
+            populateSettings();
+        };
+        showRequestBtn.onclick = () => {
+            let requestToShow = null;
+            if (lastRequestBody) {
+                if (lastRequestBody.prompt) { requestToShow = lastRequestBody.prompt; }
+                else if (lastRequestBody.messages && lastRequestBody.messages.length > 0) {
+                     let contentToDisplay = "System: " + lastRequestBody.messages[0].content + "\n\nUser: ";
+                     const userMessageContent = lastRequestBody.messages[1].content;
+                     if (Array.isArray(userMessageContent)) {
+                         userMessageContent.forEach(item => {
+                             if (item.type === "text") contentToDisplay += item.text + "\n";
+                             if (item.type === "image_url") contentToDisplay += "[IMAGE]\n";
+                         });
+                     } else { contentToDisplay += userMessageContent; }
+                     requestToShow = contentToDisplay;
+                } else if (lastRequestBody.contents && lastRequestBody.contents.length > 0 && lastRequestBody.contents[0].parts) {
+                    let contentToDisplay = "";
+                     if(lastRequestBody.systemInstruction && lastRequestBody.systemInstruction.parts && lastRequestBody.systemInstruction.parts[0].text) {
+                        contentToDisplay += "System: " + lastRequestBody.systemInstruction.parts[0].text + "\n\n";
+                    }
+                    contentToDisplay += "User: ";
+                    lastRequestBody.contents[0].parts.forEach(part => {
+                        if (part.text) contentToDisplay += part.text + "\n";
+                        if (part.inline_data) contentToDisplay += "[IMAGE]\n";
+                    });
+                    requestToShow = contentToDisplay;
+                }
+            }
+            if (requestToShow) alert('Request sent to AI:\n\n' + requestToShow);
+            else alert('No request has been sent yet, or format is unknown.');
+        };
+        refreshAnswerBtn.onclick = () => forceProcessQuestion();
+    }
 
-        if (oldActiveService !== activeService || oldPromptPrefix !== settings.promptPrefix || modelChanged /*|| oldOutputLanguage !== settings.outputLanguage*/) {
-            forceProcessQuestion();
-        }
-    };
-    refreshModelsIcon.onclick = function() {
-        const icon = this;
-        icon.classList.add('spinning');
-        fetchModels(() => icon.classList.remove('spinning'));
-    };
+    function attachSettingsPanelEventListeners() {
+        document.getElementById('close-settings-btn').onclick = () => { settingsPanelElement.style.display = 'none'; };
+        serviceTypeSelect.onchange = () => {
+            const selectedService = serviceTypeSelect.value;
+            if (!settings[selectedService]) {
+                settings[selectedService] = { ...(DEFAULT_SETTINGS[selectedService] || { apiKey: '', model: '' }) };
+            }
+            toggleSettingsVisibility();
+        };
+        refreshModelsIcon.onclick = function() {
+            const icon = this;
+            icon.classList.add('spinning');
+            fetchModels(() => icon.classList.remove('spinning'));
+        };
+        saveSettingsBtn.onclick = () => {
+            const activeService = serviceTypeSelect.value;
+            const oldActiveService = settings.activeService;
+            const oldPromptPrefix = settings.promptPrefix;
+            // const oldOutputLanguage = settings.outputLanguage; // Removed
+            let modelChanged = false;
+
+            settings.activeService = activeService;
+            settings.promptPrefix = promptPrefixTextarea.value;
+            // settings.outputLanguage = outputLanguageSelect.value; // Removed
+
+            if (activeService === 'Ollama') {
+                const oldOllamaModel = settings.Ollama.model;
+                settings.Ollama.host = document.getElementById('ollama-host').value;
+                settings.Ollama.model = ollamaModelSelect.value;
+                if (oldOllamaModel !== settings.Ollama.model) modelChanged = true;
+            } else {
+                if (!settings[activeService]) {
+                     settings[activeService] = { ...(DEFAULT_SETTINGS[activeService] || { apiKey: '', model: '' }) };
+                }
+                const oldApiModel = settings[activeService].model;
+                settings[activeService].apiKey = apiKeyInput.value;
+                settings[activeService].model = apiModelInput.value;
+                if (oldApiModel !== settings[activeService].model) modelChanged = true;
+            }
+            GM_setValue('xdAnswers_settings', JSON.stringify(settings));
+            console.log('Settings saved!');
+            settingsPanelElement.style.display = 'none';
+
+            if (oldActiveService !== activeService || oldPromptPrefix !== settings.promptPrefix || modelChanged /*|| oldOutputLanguage !== settings.outputLanguage*/) {
+                forceProcessQuestion();
+            }
+        };
+        document.getElementById('service-type-info-icon-btn').onclick = function() {
+            showInfoModal('Service Type Legend',
+                "💬 - Text support\n" +
+                "🖼️ - Image support\n" +
+                "💰 - Usage limits (requests/words per day)\n" +
+                "🏠 - Self-hosted (requires your own server)\n" +
+                "🆓 - Free tier provided out-of-the-box"
+            );
+        };
+        document.getElementById('prompt-prefix-info-icon-btn').onclick = function() {
+            showInfoModal('Prompt Field Information',
+                "This field is for adjusting the request to the AI so it understands what is expected. This prompt is added at the beginning."
+            );
+        };
+    }
+
+    function attachModalEventListeners(){
+        modalCloseBtn.onclick = function() { infoModal.style.display = 'none'; }
+        window.addEventListener('click', function(event) {
+            if (event.target == infoModal) { infoModal.style.display = 'none'; }
+        });
+         window.addEventListener('keydown', function(event) {
+            if (event.key === "Escape" && infoModal.style.display === 'block') {
+                infoModal.style.display = 'none';
+            }
+        });
+    }
+
 
     function toggleSettingsVisibility() {
         const selectedService = serviceTypeSelect.value;
@@ -429,7 +452,7 @@
     function populateSettings() {
         serviceTypeSelect.value = settings.activeService;
         promptPrefixTextarea.value = settings.promptPrefix;
-        // outputLanguageSelect.value = settings.outputLanguage; // outputLanguage select removed
+        // outputLanguageSelect.value = settings.outputLanguage; // outputLanguageSelect removed
 
         document.getElementById('ollama-host').value = settings.Ollama.host || DEFAULT_SETTINGS.Ollama.host;
         const currentActiveServiceSettings = settings[settings.activeService] || DEFAULT_SETTINGS[settings.activeService];
@@ -527,10 +550,10 @@
         let responseText = "";
         let instruction = settings.promptPrefix;
 
-        // Language instruction is now removed from here as per user request
+        // AI Response Language instruction is removed. AI will respond in the language of the prompt.
 
         if (questionData.questionType === "short_text" || questionData.questionType === "paragraph") {
-            instruction = "Дай розгорнуту відповідь на наступне відкрите питання:"; // This will be the primary instruction
+            instruction = "Дай розгорнуту відповідь на наступне відкрите питання:";
         } else if (questionData.isMultiQuiz) {
              instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
         }
@@ -686,7 +709,7 @@
             }
             if (location.hostname.includes('docs.google.com')) {
                 processGFormQuestionsSequentially();
-            } else if (location.hostname.includes('naurok.com.ua')) {
+            } else if (location.hostname.includes('naurok.com.ua') || location.hostname.includes('naurok.ua')) {
                  if (isProcessing) return;
                 processNaurokQuestion();
             }
@@ -704,7 +727,9 @@
         answerContentDiv.innerHTML = '<div class="loader"></div>';
 
         const mainImageElement = document.querySelector('.test-content-image img');
-        const isMultiQuiz = document.querySelector("div[ng-if*='multiquiz']") !== null;
+        const isMultiQuiz = document.querySelector(".question-option-inner-multiple") !== null ||
+                           document.querySelector("div[ng-if*='multiquiz']") !== null;
+
         const optionElements = document.querySelectorAll('.test-option');
         let allImageUrls = [];
         if (mainImageElement && mainImageElement.src) allImageUrls.push(mainImageElement.src);
@@ -755,12 +780,16 @@
             return;
         }
 
-        let accumulatedAnswersHTML = answerContentDiv.innerHTML; // Use innerHTML to preserve formatting
+        let accumulatedAnswersHTML = answerContentDiv.innerHTML;
+        // If it's placeholder or error message, clear it to start fresh for this batch
         if (accumulatedAnswersHTML.includes('Updating...') ||
             accumulatedAnswersHTML.includes('Waiting for question...') ||
-            accumulatedAnswersHTML.includes('No questions found on page.')) {
+            accumulatedAnswersHTML.includes('No questions found on page.') ||
+            accumulatedAnswersHTML.includes('All questions on this page have been processed') // Check for the old message too
+           ) {
             accumulatedAnswersHTML = "";
         }
+        // Clean up any stray loaders from a previous interrupted run
         accumulatedAnswersHTML = accumulatedAnswersHTML.replace(/Processing question \d+\.\.\. <div class="loader-inline"><\/div>\n?/g, "");
 
 
@@ -850,11 +879,10 @@
              answerContentDiv.innerHTML = answerContentDiv.innerHTML.replace(/Processing question \d+\.\.\. <div class="loader-inline"><\/div>\n?/g, "");
         }
 
-        if (!newQuestionsFoundThisRun && questionBlocks.length > 0) {
-             if (accumulatedAnswersHTML.trim() === '' || accumulatedAnswersHTML === 'Оновлення...') {
-                 answerContentDiv.innerHTML = 'All questions on this page have been processed. Press 🔄 to reprocess all.';
-            }
-            // No else needed here, as we don't want to append "All questions processed" if there's existing content.
+        if (!newQuestionsFoundThisRun && questionBlocks.length > 0 && accumulatedAnswersHTML.trim() === '') {
+             // If no new Qs were found and display is empty, THEN it means all were processed or none were suitable
+             // but we avoid adding the "All questions processed..." message as requested
+             console.log("All questions on page seem to be processed, or no new processable questions found.");
         } else if (questionBlocks.length === 0 && accumulatedAnswersHTML.trim() === '') {
              answerContentDiv.innerHTML = 'No questions found on the page.';
         }
@@ -869,9 +897,7 @@
     }
 
     // Initial load
-    createUI(); // Create UI elements
-    populateSettings(); // Populate settings fields
-    if (settings.activeService === 'Ollama') {
-        fetchModels();
-    }
+    createUI();
+    populateSettings();
+    if (settings.activeService === 'Ollama') fetchModels();
 })();
