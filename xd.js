@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         xdAnswers
 // @namespace    http://tampermonkey.net/
-// @version      3.0
-// @description  A script, that helps in tests. Works with Ollama.
+// @version      3.3
+// @description  A script, that helps in tests.
 // @author       aartzz
 // @match        *://naurok.com.ua/test/testing/*
 // @connect      localhost
 // @connect      api.openai.com
 // @connect      generativelanguage.googleapis.com
+// @connect      api.mistral.ai
 // @connect      *
-// @icon         data:image/png;base64,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
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
 // @grant        GM_getValue
@@ -21,7 +21,7 @@
 
     // --- CONFIGURATION ---
     const DEFAULT_SETTINGS = {
-        activeService: 'Ollama',
+        activeService: 'MistralAI', // Default to MistralAI
         Ollama: {
             host: 'http://localhost:11434',
             model: ''
@@ -34,16 +34,22 @@
             apiKey: '',
             model: 'gemini-2.0-flash'
         },
+        MistralAI: {
+            apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', // Pre-filled public key
+            model: 'pixtral-large-2411' // Default model, can be changed
+        },
         promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.'
     };
 
-    // Load settings or use defaults
     let settings = JSON.parse(GM_getValue('xdAnswers_settings', JSON.stringify(DEFAULT_SETTINGS)));
-
     let isProcessing = false;
     let availableModels = [];
     let lastProcessedText = '';
     let lastRequestBody = null;
+    let isDragging = false;
+    let dragOffsetX, dragOffsetY;
+    let settingsBtnOffsetX_relative, settingsBtnOffsetY_relative;
+
 
     // --- STYLES ---
     GM_addStyle(`
@@ -56,7 +62,7 @@
             position: fixed; bottom: 20px; right: 20px; width: 350px; max-height: 400px; background-color: var(--futuristic-bg);
             border: 2px solid var(--futuristic-border); border-radius: 10px; box-shadow: var(--futuristic-glow);
             color: var(--futuristic-text); font-family: var(--futuristic-font); z-index: 9999; display: flex; flex-direction: column;
-            overflow: hidden; transition: all 0.3s ease;
+            overflow: hidden; transition: box-shadow 0.3s ease; /* Changed transition for smoother drag without size change */
         }
         .ollama-helper-header {
             display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: #001f3f;
@@ -72,7 +78,8 @@
         .ollama-settings-button {
             position: fixed; bottom: 20px; right: 380px; width: 40px; height: 40px; background-color: var(--futuristic-bg);
             border: 2px solid var(--futuristic-border); border-radius: 50%; box-shadow: var(--futuristic-glow); color: var(--futuristic-text);
-            font-size: 20px; cursor: pointer; z-index: 9999; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; cursor: pointer; z-index: 9998; display: flex; align-items: center; justify-content: center; /* Adjusted z-index */
+             transition: box-shadow 0.3s ease;
         }
         .ollama-settings-panel {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 450px;
@@ -104,24 +111,34 @@
     `);
 
     // --- UI ELEMENTS ---
-    document.body.insertAdjacentHTML('beforeend', `
-        <div class="ollama-helper-container">
-            <div class="ollama-helper-header">
-                <span class="ollama-header-title">xdAnswers</span>
-                <div class="ollama-header-buttons">
-                    <button id="show-request-btn" title="Показати запит до ШІ">ℹ️</button>
-                    <button id="refresh-answer-btn" title="Оновити відповідь">🔄</button>
-                </div>
+    const helperContainer = document.createElement('div');
+    helperContainer.className = 'ollama-helper-container';
+    helperContainer.innerHTML = `
+        <div class="ollama-helper-header" id="ollama-helper-drag-header">
+            <span class="ollama-header-title">xdAnswers</span>
+            <div class="ollama-header-buttons">
+                <button id="show-request-btn" title="Показати запит до ШІ">ℹ️</button>
+                <button id="refresh-answer-btn" title="Оновити відповідь">🔄</button>
             </div>
-            <div class="ollama-helper-content" id="ollama-answer-content">Очікую на запитання...</div>
         </div>
-        <div class="ollama-settings-button">⚙️</div>
+        <div class="ollama-helper-content" id="ollama-answer-content">Очікую на запитання...</div>
+    `;
+    document.body.appendChild(helperContainer);
+
+    const settingsButton = document.createElement('div'); // Renamed for clarity
+    settingsButton.className = 'ollama-settings-button';
+    settingsButton.innerHTML = '⚙️';
+    document.body.appendChild(settingsButton);
+
+
+    document.body.insertAdjacentHTML('beforeend', `
         <div class="ollama-settings-panel">
             <span class="close-btn" id="close-settings-btn">&times;</span>
             <h3>Налаштування</h3>
             <div class="form-group">
                 <label for="service-type">Тип сервісу:</label>
                 <select id="service-type">
+                    <option value="MistralAI">Mistral 💬🖼️</option>
                     <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
                     <option value="Gemini">Google 💬🖼️ 💰</option>
                     <option value="Ollama">Ollama 🏠</option>
@@ -157,6 +174,58 @@
         </div>
     `);
 
+    // --- DRAGGING LOGIC ---
+    const dragHeader = document.getElementById('ollama-helper-drag-header');
+
+    function startDrag(event) {
+        isDragging = true;
+        const clientX = event.clientX || event.touches[0].clientX;
+        const clientY = event.clientY || event.touches[0].clientY;
+
+        dragOffsetX = clientX - helperContainer.offsetLeft;
+        dragOffsetY = clientY - helperContainer.offsetTop;
+
+        // Calculate relative offset for settings button
+        settingsBtnOffsetX_relative = settingsButton.offsetLeft - helperContainer.offsetLeft;
+        settingsBtnOffsetY_relative = settingsButton.offsetTop - helperContainer.offsetTop;
+
+        document.body.style.userSelect = 'none';
+        if (event.type === 'touchstart') event.preventDefault();
+    }
+
+    function doDrag(event) {
+        if (isDragging) {
+            const clientX = event.clientX || event.touches[0].clientX;
+            const clientY = event.clientY || event.touches[0].clientY;
+
+            let newHelperLeft = clientX - dragOffsetX;
+            let newHelperTop = clientY - dragOffsetY;
+
+            helperContainer.style.left = newHelperLeft + 'px';
+            helperContainer.style.top = newHelperTop + 'px';
+            helperContainer.style.right = 'auto';
+            helperContainer.style.bottom = 'auto';
+
+            settingsButton.style.left = (newHelperLeft + settingsBtnOffsetX_relative) + 'px';
+            settingsButton.style.top = (newHelperTop + settingsBtnOffsetY_relative) + 'px';
+            settingsButton.style.right = 'auto';
+            settingsButton.style.bottom = 'auto';
+        }
+    }
+
+    function stopDrag() {
+        isDragging = false;
+        document.body.style.userSelect = '';
+    }
+
+    dragHeader.addEventListener('mousedown', startDrag);
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
+
+    dragHeader.addEventListener('touchstart', startDrag, { passive: false });
+    document.addEventListener('touchmove', doDrag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
+
 
     // --- UI LOGIC ---
     const serviceTypeSelect = document.getElementById('service-type');
@@ -168,12 +237,11 @@
         if (selectedService === 'Ollama') {
             ollamaSettingsDiv.style.display = 'block';
             apiSettingsDiv.style.display = 'none';
-        } else {
+        } else { // For OpenAI, Gemini, MistralAI
             ollamaSettingsDiv.style.display = 'none';
             apiSettingsDiv.style.display = 'block';
-            // Ensure settings object exists for the service
             if (!settings[selectedService]) {
-                settings[selectedService] = { apiKey: '', model: DEFAULT_SETTINGS[selectedService]?.model || '' };
+                settings[selectedService] = { apiKey: DEFAULT_SETTINGS[selectedService]?.apiKey || '', model: DEFAULT_SETTINGS[selectedService]?.model || '' };
             }
             document.getElementById('api-key').value = settings[selectedService].apiKey;
             document.getElementById('api-model').value = settings[selectedService].model;
@@ -182,8 +250,17 @@
 
     function populateSettings() {
         serviceTypeSelect.value = settings.activeService;
-        document.getElementById('ollama-host').value = settings.Ollama.host;
+        document.getElementById('ollama-host').value = settings.Ollama.host; // Ollama specific
         document.getElementById('prompt-prefix').value = settings.promptPrefix;
+
+        // Populate API specific fields if relevant
+        if (settings.activeService !== 'Ollama') {
+            if (!settings[settings.activeService]) { // Ensure structure exists
+                 settings[settings.activeService] = { apiKey: DEFAULT_SETTINGS[settings.activeService]?.apiKey || '', model: DEFAULT_SETTINGS[settings.activeService]?.model || '' };
+            }
+            document.getElementById('api-key').value = settings[settings.activeService].apiKey;
+            document.getElementById('api-model').value = settings[settings.activeService].model;
+        }
         updateModelDropdown(); // For Ollama models
         toggleSettingsVisibility();
     }
@@ -195,26 +272,33 @@
     document.getElementById('close-settings-btn').onclick = () => { document.querySelector('.ollama-settings-panel').style.display = 'none'; };
     document.getElementById('refresh-answer-btn').onclick = () => forceProcessQuestion();
     document.getElementById('show-request-btn').onclick = () => {
-        if (lastRequestBody && lastRequestBody.prompt) { // Ollama
-            alert('Промпт, відправлений до ШІ:\n\n' + lastRequestBody.prompt);
-        } else if (lastRequestBody && lastRequestBody.messages && lastRequestBody.messages.length > 0) { // OpenAI
-             let contentToDisplay = "System: " + lastRequestBody.messages[0].content + "\n\nUser: ";
-             if (Array.isArray(lastRequestBody.messages[1].content)) {
-                 lastRequestBody.messages[1].content.forEach(item => {
-                     if (item.type === "text") contentToDisplay += item.text + "\n";
-                     if (item.type === "image_url") contentToDisplay += "[IMAGE]\n";
-                 });
-             } else {
-                 contentToDisplay += lastRequestBody.messages[1].content;
-             }
-             alert('Запит, відправлений до ШІ:\n\n' + contentToDisplay);
-        } else if (lastRequestBody && lastRequestBody.contents && lastRequestBody.contents.length > 0 && lastRequestBody.contents[0].parts) { // Gemini
-            let contentToDisplay = "";
-            lastRequestBody.contents[0].parts.forEach(part => {
-                if (part.text) contentToDisplay += part.text + "\n";
-                if (part.inline_data) contentToDisplay += "[IMAGE]\n";
-            });
-            alert('Запит, відправлений до ШІ:\n\n' + contentToDisplay);
+        let requestToShow = null;
+        if (lastRequestBody) {
+            if (lastRequestBody.prompt) { // Ollama
+                requestToShow = lastRequestBody.prompt;
+            } else if (lastRequestBody.messages && lastRequestBody.messages.length > 0) { // OpenAI, MistralAI
+                 let contentToDisplay = "System: " + lastRequestBody.messages[0].content + "\n\nUser: ";
+                 const userMessageContent = lastRequestBody.messages[1].content;
+                 if (Array.isArray(userMessageContent)) {
+                     userMessageContent.forEach(item => {
+                         if (item.type === "text") contentToDisplay += item.text + "\n";
+                         if (item.type === "image_url") contentToDisplay += "[IMAGE]\n";
+                     });
+                 } else {
+                     contentToDisplay += userMessageContent; // Should not happen for multimodal
+                 }
+                 requestToShow = contentToDisplay;
+            } else if (lastRequestBody.contents && lastRequestBody.contents.length > 0 && lastRequestBody.contents[0].parts) { // Gemini
+                let contentToDisplay = "";
+                lastRequestBody.contents[0].parts.forEach(part => {
+                    if (part.text) contentToDisplay += part.text + "\n";
+                    if (part.inline_data) contentToDisplay += "[IMAGE]\n";
+                });
+                requestToShow = contentToDisplay;
+            }
+        }
+        if (requestToShow) {
+            alert('Запит, відправлений до ШІ:\n\n' + requestToShow);
         } else {
             alert('Ще не було відправлено жодного запиту, або формат невідомий.');
         }
@@ -224,25 +308,31 @@
 
     document.getElementById('save-settings-btn').onclick = () => {
         const activeService = serviceTypeSelect.value;
+        const oldActiveService = settings.activeService;
+        const oldPromptPrefix = settings.promptPrefix;
+
         settings.activeService = activeService;
         settings.promptPrefix = document.getElementById('prompt-prefix').value;
 
         if (activeService === 'Ollama') {
             settings.Ollama.host = document.getElementById('ollama-host').value;
             settings.Ollama.model = document.getElementById('ollama-model').value;
-        } else {
-            // Ensure settings object exists for the service
+        } else { // For OpenAI, Gemini, MistralAI
             if (!settings[activeService]) {
-                 settings[activeService] = { apiKey: '', model: DEFAULT_SETTINGS[activeService]?.model || '' };
+                 settings[activeService] = { apiKey: DEFAULT_SETTINGS[activeService]?.apiKey || '', model: DEFAULT_SETTINGS[activeService]?.model || '' };
             }
             settings[activeService].apiKey = document.getElementById('api-key').value;
             settings[activeService].model = document.getElementById('api-model').value;
         }
 
         GM_setValue('xdAnswers_settings', JSON.stringify(settings));
-        alert('Налаштування збережено!');
+        console.log('Налаштування збережено!');
         document.querySelector('.ollama-settings-panel').style.display = 'none';
-        forceProcessQuestion();
+        if (oldActiveService !== activeService || oldPromptPrefix !== settings.promptPrefix ||
+            (activeService === 'Ollama' && (oldActiveService !== 'Ollama' || settings.Ollama.model !== document.getElementById('ollama-model').value)) ||
+            (activeService !== 'Ollama' && (oldActiveService !== activeService || settings[activeService].model !== document.getElementById('api-model').value)) ) {
+            forceProcessQuestion();
+        }
     };
     document.getElementById('refresh-models-icon').onclick = function() {
         const icon = this;
@@ -263,7 +353,11 @@
     }
 
     // --- API & CORE LOGIC ---
-    function fetchModels(onComplete) { // Only for Ollama
+    function fetchModels(onComplete) {
+        if (settings.activeService !== 'Ollama') {
+            if(onComplete) onComplete();
+            return;
+        }
         GM_xmlhttpRequest({
             method: 'GET', url: `${settings.Ollama.host}/api/tags`,
             onload: function(response) {
@@ -300,9 +394,7 @@
 
     function getAnswer(questionText, optionsText, allBase64Images, isMultiQuiz) {
         const service = settings.activeService;
-        console.log(`Using service: ${service}`);
         document.getElementById('ollama-answer-content').innerHTML = '<div class="loader"></div>';
-
 
         if (service === 'Ollama') {
             getAnswerFromOllama(questionText, optionsText, allBase64Images, isMultiQuiz);
@@ -310,6 +402,8 @@
             getAnswerFromOpenAI(questionText, optionsText, allBase64Images, isMultiQuiz);
         } else if (service === 'Gemini') {
             getAnswerFromGemini(questionText, optionsText, allBase64Images, isMultiQuiz);
+        } else if (service === 'MistralAI') {
+            getAnswerFromMistralAI(questionText, optionsText, allBase64Images, isMultiQuiz);
         } else {
             document.getElementById('ollama-answer-content').textContent = 'Невідомий сервіс обрано.';
             isProcessing = false;
@@ -328,7 +422,7 @@
 
         const requestBody = { model: settings.Ollama.model, prompt: prompt, stream: false };
         if (allBase64Images && allBase64Images.length > 0) requestBody.images = allBase64Images;
-        lastRequestBody = { ...requestBody }; // For debug
+        lastRequestBody = { ...requestBody };
 
         GM_xmlhttpRequest({
             method: 'POST', url: `${settings.Ollama.host}/api/generate`,
@@ -337,10 +431,9 @@
             onload: (response) => {
                 let answer = "Помилка отримання відповіді від Ollama.";
                 if (response.status === 200) {
-                    answer = JSON.parse(response.responseText).response.trim();
-                } else {
-                    answer = `Ollama API Error: ${response.status}`;
-                }
+                    try { answer = JSON.parse(response.responseText).response.trim(); }
+                    catch(e) { console.error("Ollama JSON parse error", e); }
+                } else { answer = `Ollama API Error: ${response.status}`; }
                 document.getElementById('ollama-answer-content').textContent = answer;
                 isProcessing = false;
             },
@@ -365,13 +458,12 @@
                 contentForUserMessage.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img_b64}` } });
             });
         }
-
         const requestBody = {
             model: settings.OpenAI.model,
             messages: [{ role: 'system', content: instruction }, { role: 'user', content: contentForUserMessage }],
             max_tokens: 500
         };
-        lastRequestBody = { messages: requestBody.messages }; // For debug
+        lastRequestBody = { messages: requestBody.messages };
 
         GM_xmlhttpRequest({
             method: 'POST', url: 'https://api.openai.com/v1/chat/completions',
@@ -380,7 +472,8 @@
             onload: (response) => {
                 let answer = "Помилка отримання відповіді від OpenAI.";
                 if (response.status === 200) {
-                    answer = JSON.parse(response.responseText).choices[0].message.content.trim();
+                     try { answer = JSON.parse(response.responseText).choices[0].message.content.trim(); }
+                     catch(e) { console.error("OpenAI JSON parse error", e); }
                 } else {
                     answer = `OpenAI API Error: ${response.status}`;
                     console.error("OpenAI Error:", response.responseText);
@@ -400,28 +493,25 @@
         }
         let instruction = settings.promptPrefix;
         if (isMultiQuiz) instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
-
         let userQueryText = `Запитання: ${questionText}`;
         if (optionsText) userQueryText += `\n\nВаріанти відповідей:\n${optionsText}`;
 
-        const parts = [{ text: instruction }, { text: userQueryText }]; // System instruction first, then user query
+        const parts = [{ text: instruction }, { text: userQueryText }];
         if (allBase64Images && allBase64Images.length > 0) {
             allBase64Images.forEach(img_b64 => {
                 parts.push({ inline_data: { mime_type: 'image/jpeg', data: img_b64 } });
             });
         }
-        // Gemini expects a single 'contents' object with 'parts' if it's a multimodal query with text parts not strictly alternating user/model
-        // For a simple prompt with instruction and then user query, a single content object is better.
         const requestBody = {
-            contents: [{ role: "user", parts: parts }], // Simplified structure
-             safetySettings: [ // Add safety settings to avoid blocks for common questions
+            contents: [{ role: "user", parts: parts }],
+             safetySettings: [
                 { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
                 { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
                 { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
                 { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
             ]
         };
-        lastRequestBody = { contents: requestBody.contents }; // For debug
+        lastRequestBody = { contents: requestBody.contents };
 
         GM_xmlhttpRequest({
             method: 'POST', url: `https://generativelanguage.googleapis.com/v1beta/models/${settings.Gemini.model}:generateContent?key=${settings.Gemini.apiKey}`,
@@ -430,12 +520,14 @@
             onload: (response) => {
                 let answer = "Помилка отримання відповіді від Gemini.";
                 if (response.status === 200) {
-                    const responseData = JSON.parse(response.responseText);
-                    if (responseData.candidates && responseData.candidates[0].content && responseData.candidates[0].content.parts && responseData.candidates[0].content.parts[0]) {
-                        answer = responseData.candidates[0].content.parts[0].text.trim();
-                    } else if (responseData.promptFeedback && responseData.promptFeedback.blockReason) {
-                        answer = `Запит заблоковано Gemini: ${responseData.promptFeedback.blockReason}`;
-                    }
+                    try {
+                        const responseData = JSON.parse(response.responseText);
+                        if (responseData.candidates && responseData.candidates[0].content && responseData.candidates[0].content.parts && responseData.candidates[0].content.parts[0]) {
+                            answer = responseData.candidates[0].content.parts[0].text.trim();
+                        } else if (responseData.promptFeedback && responseData.promptFeedback.blockReason) {
+                            answer = `Запит заблоковано Gemini: ${responseData.promptFeedback.blockReason}`;
+                        }
+                    } catch(e) { console.error("Gemini JSON parse error", e); }
                 } else {
                     answer = `Gemini API Error: ${response.status}`;
                     console.error("Gemini Error:", response.responseText);
@@ -447,6 +539,57 @@
             ontimeout: () => { isProcessing = false; document.getElementById('ollama-answer-content').textContent = "Тайм-аут запиту (Gemini)."; }
         });
     }
+
+    function getAnswerFromMistralAI(questionText, optionsText, allBase64Images, isMultiQuiz) {
+        if (!settings.MistralAI.apiKey || !settings.MistralAI.model) {
+            document.getElementById('ollama-answer-content').textContent = "API Ключ або модель Mistral AI не вказані.";
+            isProcessing = false; return;
+        }
+        let instruction = settings.promptPrefix;
+        if (isMultiQuiz) instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
+        let userTextContent = `Запитання: ${questionText}`;
+        if (optionsText) userTextContent += `\n\nВаріанти відповідей:\n${optionsText}`;
+
+        const contentForUserMessage = [{ type: 'text', text: userTextContent }];
+        if (allBase64Images && allBase64Images.length > 0) {
+            allBase64Images.forEach(img_b64 => {
+                // Mistral API expects image_url for their "pixtral" like models.
+                // For other models, this part might be ignored or cause error if not supported.
+                contentForUserMessage.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img_b64}` } });
+            });
+        }
+
+        const requestBody = {
+            model: settings.MistralAI.model,
+            messages: [
+                { role: 'system', content: instruction },
+                { role: 'user', content: contentForUserMessage }
+            ],
+            max_tokens: 500
+        };
+        lastRequestBody = { messages: requestBody.messages };
+
+        GM_xmlhttpRequest({
+            method: 'POST', url: 'https://api.mistral.ai/v1/chat/completions',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.MistralAI.apiKey}` },
+            data: JSON.stringify(requestBody), timeout: 60000,
+            onload: (response) => {
+                let answer = "Помилка отримання відповіді від Mistral AI.";
+                if (response.status === 200) {
+                     try { answer = JSON.parse(response.responseText).choices[0].message.content.trim(); }
+                     catch(e) { console.error("Mistral AI JSON parse error", e); }
+                } else {
+                    answer = `Mistral AI API Error: ${response.status}`;
+                    console.error("Mistral AI Error:", response.responseText);
+                }
+                document.getElementById('ollama-answer-content').textContent = answer;
+                isProcessing = false;
+            },
+            onerror: () => { isProcessing = false; document.getElementById('ollama-answer-content').textContent = "Помилка мережі (Mistral AI)."; },
+            ontimeout: () => { isProcessing = false; document.getElementById('ollama-answer-content').textContent = "Тайм-аут запиту (Mistral AI)."; }
+        });
+    }
+
 
     function forceProcessQuestion() {
         lastProcessedText = '';
@@ -500,8 +643,8 @@
     }
 
     // Initial load
-    populateSettings(); // Load and display current settings
+    populateSettings();
     if (settings.activeService === 'Ollama') {
-        fetchModels(); // Fetch Ollama models if it's the active service
+        fetchModels();
     }
 })();
