@@ -79,9 +79,7 @@
             cursor: pointer; margin-left: 10px; display: inline-block;
             transition: transform 0.5s ease;
         }
-        #refresh-models-icon.spinning {
-            animation: spin 1s linear infinite;
-        }
+        #refresh-models-icon.spinning { animation: spin 1s linear infinite; }
         .ollama-settings-panel input, .ollama-settings-panel select, .ollama-settings-panel textarea {
             width: 100%; padding: 8px; background-color: #001f3f; border: 1px solid var(--futuristic-border);
             color: var(--futuristic-text); border-radius: 5px; box-sizing: border-box; font-family: var(--futuristic-font);
@@ -131,8 +129,7 @@
         </div>
         <div class="form-group">
             <label for="ollama-model">
-                Модель:
-                <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
+                Модель: <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
             </label>
             <select id="ollama-model"></select>
         </div>
@@ -147,7 +144,6 @@
     // --- UI LOGIC ---
     settingsButton.onclick = () => { settingsPanel.style.display = 'block'; };
     document.getElementById('close-settings-btn').onclick = () => { settingsPanel.style.display = 'none'; };
-
     document.getElementById('refresh-answer-btn').onclick = () => forceProcessQuestion();
     document.getElementById('show-request-btn').onclick = () => {
         if (lastRequestBody && lastRequestBody.prompt) {
@@ -156,38 +152,26 @@
             alert('Ще не було відправлено жодного запиту.');
         }
     };
-
     document.getElementById('ollama-host').value = settings.host;
     document.getElementById('ollama-prompt-prefix').value = settings.promptPrefix;
-
     document.getElementById('save-settings-btn').onclick = () => {
         const oldPromptPrefix = settings.promptPrefix;
         const newPromptPrefix = document.getElementById('ollama-prompt-prefix').value;
         settings.host = document.getElementById('ollama-host').value;
         settings.model = document.getElementById('ollama-model').value;
         settings.promptPrefix = newPromptPrefix;
-
         GM_setValue('ollama_host', settings.host);
         GM_setValue('ollama_model', settings.model);
         GM_setValue('ollama_prompt_prefix', settings.promptPrefix);
-
         alert('Налаштування збережено!');
         settingsPanel.style.display = 'none';
-
-        if (oldPromptPrefix !== newPromptPrefix) {
-            forceProcessQuestion();
-        }
+        if (oldPromptPrefix !== newPromptPrefix) forceProcessQuestion();
     };
-
     document.getElementById('refresh-models-icon').onclick = function() {
         const icon = this;
         icon.classList.add('spinning');
-        fetchModels(() => {
-            // Callback to stop spinning animation when done
-            icon.classList.remove('spinning');
-        });
+        fetchModels(() => icon.classList.remove('spinning'));
     };
-
 
     function updateModelDropdown() {
         const select = document.getElementById('ollama-model');
@@ -216,10 +200,7 @@
                 }
                 if (onComplete) onComplete();
             },
-            onerror: function(error) {
-                console.error("Fetch models error:", error);
-                if (onComplete) onComplete();
-            }
+            onerror: (error) => { if (onComplete) onComplete(); }
         });
     }
 
@@ -235,35 +216,30 @@
                     };
                     reader.onerror = () => callback(null);
                     reader.readAsDataURL(response.response);
-                } else {
-                    callback(null);
-                }
+                } else { callback(null); }
             },
             onerror: () => callback(null)
         });
     }
 
-
-    function getAnswer(questionText, optionsText, base64Image, isMultiQuiz) {
+    function getAnswer(questionText, optionsText, allBase64Images, isMultiQuiz) {
         if (!settings.model) {
             document.getElementById('ollama-answer-content').innerHTML = "Помилка: модель не обрана.";
             isProcessing = false; return;
         }
-
         let instruction = settings.promptPrefix;
         if (isMultiQuiz) {
             instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
         }
-
         let prompt = `${instruction}\n\nЗапитання: ${questionText}`;
         if (optionsText) {
             prompt += `\n\nВаріанти відповідей:\n${optionsText}`;
         }
-
         const requestBody = { model: settings.model, prompt: prompt, stream: false };
-        if (base64Image) requestBody.images = [base64Image];
+        if (allBase64Images && allBase64Images.length > 0) {
+            requestBody.images = allBase64Images;
+        }
         lastRequestBody = { ...requestBody };
-
         GM_xmlhttpRequest({
             method: 'POST', url: `${settings.host}/api/generate`,
             headers: { 'Content-Type': 'application/json' },
@@ -295,10 +271,8 @@
 
     function processQuestion() {
         if (isProcessing) return;
-
         const questionTextElement = document.querySelector('.test-content-text-inner');
         if (!questionTextElement) return;
-
         const currentText = questionTextElement.innerText.trim();
         if (currentText === lastProcessedText || currentText === '') return;
 
@@ -306,20 +280,41 @@
         lastProcessedText = currentText;
         document.getElementById('ollama-answer-content').innerHTML = '<div class="loader"></div>';
 
-        const optionElements = document.querySelectorAll('.question-option-inner-content');
-        let optionsText = null;
-        if (optionElements.length > 0) {
-            optionsText = Array.from(optionElements).map(el => el.innerText.trim()).join('\n');
-        }
-
+        const mainImageElement = document.querySelector('.test-content-image img');
         const isMultiQuiz = document.querySelector("div[ng-if*='multiquiz']") !== null;
+        const optionElements = document.querySelectorAll('.test-option');
 
-        const imageElement = document.querySelector('.test-content-image img');
-        if (imageElement && imageElement.src) {
-            imageToBase64(imageElement.src, (base64) => getAnswer(currentText, optionsText, base64, isMultiQuiz));
-        } else {
-            getAnswer(currentText, optionsText, null, isMultiQuiz);
+        let allImageUrls = [];
+        if (mainImageElement && mainImageElement.src) {
+            allImageUrls.push(mainImageElement.src);
         }
+
+        let optionLabels = [];
+        optionElements.forEach((opt, index) => {
+            const imageDiv = opt.querySelector('.question-option-image');
+            const textDiv = opt.querySelector('.question-option-inner-content');
+
+            if (imageDiv && imageDiv.style.backgroundImage) {
+                const urlMatch = imageDiv.style.backgroundImage.match(/url\("?(.+?)"?\)/);
+                if (urlMatch && urlMatch[1]) {
+                    allImageUrls.push(urlMatch[1]);
+                    // --- CHANGE: Only label image options with a number ---
+                    const label = `Варіант ${index + 1}`;
+                    optionLabels.push(`${label} (зображення)`);
+                }
+            } else if (textDiv) {
+                // --- CHANGE: Add raw text for text options without a label ---
+                optionLabels.push(textDiv.innerText.trim());
+            }
+        });
+
+        const optionsText = optionLabels.join('\n');
+        const imagePromises = allImageUrls.map(url => new Promise(resolve => imageToBase64(url, resolve)));
+
+        Promise.all(imagePromises).then(base64Images => {
+            const validImages = base64Images.filter(img => img !== null);
+            getAnswer(currentText, optionsText, validImages, isMultiQuiz);
+        });
     }
 
     // --- OBSERVER ---
