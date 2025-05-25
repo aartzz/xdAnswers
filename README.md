@@ -1,5 +1,5 @@
 # xdAnswers
-A script, that helps in tests. Works with Ollama.
+A script, that helps in tests.
 
 ### Todo:
 - Add support for Vseosvita, Kahoot etc.
