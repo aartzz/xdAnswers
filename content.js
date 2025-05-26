@@ -1,15 +1,7 @@
-// content.js
-// Повна версія, адаптована для роботи з popup-налаштуваннями
 (async function() {
     'use strict';
 
-    // --- ДОПОМІЖНІ ФУНКЦІЇ, ЩО ЗАМІНЮЮТЬ GM_* ---
-
-    /**
-     * Надсилає запит через фоновий скрипт (background.js).
-     * @param {object} options - Параметри запиту (url, method, headers, data, etc.).
-     * @returns {Promise<object>} - Проміс, що повертає відповідь.
-     */
+    // --- Помічники ---
     function makeRequest(options) {
         return new Promise((resolve, reject) => {
             chrome.runtime.sendMessage({ type: 'fetch', payload: options }, (response) => {
@@ -25,17 +17,19 @@
         });
     }
 
-    /**
-     * Додає стилі на сторінку.
-     * @param {string} css - Рядок CSS для додавання.
-     */
+    let styleElement = null;
     function addStyle(css) {
-        const style = document.createElement('style');
-        style.textContent = css;
-        document.head.appendChild(style);
+        if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'xdAnswers-styles';
+            document.head.appendChild(styleElement);
+        }
+        if (styleElement.textContent !== css) {
+            styleElement.textContent = css;
+        }
     }
 
-    // --- КОНФІГУРАЦІЯ ---
+    // --- Конфігурація та Налаштування ---
     const DEFAULT_SETTINGS = {
         activeService: 'MistralAI',
         Ollama: { host: '', model: '' },
@@ -45,27 +39,20 @@
         promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.'
     };
 
-    /**
-     * Асинхронно завантажує налаштування зі сховища розширення.
-     * @returns {Promise<object>} - Об'єкт з налаштуваннями.
-     */
     async function loadSettings() {
         const data = await chrome.storage.local.get('xdAnswers_settings');
-        let loadedSettings = DEFAULT_SETTINGS;
+        let loadedSettings = { ...DEFAULT_SETTINGS };
         if (data.xdAnswers_settings) {
             try {
-                loadedSettings = JSON.parse(data.xdAnswers_settings);
-            } catch (e) {
-                console.error("Failed to parse settings, using defaults.", e);
-            }
-        }
-        for (const serviceKey in DEFAULT_SETTINGS) {
-            if (!['activeService', 'promptPrefix'].includes(serviceKey)) {
-                if (!loadedSettings[serviceKey]) {
-                    loadedSettings[serviceKey] = { ...DEFAULT_SETTINGS[serviceKey] };
-                } else {
-                    loadedSettings[serviceKey] = { ...DEFAULT_SETTINGS[serviceKey], ...loadedSettings[serviceKey] };
+                const parsedSettings = JSON.parse(data.xdAnswers_settings);
+                loadedSettings = { ...loadedSettings, ...parsedSettings };
+                for (const serviceKey in DEFAULT_SETTINGS) {
+                    if (typeof DEFAULT_SETTINGS[serviceKey] === 'object' && DEFAULT_SETTINGS[serviceKey] !== null) {
+                        loadedSettings[serviceKey] = { ...DEFAULT_SETTINGS[serviceKey], ...(loadedSettings[serviceKey] || {}) };
+                    }
                 }
+            } catch (e) {
+                console.error("xdAnswers: Failed to parse settings, using defaults.", e);
             }
         }
         const validServices = ['Ollama', 'OpenAI', 'Gemini', 'MistralAI'];
@@ -77,8 +64,8 @@
 
     let settings = await loadSettings();
 
-    // --- ЗМІННІ СТАНУ ---
-    let isProcessing = false;
+    // --- Змінні стану ---
+    let isProcessingAI = false;
     let lastProcessedNaurokText = '';
     let processedGFormQuestionIds = new Set();
     let lastRequestBody = null;
@@ -86,6 +73,10 @@
     let dragOffsetX, dragOffsetY;
     let observerDebounceTimeout = null;
     let isHelperWindowMaximized = false;
+    let lastProcessedVseosvitaKey = '';
+    let currentHelperParentNode = null;
+    let isManuallyPositioned = false;
+    let isExtensionModifyingDOM = false; // Головний прапорець для блокування MutationObserver
 
     const defaultHelperState = {
         width: '350px', height: 'auto', maxHeight: '400px',
@@ -96,169 +87,272 @@
         top: '15vh', left: '15vw', bottom: 'auto', right: 'auto'
     };
 
-    // --- СТИЛІ (тільки для головного вікна-помічника) ---
-    addStyle(`
-        :root {
-            --futuristic-bg: #0a0a14;
-            --futuristic-border: #00ffff;
-            --futuristic-text: #00ff9d;
-            --futuristic-glow: 0 0 5px var(--futuristic-border), 0 0 10px var(--futuristic-border), 0 0 15px var(--futuristic-border);
-            --futuristic-font: 'Courier New', Courier, monospace;
-        }
-        .ollama-helper-container {
-            position: fixed;
-            width: ${defaultHelperState.width};
-            height: ${defaultHelperState.height};
-            max-height: ${defaultHelperState.maxHeight};
-            bottom: ${defaultHelperState.bottom};
-            right: ${defaultHelperState.right};
-            top: ${defaultHelperState.top};
-            left: ${defaultHelperState.left};
-            background-color: var(--futuristic-bg);
-            border: 2px solid var(--futuristic-border);
-            border-radius: 10px;
-            box-shadow: var(--futuristic-glow);
-            color: var(--futuristic-text);
-            font-family: var(--futuristic-font);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s ease, height 0.3s ease, max-height 0.3s ease, top 0.3s ease, left 0.3s ease, bottom 0.3s ease, right 0.3s ease;
-        }
-        .ollama-helper-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            background-color: #001f3f;
-            border-bottom: 1px solid var(--futuristic-border);
-            cursor: move;
-        }
-        .ollama-header-title {
-            font-weight: bold;
-            margin-right: auto;
-        }
-        .ollama-header-buttons {
-            display: flex;
-            align-items: center;
-        }
-        .ollama-header-buttons button {
-            background: none;
-            border: 1px solid var(--futuristic-border);
-            color: var(--futuristic-border);
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 5px;
-            font-size: 12px;
-            width: 28px;
-            height: 22px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .ollama-header-buttons button:hover {
-            background-color: var(--futuristic-border);
-            color: var(--futuristic-bg);
-        }
-        .ollama-helper-content {
-            padding: 15px;
-            overflow-y: auto;
-            flex-grow: 1;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        .ollama-helper-content ul {
-            margin-left: 20px;
-            padding-left: 10px;
-            list-style-type: disc;
-        }
-        .ollama-helper-content li {
-            margin-bottom: 4px;
-        }
-        .ollama-helper-content::-webkit-scrollbar { width: 8px; }
-        .ollama-helper-content::-webkit-scrollbar-track { background: var(--futuristic-bg); }
-        .ollama-helper-content::-webkit-scrollbar-thumb {
-            background-color: var(--futuristic-border);
-            border-radius: 10px;
-            border: 2px solid var(--futuristic-bg);
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--futuristic-border);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        .loader-inline {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid var(--futuristic-border);
-            border-radius: 50%;
-            width: 12px;
-            height: 12px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-            margin-left: 5px;
-            vertical-align: middle;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `);
-
-    // --- ЗМІННІ ДЛЯ UI ЕЛЕМЕНТІВ ---
+    // --- UI елементи ---
     let showRequestBtn, refreshAnswerBtn, resizeHelperBtn, copyAnswerBtn,
         answerContentDiv, dragHeader, helperContainer;
 
-    // --- СТВОРЕННЯ UI ---
+    // --- Стилі та UI ---
+    function updateHelperBaseStyles() {
+         addStyle(`
+            :root {
+                --futuristic-bg: #0a0a14;
+                --futuristic-border: #00ffff;
+                --futuristic-text: #00ff9d;
+                --futuristic-glow: 0 0 5px var(--futuristic-border), 0 0 10px var(--futuristic-border), 0 0 15px var(--futuristic-border);
+                --futuristic-font: 'Courier New', Courier, monospace;
+            }
+            .ollama-helper-container {
+                all: initial !important; 
+                position: fixed !important; 
+                width: ${isHelperWindowMaximized ? maximizedHelperState.width : defaultHelperState.width} !important;
+                height: ${isHelperWindowMaximized ? maximizedHelperState.height : defaultHelperState.height} !important;
+                max-height: ${isHelperWindowMaximized ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight} !important;
+                background-color: var(--futuristic-bg) !important;
+                border: 2px solid var(--futuristic-border) !important;
+                border-radius: 10px !important;
+                box-shadow: var(--futuristic-glow) !important;
+                color: var(--futuristic-text) !important;
+                font-family: var(--futuristic-font) !important;
+                font-size: 14px !important; 
+                line-height: 1.3 !important; 
+                z-index: 2147483647 !important; 
+                display: flex !important; 
+                flex-direction: column !important;
+                overflow: hidden !important;
+            }
+            .ollama-helper-container *, .ollama-helper-container *:before, .ollama-helper-container *:after {
+                all: revert !important; 
+                font-family: var(--futuristic-font) !important; 
+                font-size: inherit !important; 
+                line-height: inherit !important; 
+                color: var(--futuristic-text) !important;
+                box-sizing: border-box !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                background: none !important;
+                border: none !important; 
+            }
+            .ollama-helper-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 8px 10px !important;
+                background-color: #001f3f !important;
+                border-bottom: 1px solid var(--futuristic-border) !important;
+                cursor: move !important;
+                user-select: none; 
+                -webkit-user-select: none; 
+                -ms-user-select: none; 
+            }
+            .ollama-header-title {
+                font-weight: bold !important;
+                margin-right: auto !important;
+            }
+            .ollama-header-buttons {
+                display: flex !important;
+                align-items: center !important;
+            }
+            .ollama-header-buttons button {
+                all: revert !important;
+                background: none !important;
+                border: 1px solid var(--futuristic-border) !important;
+                color: var(--futuristic-text) !important; 
+                font-family: var(--futuristic-font) !important; 
+                font-size: 12px !important; 
+                border-radius: 5px !important;
+                cursor: pointer !important;
+                margin-left: 5px !important;
+                width: 28px !important;
+                height: 22px !important;
+                padding: 0 !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                line-height: 1 !important; 
+            }
+            .ollama-header-buttons button:hover {
+                background-color: var(--futuristic-border) !important;
+                color: var(--futuristic-bg) !important;
+            }
+            .ollama-helper-content {
+                padding: 15px !important;
+                overflow-y: auto !important;
+                flex-grow: 1 !important;
+                white-space: pre-wrap !important;
+                word-wrap: break-word !important;
+            }
+            .ollama-helper-content ul {
+                margin-left: 20px !important;
+                padding-left: 10px !important;
+                list-style-type: disc !important;
+            }
+            .ollama-helper-content li {
+                margin-bottom: 4px !important;
+            }
+            .ollama-helper-content::-webkit-scrollbar { width: 8px !important; }
+            .ollama-helper-content::-webkit-scrollbar-track { background: var(--futuristic-bg) !important; }
+            .ollama-helper-content::-webkit-scrollbar-thumb {
+                background-color: var(--futuristic-border) !important;
+                border-radius: 10px !important;
+                border: 2px solid var(--futuristic-bg) !important;
+            }
+            .loader {
+                all: revert !important; box-sizing: border-box !important; border: 4px solid #f3f3f3 !important;
+                border-top: 4px solid var(--futuristic-border) !important; border-radius: 50% !important;
+                width: 30px !important; height: 30px !important; animation: spin 1s linear infinite !important;
+                margin: 20px auto !important;
+            }
+            .loader-inline {
+                all: revert !important; box-sizing: border-box !important; border: 2px solid #f3f3f3 !important;
+                border-top: 2px solid var(--futuristic-border) !important; border-radius: 50% !important;
+                width: 12px !important; height: 12px !important; animation: spin 1s linear infinite !important;
+                display: inline-block !important; margin-left: 5px !important; vertical-align: middle !important;
+            }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        `);
+    }
+    
     function createUI() {
-        helperContainer = document.createElement('div');
-        helperContainer.className = 'ollama-helper-container';
-        // HTML тепер без кнопки налаштувань
-        helperContainer.innerHTML = `
-            <div class="ollama-helper-header" id="ollama-helper-drag-header">
-                <span class="ollama-header-title">xdAnswers</span>
-                <div class="ollama-header-buttons">
-                    <button id="resize-helper-btn" title="Resize">➕</button>
-                    <button id="copy-answer-btn" title="Copy Answer">📋</button>
-                    <button id="show-request-btn" title="Show AI Request">ℹ️</button>
-                    <button id="refresh-answer-btn" title="Refresh Answer">🔄</button>
+        if (!helperContainer) { 
+            helperContainer = document.createElement('div');
+            helperContainer.className = 'ollama-helper-container'; 
+            helperContainer.innerHTML = `
+                <div class="ollama-helper-header" id="ollama-helper-drag-header">
+                    <span class="ollama-header-title">xdAnswers</span>
+                    <div class="ollama-header-buttons">
+                        <button id="resize-helper-btn" title="Resize">➕</button>
+                        <button id="copy-answer-btn" title="Copy Answer">📋</button>
+                        <button id="show-request-btn" title="Show AI Request">ℹ️</button>
+                        <button id="refresh-answer-btn" title="Refresh Answer">🔄</button>
+                    </div>
                 </div>
-            </div>
-            <div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>`;
-        document.body.appendChild(helperContainer);
-
-        // Прив'язуємо змінні до елементів
-        answerContentDiv = document.getElementById('ollama-answer-content');
-        dragHeader = document.getElementById('ollama-helper-drag-header');
-        resizeHelperBtn = document.getElementById('resize-helper-btn');
-        copyAnswerBtn = document.getElementById('copy-answer-btn');
-        showRequestBtn = document.getElementById('show-request-btn');
-        refreshAnswerBtn = document.getElementById('refresh-answer-btn');
+                <div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>`;
+        }
+        
+        answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+        dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
+        resizeHelperBtn = helperContainer.querySelector('#resize-helper-btn');
+        copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
+        showRequestBtn = helperContainer.querySelector('#show-request-btn');
+        refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
 
         attachHelperEventListeners();
+        updateHelperBaseStyles(); 
     }
 
-    // --- ОБРОБНИКИ ПОДІЙ ---
+    function attachAndPositionHelper(forcePositionRecalculation = false) {
+        if (isExtensionModifyingDOM && !forcePositionRecalculation) return; 
+        isExtensionModifyingDOM = true;
+
+        if (!helperContainer) {
+            createUI(); 
+        }
+
+        let determinedTargetParent = document.body;
+        let useDefaultPositioning = true;
+
+        if (location.hostname.includes('vseosvita.ua') &&
+            (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
+            
+            const vseosvitaFullScreenContainer = document.querySelector('.full-screen-container');
+            
+            if (vseosvitaFullScreenContainer && document.body.contains(vseosvitaFullScreenContainer)) {
+                determinedTargetParent = vseosvitaFullScreenContainer;
+                useDefaultPositioning = false; 
+            } else {
+                 determinedTargetParent = document.body;
+                 useDefaultPositioning = true;
+                 if (currentHelperParentNode !== document.body) isManuallyPositioned = false; 
+            }
+        } else {
+            determinedTargetParent = document.body;
+            useDefaultPositioning = true;
+            if (currentHelperParentNode !== document.body) isManuallyPositioned = false;
+        }
+        
+        // Переміщуємо, тільки якщо батько змінився АБО хелпер ще не в DOM
+        if (!helperContainer.parentNode || helperContainer.parentNode !== determinedTargetParent) {
+            if (helperContainer.parentNode) {
+                helperContainer.parentNode.removeChild(helperContainer);
+            }
+            if (determinedTargetParent === document.querySelector('.full-screen-container') && determinedTargetParent.firstChild) {
+                determinedTargetParent.insertBefore(helperContainer, determinedTargetParent.firstChild); // Вставляємо НА ПОЧАТКУ .full-screen-container
+            } else {
+                determinedTargetParent.appendChild(helperContainer); // Інакше в кінець
+            }
+            isManuallyPositioned = false; 
+        } else {
+             // Якщо батько той самий, але це .full-screen-container, переконуємося, що він перший
+            if (determinedTargetParent === document.querySelector('.full-screen-container') && helperContainer !== determinedTargetParent.firstChild) {
+                 determinedTargetParent.insertBefore(helperContainer, determinedTargetParent.firstChild);
+            } else if (determinedTargetParent === document.body) {
+                 determinedTargetParent.appendChild(helperContainer); // Для body завжди в кінець
+            }
+        }
+        currentHelperParentNode = determinedTargetParent;
+
+        helperContainer.style.setProperty('display', 'flex', 'important');
+        helperContainer.style.setProperty('position', 'fixed', 'important'); 
+        helperContainer.style.setProperty('z-index', '2147483647', 'important');
+        
+        updateHelperBaseStyles(); 
+
+        if (!isManuallyPositioned || forcePositionRecalculation) {
+            if (useDefaultPositioning) { 
+                if (isHelperWindowMaximized) {
+                    helperContainer.style.top = maximizedHelperState.top;
+                    helperContainer.style.left = maximizedHelperState.left;
+                    helperContainer.style.bottom = 'auto';
+                    helperContainer.style.right = 'auto';
+                } else {
+                    helperContainer.style.bottom = defaultHelperState.bottom;
+                    helperContainer.style.right = defaultHelperState.right;
+                    helperContainer.style.top = 'auto'; 
+                    helperContainer.style.left = 'auto';
+                }
+            } else { 
+                // Для Всеосвіти, коли "вшито", прив'язуємо до правого нижнього кута
+                // батьківського елемента (.full-screen-container)
+                helperContainer.style.bottom = '10px'; 
+                helperContainer.style.right = '10px';
+                helperContainer.style.top = 'auto'; 
+                helperContainer.style.left = 'auto'; 
+                
+                if (!isHelperWindowMaximized) { 
+                     helperContainer.style.width = defaultHelperState.width; 
+                     helperContainer.style.maxHeight = defaultHelperState.maxHeight;
+                }
+            }
+            if (forcePositionRecalculation && !isDragging) isManuallyPositioned = false;
+        }
+        isExtensionModifyingDOM = false;
+    }
+
     function attachDragLogic() {
-        if (!dragHeader) return;
+        if (!dragHeader || !helperContainer) return;
+        
+        dragHeader.onmousedown = null; 
+        document.onmousemove = null; 
+        document.onmouseup = null;
+        dragHeader.ontouchstart = null;
+        document.ontouchmove = null;
+        document.ontouchend = null;
+
         dragHeader.onmousedown = function(event) {
             if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
             isDragging = true;
-            dragOffsetX = event.clientX - helperContainer.offsetLeft;
-            dragOffsetY = event.clientY - helperContainer.offsetTop;
+            isManuallyPositioned = true; 
+            const rect = helperContainer.getBoundingClientRect();
+            dragOffsetX = event.clientX - rect.left;
+            dragOffsetY = event.clientY - rect.top;
             document.body.style.userSelect = 'none';
         };
         document.onmousemove = function(event) {
             if (isDragging) {
-                let newHelperLeft = event.clientX - dragOffsetX;
-                let newHelperTop = event.clientY - dragOffsetY;
-                helperContainer.style.left = newHelperLeft + 'px';
-                helperContainer.style.top = newHelperTop + 'px';
+                let newTop = event.clientY - dragOffsetY;
+                let newLeft = event.clientX - dragOffsetX;
+                helperContainer.style.top = newTop + 'px';
+                helperContainer.style.left = newLeft + 'px';
                 helperContainer.style.right = 'auto';
                 helperContainer.style.bottom = 'auto';
             }
@@ -269,19 +363,21 @@
         dragHeader.ontouchstart = function(event) {
             if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
             isDragging = true;
+            isManuallyPositioned = true; 
             const touch = event.touches[0];
-            dragOffsetX = touch.clientX - helperContainer.offsetLeft;
-            dragOffsetY = touch.clientY - helperContainer.offsetTop;
+            const rect = helperContainer.getBoundingClientRect();
+            dragOffsetX = touch.clientX - rect.left;
+            dragOffsetY = touch.clientY - rect.top;
             document.body.style.userSelect = 'none';
             event.preventDefault();
         };
         document.ontouchmove = function(event) {
             if (isDragging) {
                 const touch = event.touches[0];
-                let newHelperLeft = touch.clientX - dragOffsetX;
-                let newHelperTop = touch.clientY - dragOffsetY;
-                helperContainer.style.left = newHelperLeft + 'px';
-                helperContainer.style.top = newHelperTop + 'px';
+                let newTop = touch.clientY - dragOffsetY;
+                let newLeft = touch.clientX - dragOffsetX;
+                helperContainer.style.top = newTop + 'px';
+                helperContainer.style.left = newLeft + 'px';
                 helperContainer.style.right = 'auto';
                 helperContainer.style.bottom = 'auto';
             }
@@ -292,33 +388,37 @@
     }
 
     function attachHelperEventListeners() {
-        if (!resizeHelperBtn) return;
-        attachDragLogic();
+        if (!helperContainer) return;
+        
+        resizeHelperBtn = helperContainer.querySelector('#resize-helper-btn');
+        copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
+        showRequestBtn = helperContainer.querySelector('#show-request-btn');
+        refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
+        dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
+
+        if (!resizeHelperBtn || !dragHeader) return; 
+
+        resizeHelperBtn.onclick = null;
+        copyAnswerBtn.onclick = null;
+        showRequestBtn.onclick = null;
+        refreshAnswerBtn.onclick = null;
+
+        attachDragLogic(); 
+
         resizeHelperBtn.onclick = () => {
             isHelperWindowMaximized = !isHelperWindowMaximized;
-            const targetState = isHelperWindowMaximized ? maximizedHelperState : defaultHelperState;
-            Object.keys(targetState).forEach(key => helperContainer.style[key] = targetState[key]);
+            isManuallyPositioned = false; 
+            attachAndPositionHelper(true); 
             resizeHelperBtn.textContent = isHelperWindowMaximized ? '➖' : '➕';
-            if (!isHelperWindowMaximized) {
-                const currentBounds = helperContainer.getBoundingClientRect();
-                const defaultRightNum = parseFloat(defaultHelperState.right);
-                const defaultBottomNum = parseFloat(defaultHelperState.bottom);
-                 if (helperContainer.style.left !== 'auto' && helperContainer.style.top !== 'auto' &&
-                    !(Math.abs(window.innerWidth - currentBounds.left - parseFloat(defaultHelperState.width) - defaultRightNum) < 50 &&
-                      Math.abs(window.innerHeight - currentBounds.top - parseFloat(defaultHelperState.maxHeight) - defaultBottomNum) < 50)) {
-                } else {
-                     Object.keys(defaultHelperState).forEach(key => helperContainer.style[key] = defaultHelperState[key]);
-                }
-            }
         };
         copyAnswerBtn.onclick = async () => {
+            if (!answerContentDiv) return;
             const textToCopy = answerContentDiv.innerText;
             if (textToCopy && textToCopy !== 'Waiting for question...' && !answerContentDiv.querySelector('.loader')) {
                 try {
                     await navigator.clipboard.writeText(textToCopy);
                     copyAnswerBtn.textContent = '✅';
                 } catch (err) {
-                    console.error('Failed to copy text: ', err);
                     copyAnswerBtn.textContent = '❌';
                 }
                 setTimeout(() => { copyAnswerBtn.textContent = '📋'; }, 1500);
@@ -360,29 +460,20 @@
         refreshAnswerBtn.onclick = () => forceProcessQuestion();
     }
     
-    // --- ПРОСЛУХОВУВАЧ ПОВІДОМЛЕНЬ ВІД POPUP ---
-    // --- ПРОСЛУХОВУВАЧ ПОВІДОМЛЕНЬ ВІД POPUP ТА BACKGROUND SCRIPT ---
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-        // Повідомлення про оновлення налаштувань з popup
+        if (isExtensionModifyingDOM) { sendResponse({status: "dom_update_in_progress"}); return true;}
+
         if (message.type === "settingsUpdated") {
-            console.log("Settings updated, reloading and reprocessing...");
             settings = await loadSettings();
             forceProcessQuestion();
             sendResponse({ status: "ok" });
-        }
-        
-        // Повідомлення про зміну URL на сторінці Google Form
-        if (message.type === "gform_url_changed") {
-            console.log("Google Form URL changed, reprocessing content...");
-            // Запускаємо нашу функцію, яка аналізує вміст сторінки
-            handlePageContentChange(); 
+        } else if (message.type === "gform_url_changed") {
+            handlePageContentChange(true); 
             sendResponse({ status: "ok" });
         }
-        
-        return true; // для асинхронної відповіді
+        return true; 
     });
 
-    // --- API & ОСНОВНА ЛОГІКА ---
     async function imageToBase64(url) {
         try {
             const response = await makeRequest({
@@ -390,10 +481,8 @@
                 url: url,
                 responseType: 'blob'
             });
-            // response.data буде містити Data URL
             return response.data ? response.data.split(',', 2)[1] : null;
         } catch (error) {
-            console.error("Error converting image to base64 for", url, error);
             return null;
         }
     }
@@ -428,18 +517,19 @@
         return htmlOutput.trim();
     }
 
-    // --- ГОЛОВНИЙ ДИСПЕТЧЕР ---
     async function getAnswer(questionData) {
         const service = settings.activeService;
         let responseText = "";
-        let instruction = settings.promptPrefix;
+        let instruction = questionData.customPromptPrefix || settings.promptPrefix;
 
-        if (questionData.questionType === "short_text" || questionData.questionType === "paragraph") {
-            instruction = "Дай розгорнуту відповідь на наступне відкрите питання:";
-        } else if (questionData.isMultiQuiz) {
-            instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
+        if (!questionData.customPromptPrefix) {
+            if (questionData.questionType === "short_text" || questionData.questionType === "paragraph" || questionData.questionType === "open_ended") {
+                instruction = "Дай розгорнуту відповідь на наступне відкрите питання:";
+            } else if (questionData.isMultiQuiz) {
+                instruction += '\nЦе питання може мати ДЕКІЛЬКА правильних відповідей. Перерахуй їх.';
+            }
         }
-
+        
         try {
             if (service === 'Ollama') {
                 responseText = await getAnswerFromOllama(instruction, questionData.text, questionData.optionsText, questionData.base64Images);
@@ -453,15 +543,13 @@
                 responseText = 'Unknown service selected.';
             }
         } catch (error) {
-            console.error(`Error getting answer from ${service}:`, error);
             responseText = `Service error ${service}. Check console for details.`;
         }
         return responseText;
     }
 
-    // --- ОБРОБНИКИ API ДЛЯ КОНКРЕТНИХ СЕРВІСІВ ---
     async function getAnswerFromOllama(instruction, questionText, optionsText, base64Images) {
-        if (!settings.Ollama.model) return "Ollama model not selected.";
+        if (!settings.Ollama.host || !settings.Ollama.model) return "Ollama host or model not selected.";
         let prompt = `${instruction}\n\nQuestion: ${questionText}`;
         if (optionsText) prompt += `\n\nOptions:\n${optionsText}`;
         const requestBody = { model: settings.Ollama.model, prompt: prompt, stream: false };
@@ -478,7 +566,6 @@
             });
             return JSON.parse(response.data).response.trim();
         } catch (error) {
-            console.error("Ollama API Error:", error);
             return `Ollama API Error: ${error.message}`;
         }
     }
@@ -507,7 +594,6 @@
             });
             return JSON.parse(response.data).choices[0].message.content.trim();
         } catch (error) {
-            console.error("OpenAI API Error:", error);
             return `OpenAI API Error: ${error.message}`;
         }
     }
@@ -544,7 +630,6 @@
             if (!d.candidates || d.candidates.length === 0) return "Gemini provided no answer candidates.";
             return "Unknown Gemini response.";
         } catch (error) {
-            console.error("Gemini API Error:", error);
             return `Gemini API Error: ${error.message}`;
         }
     }
@@ -573,41 +658,79 @@
             });
             return JSON.parse(response.data).choices[0].message.content.trim();
         } catch (error) {
-            console.error("MistralAI API Error:", error);
             return `MistralAI API Error: ${error.message}`;
         }
     }
-
-    // --- ОБРОБКА ДЛЯ КОНКРЕТНИХ САЙТІВ ---
+    
     function forceProcessQuestion() {
+        if (isExtensionModifyingDOM) return;
         processedGFormQuestionIds.clear();
         lastProcessedNaurokText = '';
-        answerContentDiv.innerHTML = 'Updating...';
-        handlePageContentChange();
+        lastProcessedVseosvitaKey = '';
+        if (answerContentDiv) {
+             answerContentDiv.innerHTML = 'Updating...';
+        } else if (helperContainer) { 
+            const tempAnswerDiv = helperContainer.querySelector('#ollama-answer-content');
+            if (tempAnswerDiv) tempAnswerDiv.innerHTML = 'Updating...';
+        }
+        handlePageContentChange(true); 
     }
 
-    function handlePageContentChange() {
+    let isHandlePageContentRunning = false; 
+    function handlePageContentChange(isNavigationEvent = false) {
         if (observerDebounceTimeout) clearTimeout(observerDebounceTimeout);
+        
         observerDebounceTimeout = setTimeout(() => {
-            if (isProcessing && !location.hostname.includes('docs.google.com')) {
-                return;
+            if (isExtensionModifyingDOM || isHandlePageContentRunning) return; 
+            isHandlePageContentRunning = true;
+
+            if (!document.body) { 
+                isHandlePageContentRunning = false;
+                return; 
             }
+            if (!helperContainer) createUI();
+
+
+            attachAndPositionHelper(isNavigationEvent); 
+
+            let siteProcessed = false;
             if (location.hostname.includes('docs.google.com')) {
                 processGFormQuestionsSequentially();
+                siteProcessed = true;
             } else if (location.hostname.includes('naurok.com.ua') || location.hostname.includes('naurok.ua')) {
-                if (isProcessing) return;
                 processNaurokQuestion();
+                siteProcessed = true;
+            } else if (location.hostname.includes('vseosvita.ua') && 
+                       (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
+                processVseosvitaQuestion();
+                siteProcessed = true;
             }
-        }, 1000);
+            
+            if ((isNavigationEvent || !siteProcessed) && !document.fullscreenElement) { 
+                attachAndPositionHelper();
+            }
+            isHandlePageContentRunning = false;
+        }, isNavigationEvent ? 100 : 500); 
     }
 
-    async function processNaurokQuestion() {
+    async function processNaurokQuestion() { 
+        if (isExtensionModifyingDOM) return;
+        if (isProcessingAI) return;
+        if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+        if (!answerContentDiv) return;
+        
         const questionTextElement = document.querySelector('.test-content-text-inner');
-        if (!questionTextElement) return;
+        if (!questionTextElement) {
+            if(!document.fullscreenElement) attachAndPositionHelper(); 
+            return;
+        }
         const currentText = questionTextElement.innerText.trim();
-        if (currentText === lastProcessedNaurokText || currentText === '') return;
-
-        isProcessing = true;
+        if (currentText === lastProcessedNaurokText || currentText === '') {
+            if(helperContainer && getComputedStyle(helperContainer).display !== 'none' && !document.fullscreenElement) attachAndPositionHelper();
+            return;
+        }
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
         lastProcessedNaurokText = currentText;
         answerContentDiv.innerHTML = '<div class="loader"></div>';
 
@@ -649,23 +772,30 @@
             const answer = await getAnswer(questionData);
             answerContentDiv.innerHTML = formatAIResponse(answer);
         } catch (err) {
-            console.error("Image processing error on Naurok", err);
             answerContentDiv.innerHTML = formatAIResponse("Image processing error (Naurok).");
         } finally {
-            isProcessing = false;
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
+            if(!document.fullscreenElement) attachAndPositionHelper();
         }
     }
-
-    async function processGFormQuestionsSequentially() {
-        if (isProcessing) return;
-        isProcessing = true;
+    async function processGFormQuestionsSequentially() { 
+        if (isExtensionModifyingDOM) return;
+        if (isProcessingAI) return;
+        if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+        if (!answerContentDiv) return;
+        
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
 
         const questionBlocks = document.querySelectorAll('div.Qr7Oae');
         if (!questionBlocks.length) {
-            isProcessing = false;
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
             if (answerContentDiv.innerHTML.includes("loader") || answerContentDiv.innerText === 'Updating...' || answerContentDiv.innerText === 'Waiting for question...') {
                 answerContentDiv.innerHTML = formatAIResponse('No questions found on page.');
             }
+            if(!document.fullscreenElement) attachAndPositionHelper();
             return;
         }
 
@@ -775,19 +905,245 @@
         } else if (questionBlocks.length === 0 && accumulatedAnswersHTML.trim() === '') {
             answerContentDiv.innerHTML = 'No questions found on the page.';
         }
-        isProcessing = false;
+        isProcessingAI = false;
+        isExtensionModifyingDOM = false;
+        if(!document.fullscreenElement) attachAndPositionHelper();
     }
 
-    // --- СПОСТЕРІГАЧ ---
-    const observerTarget = document.body;
-    if (observerTarget) {
-        const observer = new MutationObserver(handlePageContentChange);
-        observer.observe(observerTarget, { childList: true, subtree: true });
+    async function processVseosvitaQuestion() {
+        if (isExtensionModifyingDOM) return;
+        if (isProcessingAI) return;
+        if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+        if (!answerContentDiv) { return; }
+
+        const questionContainer = document.querySelector('div[id^="i-test-question-"]');
+        if (!questionContainer) {
+            if (!document.fullscreenElement) attachAndPositionHelper();
+            return;
+        }
+
+        const questionNumberElement = document.querySelector('span.v-numbertest span.occasional_class occ1 span.occasional_class occ2'); 
+        const questionTitleElement = questionContainer.querySelector('.v-test-questions-title .content-box p');
+        
+        const currentQuestionNumberText = questionNumberElement ? questionNumberElement.innerText.trim() : Math.random().toString(); 
+        const currentQuestionTitleText = questionTitleElement ? questionTitleElement.innerText.trim() : '';
+        
+        const questionTextSample = currentQuestionTitleText.substring(0, 50); 
+        const currentVseosvitaKey = `${currentQuestionNumberText}#${questionTextSample}`;
+
+
+        if (currentVseosvitaKey === lastProcessedVseosvitaKey && currentQuestionTitleText !== '') { 
+             if (helperContainer && getComputedStyle(helperContainer).display !== 'none' && !document.fullscreenElement){
+                attachAndPositionHelper(); 
+            }
+            return;
+        }
+        
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
+        lastProcessedVseosvitaKey = currentVseosvitaKey;
+        answerContentDiv.innerHTML = '<div class="loader"></div>';
+
+        let questionTextForAI = currentQuestionTitleText;
+        let optionsTextForAI = "";
+        let questionType = "unknown";
+        let isMultiQuiz = false;
+        let customPromptPrefix = null; 
+
+        const radioBlock = questionContainer.querySelector('.v-test-questions-radio-block');
+        const checkboxBlock = questionContainer.querySelector('.v-test-questions-checkbox-block');
+        const matchingBlock = questionContainer.querySelector('.v-block-answers-cross-wrapper');
+
+        if (matchingBlock) {
+            questionType = "matching";
+            customPromptPrefix = "Встанови відповідність. Відповідь надай у форматі 'Цифра - Буква'. Наприклад: 1-А, 2-В, 3-Б. Не пиши нічого зайвого, лише пари.";
+            let leftColumnText = "Завдання:\n";
+            const leftItems = matchingBlock.querySelectorAll('.v-block-answers-cross_row .v-col-6:not(.v-col-last) .v-block-answers-cross-block');
+            leftItems.forEach(item => {
+                const num = item.querySelector('.rk-cross__item .numb-item')?.innerText.trim();
+                const text = item.querySelector('.n-kahoot-p')?.innerText.trim();
+                if (num && text) leftColumnText += `${num}. ${text}\n`;
+            });
+            let rightColumnText = "\nВаріанти:\n";
+            const rightItems = matchingBlock.querySelectorAll('.v-block-answers-cross_row .v-col-6.v-col-last .v-block-answers-cross-block');
+            rightItems.forEach(item => {
+                const letter = item.querySelector('.rk-cross__item .numb-item')?.innerText.trim();
+                const text = item.querySelector('.n-kahoot-p')?.innerText.trim();
+                if (letter && text) rightColumnText += `${letter}. ${text}\n`;
+            });
+            optionsTextForAI = leftColumnText + rightColumnText;
+        } else if (radioBlock) {
+            questionType = "radio";
+            const options = questionContainer.querySelectorAll('.v-test-questions-radio-block');
+            options.forEach((opt, index) => {
+                const text = opt.querySelector('label p')?.innerText.trim();
+                if (text) optionsTextForAI += `${index + 1}. ${text}\n`;
+            });
+        } else if (checkboxBlock) {
+            questionType = "checkbox";
+            isMultiQuiz = true;
+            const options = questionContainer.querySelectorAll('.v-test-questions-checkbox-block');
+            options.forEach((opt, index) => {
+                const text = opt.querySelector('label p')?.innerText.trim();
+                if (text) optionsTextForAI += `${index + 1}. ${text}\n`;
+            });
+        } else {
+             questionType = "open_ended";
+        }
+        
+        optionsTextForAI = optionsTextForAI.trim();
+        const base64Images = []; 
+
+        const questionData = {
+            text: questionTextForAI,
+            optionsText: optionsTextForAI,
+            base64Images: base64Images,
+            isMultiQuiz: isMultiQuiz,
+            questionType: questionType,
+            customPromptPrefix: customPromptPrefix 
+        };
+        
+        try {
+            const answer = await getAnswer(questionData);
+            if (answerContentDiv) answerContentDiv.innerHTML = formatAIResponse(answer);
+        } catch (error) {
+            if (answerContentDiv) answerContentDiv.innerHTML = formatAIResponse("Помилка отримання відповіді.");
+        } finally {
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
+            if (!document.fullscreenElement) {
+                attachAndPositionHelper(); 
+            }
+        }
     }
 
-    // --- ІНІЦІАЛІЗАЦІЯ ---
-    createUI();
-    // Не потрібно завантажувати моделі чи налаштування при старті,
-    // оскільки це відбувається в popup або при отриманні повідомлення.
+
+    let observer; 
+    let previousVseosvitaFsContainerState = false; 
+
+    function initializeObserver() {
+        if (observer) {
+            observer.disconnect(); 
+        }
+        const observerTarget = document.documentElement; 
+        if (observerTarget) {
+            observer = new MutationObserver((mutationsList) => {
+                if (isExtensionModifyingDOM) return; 
+
+                let triggerHandlePageChange = false;
+
+                if (location.hostname.includes('vseosvita.ua')) {
+                    const vseosvitaFsContainer = document.querySelector('.full-screen-container');
+                    const isVseosvitaFsPresent = vseosvitaFsContainer && document.body.contains(vseosvitaFsContainer);
+                    if (isVseosvitaFsPresent !== previousVseosvitaFsContainerState) {
+                        triggerHandlePageChange = true;
+                        previousVseosvitaFsContainerState = isVseosvitaFsPresent;
+                    }
+                }
+
+                if (!triggerHandlePageChange) {
+                    for (const mutation of mutationsList) {
+                        // Ігноруємо мутації, якщо їх ціль - наш хелпер або його нащадки
+                        if (helperContainer && (mutation.target === helperContainer || helperContainer.contains(mutation.target))) {
+                            continue;
+                        }
+                        // Ігноруємо мутації, якщо наш хелпер додається або видаляється
+                        if (helperContainer && 
+                            ( (mutation.addedNodes && Array.from(mutation.addedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer)))) ||
+                              (mutation.removedNodes && Array.from(mutation.removedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer))))
+                            )) {
+                            continue; 
+                         }
+
+                        if (mutation.type === 'childList' && (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+                            triggerHandlePageChange = true;
+                            break; 
+                        }
+                    }
+                }
+
+                if (triggerHandlePageChange) {
+                    handlePageContentChange(true); 
+                }
+            });
+            observer.observe(observerTarget, { childList: true, subtree: true });
+        }
+    }
+
+    function reinitializeExtensionUI(forceRecreateDOM = false) {
+        if (isExtensionModifyingDOM && !forceRecreateDOM) return;
+        isExtensionModifyingDOM = true;
+
+        if (!helperContainer || forceRecreateDOM) {
+            const existingHelper = document.querySelector('.ollama-helper-container');
+            if (existingHelper) {
+                const oldDragHeader = existingHelper.querySelector('#ollama-helper-drag-header');
+                if (oldDragHeader) {
+                    oldDragHeader.onmousedown = null;
+                    oldDragHeader.ontouchstart = null;
+                    document.onmousemove = null; // Очищаємо глобальні обробники
+                    document.onmouseup = null;
+                    document.ontouchmove = null;
+                    document.ontouchend = null;
+                }
+                existingHelper.remove();
+            }
+            helperContainer = null; 
+            createUI(); 
+        } else {
+             answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+             dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
+             resizeHelperBtn = helperContainer.querySelector('#resize-helper-btn');
+             copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
+             showRequestBtn = helperContainer.querySelector('#show-request-btn');
+             refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
+             attachHelperEventListeners();
+             updateHelperBaseStyles();
+        }
+        
+        initializeObserver(); 
+        attachAndPositionHelper(true); 
+        handlePageContentChange(true); 
+        isExtensionModifyingDOM = false;
+    }
+    
+    function handleFullscreenChange() {
+        if (isExtensionModifyingDOM) return;
+
+        if (document.fullscreenElement) {
+            if (helperContainer) { 
+                 if (!document.body.contains(helperContainer) && 
+                     document.fullscreenElement !== helperContainer && 
+                     document.fullscreenElement !== document.documentElement) {
+                    try { document.body.appendChild(helperContainer); } catch (e) { /* ігноруємо */ }
+                } else if (document.fullscreenElement === document.documentElement && 
+                           !document.body.contains(helperContainer)){
+                     try { document.body.appendChild(helperContainer); } catch (e) { /* ігноруємо */ }
+                }
+                helperContainer.style.setProperty('display', 'flex', 'important');
+                helperContainer.style.setProperty('z-index', '2147483647', 'important');
+            }
+        } else {
+            reinitializeExtensionUI(true); 
+        }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (observerDebounceTimeout) {
+                clearTimeout(observerDebounceTimeout); 
+            }
+        } else {
+            // При поверненні на вкладку, перевіряємо, чи є хелпер і чи він у правильному місці
+            if (helperContainer && document.body.contains(helperContainer)) {
+                 handlePageContentChange(true); 
+            } else { 
+                reinitializeExtensionUI(true);
+            }
+        }
+    });
+
+    reinitializeExtensionUI(true); 
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
 })();

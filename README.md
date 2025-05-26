@@ -78,6 +78,7 @@ This method is for those who want to modify the code or test the latest unreleas
 ## ✅ Supported Sites
 
 -   [🇺🇦 NaUrok](https://naurok.com.ua)
+-   [🇺🇦 Vseosvita](https://vseosvita.ua) [BETA]
 -   [🌐 Google Forms](https://docs.google.com/forms) [BETA]
 
 ## 📝 To-Do
