@@ -1,0 +1,107 @@
+body {
+    width: 450px;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #0a0a14;
+    color: #00ff9d;
+    padding: 15px;
+    margin: 0;
+}
+
+h3 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 8px;
+    background-color: #001f3f;
+    border: 1px solid #00ffff;
+    color: #00ff9d;
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+button#save-settings-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #00ffff;
+    border: none;
+    color: #0a0a14;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+    transition: all 0.2s ease;
+}
+
+button#save-settings-btn:hover {
+    box-shadow: 0 0 5px #00ffff, 0 0 10px #00ffff;
+    color: #fff;
+}
+
+.service-specific-settings {
+    border-top: 1px solid #00ffff;
+    padding-top: 15px;
+    margin-top: 15px;
+}
+
+.prompt-group {
+    border-top: 1px solid #00ffff;
+    padding-top: 15px;
+}
+
+.info-icon {
+    cursor: pointer;
+    font-style: normal;
+    padding: 1px 5px;
+    font-size: 0.9em;
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+.info-icon:hover {
+    color: #00ffff;
+}
+
+#refresh-models-icon {
+    cursor: pointer;
+    display: inline-block;
+    transition: transform 0.5s ease;
+    padding: 1px 4px;
+    line-height: 1;
+    vertical-align: middle;
+    font-size: 0.9em;
+}
+
+#refresh-models-icon.spinning {
+    animation: spin 1s linear infinite;
+}
+
+#refresh-models-icon:hover {
+    color: #00ffff;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

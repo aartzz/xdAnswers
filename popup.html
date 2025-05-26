@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>xdAnswers Settings</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <h3>Налаштування xdAnswers</h3>
+    <div class="form-group">
+        <label for="service-type">Сервіс:
+            <span class="info-icon" id="service-type-info-icon-btn" title="Довідка по сервісах">ℹ️</span>
+        </label>
+        <select id="service-type">
+            <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
+            <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
+            <option value="Gemini">Google 💬🖼️ 💰</option>
+            <option value="Ollama">Ollama 🏠</option>
+        </select>
+    </div>
+    <div id="ollama-settings" class="service-specific-settings">
+        <div class="form-group">
+            <label for="ollama-host">Ollama Host:</label>
+            <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
+        </div>
+        <div class="form-group">
+            <label for="ollama-model">
+                Локальна модель: <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
+            </label>
+            <select id="ollama-model"></select>
+        </div>
+    </div>
+    <div id="api-settings" class="service-specific-settings">
+         <div class="form-group">
+            <label for="api-key">API Ключ:</label>
+            <input type="password" id="api-key">
+        </div>
+        <div class="form-group">
+            <label for="api-model">Назва моделі:</label>
+            <input type="text" id="api-model">
+        </div>
+    </div>
+    <div class="form-group prompt-group">
+        <label for="prompt-prefix">Системний промпт:
+             <span class="info-icon" id="prompt-prefix-info-icon-btn" title="Системна інструкція для ШІ">ℹ️</span>
+        </label>
+        <textarea id="prompt-prefix"></textarea>
+    </div>
+    <button id="save-settings-btn">Зберегти та закрити</button>
+
+    <script src="popup.js"></script>
+</body>
+</html>
