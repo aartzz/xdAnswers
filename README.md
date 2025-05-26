@@ -34,7 +34,7 @@ Under the **Assets** section of the latest release, download the appropriate fil
 
 **Step 3: Install the File in Your Browser**
 
-#### 🥝 Kiwi Browser (on Android) - The Easiest!
+#### 🥝 Kiwi Browser (Android)
 
 1.  Download the `...chrome...zip` file directly to your phone.
 2.  Open Kiwi Browser, tap the three-dot menu, and select **Extensions**.
