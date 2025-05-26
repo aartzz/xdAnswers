@@ -1,58 +1,71 @@
 # Назва нашого workflow, яка буде відображатися на вкладці "Actions" в GitHub
-name: Build & Release
+name: Build & Release Extension
 
 # Умова запуску: workflow активується тільки при створенні нового релізу
 on:
   release:
     types: [created]
 
-# Завдання (jobs), які будуть виконуватися
 jobs:
   build-and-release:
-    # --- ДОДАЙТЕ ЦЮ СЕКЦІЮ ДЛЯ ДОЗВОЛІВ ---
     permissions:
       contents: write # Дозвіл на запис (включаючи завантаження артефактів у реліз)
-    # -----------------------------------------
-    # Використовуємо останню версію Ubuntu для запуску
     runs-on: ubuntu-latest
 
-    # Кроки, які виконує job
     steps:
-      # 1. Клонуємо репозиторій
-      # Цей крок завантажує код вашого розширення для подальшої роботи
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Налаштовуємо Node.js
-      # Це потрібно для використання npm та запуску скриптів з package.json
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # Рекомендується використовувати стабільну LTS-версію
+          node-version: '20'
 
-      # 3. Встановлюємо залежності
-      # Запускає `npm install` для завантаження `web-ext` та інших пакетів
       - name: Install dependencies
         run: npm install
 
-      # 4. Збираємо розширення для Firefox
-      # Використовує офіційний інструмент від Mozilla 'web-ext'
+      # Крок для отримання версії з manifest.json
+      # Це потрібно, якщо web-ext використовує версію для назви файлу
+      - name: Get extension version from manifest
+        id: get_version
+        run: echo "version=$(jq -r .version manifest.json)" >> $GITHUB_OUTPUT
+
       - name: Build for Firefox
-        run: npm run build:firefox # Ця команда визначена у вашому package.json
+        run: npm run build:firefox # Ця команда має створювати архів у папці ./build
 
-      # 5. Пакуємо розширення для Chrome в .zip архів
-      # Chrome Web Store приймає саме .zip файли
+      # Пакуємо розширення для Chrome
+      # Включаємо тільки необхідні файли та папки
       - name: Package for Chrome
-        run: zip -r chrome-extension.zip . -x ".git/*" ".github/*" "node_modules/*" "scripts/*" "build/*" "key.pem" "LICENSE" "README.md" "package-lock.json" # Додав виключення package-lock.json, якщо він є
+        run: |
+          mkdir chrome_package
+          cp manifest.json chrome_package/
+          cp background.js chrome_package/
+          cp content.js chrome_package/
+          cp popup.html chrome_package/
+          cp popup.js chrome_package/
+          cp popup.css chrome_package/
+          cp -r images chrome_package/
+          # Додайте сюди інші файли/папки, якщо вони є частиною розширення
+          cd chrome_package
+          zip -r ../chrome-extension.zip .
+          cd ..
 
-      # 6. Визначаємо шлях до зібраного файлу Firefox
-      # Це робить скрипт надійнішим, оскільки назва файлу може змінюватися з версією
-      # Також, web-ext створює .zip, а не .xpi напряму, тому шукаємо .zip
+      # Визначаємо шлях до зібраного файлу Firefox (web-ext зазвичай створює .zip)
+      # Назва файлу, створеного web-ext, може включати версію
+      # Приклад: xdanswers-X.Y.Z.zip
       - name: Get Firefox artifact path
         id: get_firefox_path
-        run: echo "path=$(ls -1 build/*.zip)" >> $GITHUB_OUTPUT
+        # Шукаємо .zip файл у папці build. Якщо web-ext створює файл з версією,
+        # цей ls має його знайти. Якщо web-ext налаштований створювати .xpi, змініть *.zip на *.xpi
+        run: |
+          firefox_artifact_path=$(ls -1 build/*.zip | head -n 1)
+          if [ -z "$firefox_artifact_path" ]; then
+            echo "::error::Firefox artifact (.zip) not found in build/ directory."
+            exit 1
+          fi
+          echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
+          echo "Found Firefox artifact: $firefox_artifact_path"
 
-      # 7. Завантажуємо артефакт для Firefox на сторінку релізу
       - name: Upload Firefox Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
@@ -60,11 +73,10 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ${{ steps.get_firefox_path.outputs.path }}
-          # Перейменовуємо .zip в .xpi для зрозумілості, це стандартне розширення для Firefox
-          asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
+          # Використовуємо версію з тегу релізу для назви артефакту
+          asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi 
           asset_content_type: application/x-xpinstall
 
-      # 8. Завантажуємо артефакт для Chrome на сторінку релізу
       - name: Upload Chrome Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
@@ -72,5 +84,6 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./chrome-extension.zip
+          # Використовуємо версію з тегу релізу для назви артефакту
           asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
           asset_content_type: application/zip
