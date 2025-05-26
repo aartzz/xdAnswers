@@ -9,6 +9,10 @@ on:
 # Завдання (jobs), які будуть виконуватися
 jobs:
   build-and-release:
+    # --- ДОДАЙТЕ ЦЮ СЕКЦІЮ ДЛЯ ДОЗВОЛІВ ---
+    permissions:
+      contents: write # Дозвіл на запис (включаючи завантаження артефактів у реліз)
+    # -----------------------------------------
     # Використовуємо останню версію Ubuntu для запуску
     runs-on: ubuntu-latest
 
@@ -39,10 +43,11 @@ jobs:
       # 5. Пакуємо розширення для Chrome в .zip архів
       # Chrome Web Store приймає саме .zip файли
       - name: Package for Chrome
-        run: zip -r chrome-extension.zip . -x ".git/*" ".github/*" "node_modules/*" "scripts/*" "build/*" "key.pem" "LICENSE" "README.md" "package-lock.json"
+        run: zip -r chrome-extension.zip . -x ".git/*" ".github/*" "node_modules/*" "scripts/*" "build/*" "key.pem" "LICENSE" "README.md" "package-lock.json" # Додав виключення package-lock.json, якщо він є
 
       # 6. Визначаємо шлях до зібраного файлу Firefox
       # Це робить скрипт надійнішим, оскільки назва файлу може змінюватися з версією
+      # Також, web-ext створює .zip, а не .xpi напряму, тому шукаємо .zip
       - name: Get Firefox artifact path
         id: get_firefox_path
         run: echo "path=$(ls -1 build/*.zip)" >> $GITHUB_OUTPUT
