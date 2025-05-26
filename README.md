@@ -2,6 +2,9 @@
 
 A free and open-source extension that helps you with tests using the power of artificial intelligence.
 
+> [!IMPORTANT]  
+> This project still in **BETA** testing. If you see bug, [create issue](https://github.com/aartzz/xdAnswers/issues) about it.
+
 ![A screenshot of the extension in action](images/README/ui.png) 
 ## 🚀 Key Features
 
