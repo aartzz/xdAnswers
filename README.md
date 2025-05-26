@@ -16,14 +16,6 @@ A free and open-source extension that helps you with tests using the power of ar
 
 ## ⚙️ How to Install
 
-We offer two installation methods. The "User Method" is the easiest and recommended for most people.
-
----
-
-### Installation
-
-This method uses the pre-built packages created by our automated workflow. You don't need to download the source code.
-
 **Step 1: Go to the Releases Page**
 
 1.  Navigate to the **[Releases](https://github.com/aartzz/xdAnswers/releases)** page of this repository.
@@ -64,7 +56,7 @@ Under the **Assets** section of the latest release, download the appropriate fil
 
 ---
 
-### Installation (for Developers)
+### For Developers
 
 This method is for those who want to modify the code or test the latest unreleased changes.
 
