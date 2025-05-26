@@ -1,5 +1,5 @@
 # Назва нашого workflow, яка буде відображатися на вкладці "Actions" в GitHub
-name: Build & Release Extension
+name: Build & Release
 
 # Умова запуску: workflow активується тільки при створенні нового релізу
 on:
