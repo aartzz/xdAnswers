@@ -1,4 +1,4 @@
-# xdAnswers
+# 🇺🇦xdAnswers
 
 A free and open-source extension that helps you with tests using the power of artificial intelligence.
 
