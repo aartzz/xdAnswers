@@ -1,14 +1,16 @@
-# Назва нашого workflow, яка буде відображатися на вкладці "Actions" в GitHub
-name: Build Extension on Push
+# Назва нашого workflow
+name: Create Release and Upload Assets
 
-# Умова запуску: workflow активується при push у гілку main
+# Умова запуску: workflow активується при створенні нового тегу, що починається з "v"
 on:
   push:
-    branches:
-      - main # Запускати тільки для гілки main. Можна додати інші, наприклад: [ main, master ]
+    tags:
+      - 'v*' # Наприклад, v1.0, v1.2.3, v2.0-beta
 
 jobs:
-  build-extension:
+  build-and-release:
+    permissions:
+      contents: write # Потрібен дозвіл на створення релізу та завантаження файлів
     runs-on: ubuntu-latest
 
     steps:
@@ -23,15 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Крок для отримання версії з manifest.json (залишаємо, може бути корисним)
-      - name: Get extension version from manifest
-        id: get_version
-        run: echo "version=$(jq -r .version manifest.json)" >> $GITHUB_OUTPUT
-
       - name: Build for Firefox
-        run: npm run build:firefox # Ця команда має створювати архів у папці ./build
+        run: npm run build:firefox # Команда має створювати архів у папці ./build
 
-      # Пакуємо розширення для Chrome
       - name: Package for Chrome
         run: |
           mkdir chrome_package
@@ -42,10 +38,21 @@ jobs:
           cp popup.js chrome_package/
           cp popup.css chrome_package/
           cp -r images chrome_package/
-          # Додайте сюди інші файли/папки, якщо вони є частиною розширення
           cd chrome_package
           zip -r ../chrome-extension.zip .
           cd ..
+      
+      # КРОК 1: Створюємо сам реліз на GitHub
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }} # Використовуємо тег, що запустив workflow
+          release_name: Release ${{ github.ref_name }} # Назва релізу, напр. "Release v1.0.1"
+          draft: false # Якщо true, реліз буде чернеткою
+          prerelease: false # Якщо true, реліз буде позначено як "pre-release"
 
       # Визначаємо шлях до зібраного файлу Firefox
       - name: Get Firefox artifact path
@@ -57,18 +64,25 @@ jobs:
             exit 1
           fi
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
-          echo "Found Firefox artifact: $firefox_artifact_path"
 
-      # ЗБЕРІГАЄМО АРТЕФАКТИ
-      # Замість завантаження у реліз, зберігаємо зібрані файли як артефакти цього workflow
-      - name: Upload Chrome Extension Artifact
-        uses: actions/upload-artifact@v4
+      # КРОК 2: Завантажуємо артефакт для Firefox у щойно створений реліз
+      - name: Upload Firefox Artifact to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: chrome-extension-${{ steps.get_version.outputs.version }} # Назва артефакту
-          path: chrome-extension.zip # Шлях до файлу для завантаження
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для завантаження, отриманий з кроку "Create Release"
+          asset_path: ${{ steps.get_firefox_path.outputs.path }}
+          asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
+          asset_content_type: application/x-xpinstall
 
-      - name: Upload Firefox Extension Artifact
-        uses: actions/upload-artifact@v4
+      # КРОК 3: Завантажуємо артефакт для Chrome у той самий реліз
+      - name: Upload Chrome Artifact to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: firefox-extension-${{ steps.get_version.outputs.version }} # Назва артефакту
-          path: ${{ steps.get_firefox_path.outputs.path }} # Шлях до файлу Firefox
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # Використовуємо той самий URL
+          asset_path: ./chrome-extension.zip
+          asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
+          asset_content_type: application/zip
