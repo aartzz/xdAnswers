@@ -1,15 +1,14 @@
 # Назва нашого workflow, яка буде відображатися на вкладці "Actions" в GitHub
-name: Build & Release Extension
+name: Build Extension on Push
 
-# Умова запуску: workflow активується тільки при створенні нового релізу
+# Умова запуску: workflow активується при push у гілку main
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - main # Запускати тільки для гілки main. Можна додати інші, наприклад: [ main, master ]
 
 jobs:
-  build-and-release:
-    permissions:
-      contents: write # Дозвіл на запис (включаючи завантаження артефактів у реліз)
+  build-extension:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,8 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Крок для отримання версії з manifest.json
-      # Це потрібно, якщо web-ext використовує версію для назви файлу
+      # Крок для отримання версії з manifest.json (залишаємо, може бути корисним)
       - name: Get extension version from manifest
         id: get_version
         run: echo "version=$(jq -r .version manifest.json)" >> $GITHUB_OUTPUT
@@ -34,7 +32,6 @@ jobs:
         run: npm run build:firefox # Ця команда має створювати архів у папці ./build
 
       # Пакуємо розширення для Chrome
-      # Включаємо тільки необхідні файли та папки
       - name: Package for Chrome
         run: |
           mkdir chrome_package
@@ -50,13 +47,9 @@ jobs:
           zip -r ../chrome-extension.zip .
           cd ..
 
-      # Визначаємо шлях до зібраного файлу Firefox (web-ext зазвичай створює .zip)
-      # Назва файлу, створеного web-ext, може включати версію
-      # Приклад: xdanswers-X.Y.Z.zip
+      # Визначаємо шлях до зібраного файлу Firefox
       - name: Get Firefox artifact path
         id: get_firefox_path
-        # Шукаємо .zip файл у папці build. Якщо web-ext створює файл з версією,
-        # цей ls має його знайти. Якщо web-ext налаштований створювати .xpi, змініть *.zip на *.xpi
         run: |
           firefox_artifact_path=$(ls -1 build/*.zip | head -n 1)
           if [ -z "$firefox_artifact_path" ]; then
@@ -66,24 +59,16 @@ jobs:
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
           echo "Found Firefox artifact: $firefox_artifact_path"
 
-      - name: Upload Firefox Artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # ЗБЕРІГАЄМО АРТЕФАКТИ
+      # Замість завантаження у реліз, зберігаємо зібрані файли як артефакти цього workflow
+      - name: Upload Chrome Extension Artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ steps.get_firefox_path.outputs.path }}
-          # Використовуємо версію з тегу релізу для назви артефакту
-          asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi 
-          asset_content_type: application/x-xpinstall
+          name: chrome-extension-${{ steps.get_version.outputs.version }} # Назва артефакту
+          path: chrome-extension.zip # Шлях до файлу для завантаження
 
-      - name: Upload Chrome Artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Firefox Extension Artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./chrome-extension.zip
-          # Використовуємо версію з тегу релізу для назви артефакту
-          asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
-          asset_content_type: application/zip
+          name: firefox-extension-${{ steps.get_version.outputs.version }} # Назва артефакту
+          path: ${{ steps.get_firefox_path.outputs.path }} # Шлях до файлу Firefox
