@@ -6,17 +6,18 @@
     "permissions": [
       "storage",
       "clipboardWrite",
-      "tabs"
+      "tabs",
+      "webNavigation"
     ],
     "host_permissions": [
       "*://naurok.com.ua/test/testing/*",
       "*://naurok.ua/test/testing/*",
-      "*://docs.google.com/forms/d/e/*/viewform*",
       "http://localhost/*",
       "https://api.openai.com/*",
       "https://generativelanguage.googleapis.com/*",
       "https://api.mistral.ai/*",
-      "*://*.googleusercontent.com/*"
+      "*://*.googleusercontent.com/*",
+      "*://docs.google.com/forms/*"
     ],
     "background": {
       "scripts": ["background.js"]
@@ -26,10 +27,14 @@
         "matches": [
           "*://naurok.com.ua/test/testing/*",
           "*://naurok.ua/test/testing/*",
-          "*://docs.google.com/forms/d/e/*/viewform*"
+          "*://docs.google.com/forms/u/*/d/e/*/viewform*",
+          "*://docs.google.com/forms/u/*/d/e/*/formResponse*",
+          "*://docs.google.com/forms/d/e/*/viewform*",
+          "*://docs.google.com/forms/d/e/*/formResponse*"
         ],
         "js": ["content.js"],
-        "run_at": "document_end"
+        "run_at": "document_end",
+        "all_frames": true
       }
     ],
     "action": {

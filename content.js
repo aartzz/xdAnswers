@@ -361,13 +361,24 @@
     }
     
     // --- ПРОСЛУХОВУВАЧ ПОВІДОМЛЕНЬ ВІД POPUP ---
+    // --- ПРОСЛУХОВУВАЧ ПОВІДОМЛЕНЬ ВІД POPUP ТА BACKGROUND SCRIPT ---
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+        // Повідомлення про оновлення налаштувань з popup
         if (message.type === "settingsUpdated") {
             console.log("Settings updated, reloading and reprocessing...");
             settings = await loadSettings();
             forceProcessQuestion();
             sendResponse({ status: "ok" });
         }
+        
+        // Повідомлення про зміну URL на сторінці Google Form
+        if (message.type === "gform_url_changed") {
+            console.log("Google Form URL changed, reprocessing content...");
+            // Запускаємо нашу функцію, яка аналізує вміст сторінки
+            handlePageContentChange(); 
+            sendResponse({ status: "ok" });
+        }
+        
         return true; // для асинхронної відповіді
     });
 
