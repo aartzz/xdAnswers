@@ -12,7 +12,7 @@ A free and open-source extension that helps you with tests using the power of ar
 * **Multi-Service Support:** Integrates with MistralAI, OpenAI, Google Gemini, and local models via Ollama.
 * **Image Recognition:** The extension can analyze images in both questions and answer options.
 * **Convenient UI:** A floating helper window that you can move and resize.
-* **Flexible Configuration:** Manage API keys, models, and system prompts through a user-friendly popup window.
+* **Flexible Configuration:** Manage Themes, API keys, models, and system prompts through a user-friendly popup window.
 
 ## ⚙️ How to Install
 
