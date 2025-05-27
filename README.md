@@ -62,7 +62,8 @@ This method is for those who want to modify the code or test the latest unreleas
     ```bash
     git clone https://github.com/aartzz/xdAnswers.git
     ```
-2.  Follow the "Load unpacked" instructions for your browser (Chrome or the "Temporary Add-on" method for Firefox) as described above, but select the source code folder you just cloned/downloaded.
+2.  Rename manifest._[your browser]_.json to manifest.json
+3.  Follow the "Load unpacked" instructions for your browser (Chrome or the "Temporary Add-on" method for Firefox) as described above, but select the source code folder you just cloned/downloaded.
 
 ## 💡 How to Use
 
