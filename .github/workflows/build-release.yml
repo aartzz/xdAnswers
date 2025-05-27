@@ -58,11 +58,17 @@ jobs:
       - name: Get Firefox artifact path
         id: get_firefox_path
         run: |
-          firefox_artifact_path=$(ls -1 build/*.zip | head -n 1)
+          firefox_artifact_path=$(find build -maxdepth 1 \( -name "*.zip" -o -name "*.xpi" \) | head -n 1)
+          
           if [ -z "$firefox_artifact_path" ]; then
-            echo "::error::Firefox artifact (.zip) not found in build/ directory."
+            echo "::error::Firefox artifact (.zip or .xpi) not found in build/ directory."
+            echo "--- Directory contents for debugging ---"
+            ls -R
+            echo "----------------------------------------"
             exit 1
           fi
+          
+          echo "Found artifact: $firefox_artifact_path"
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
 
       # КРОК 2: Завантажуємо артефакт для Firefox у щойно створений реліз
