@@ -26,12 +26,14 @@ jobs:
         run: npm install
 
       - name: Build for Firefox
-        run: npm run build:firefox # Команда має створювати архів у папці ./build
+        run: |
+          cp manifest.firefox.json manifest.json
+          npm run build:firefox # Команда має створювати архів у папці ./build
 
       - name: Package for Chrome
         run: |
           mkdir chrome_package
-          cp manifest.json chrome_package/
+          cp manifest.chrome.json chrome_package/manifest.json
           cp background.js chrome_package/
           cp content.js chrome_package/
           cp popup.html chrome_package/
