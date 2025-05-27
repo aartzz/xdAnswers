@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "xdAnswers",
-    "version": "4.2",
+    "version": "4.2.1",
     "description": "A script that helps in tests by providing AI-powered answers.",
     "permissions": [
       "storage",
