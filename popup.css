@@ -48,6 +48,7 @@ input[type="text"], input[type="password"], select, textarea {
 input[type="checkbox"] {
     width: auto;
     height: auto;
+    vertical-align: middle;
 }
 
 textarea {
@@ -87,9 +88,24 @@ button#save-settings-btn:hover {
     margin: 20px 0;
 }
 
-.info-icon, #refresh-models-icon {
+.info-icon {
     cursor: pointer;
+    font-style: normal;
+    padding: 1px 5px;
+    font-size: 0.9em;
+    display: inline-block;
+    line-height: 1;
     vertical-align: middle;
+}
+
+#refresh-models-icon {
+    cursor: pointer;
+    display: inline-block;
+    transition: transform 0.5s ease;
+    padding: 1px 4px;
+    line-height: 1;
+    vertical-align: middle;
+    font-size: 0.9em;
 }
 
 #refresh-models-icon.spinning {
@@ -172,11 +188,12 @@ button#save-settings-btn:hover {
     text-align: center;
     margin-bottom: 8px;
     white-space: nowrap;
+    font-size: 0.9em;
 }
 
 .theme-preview {
     display: flex;
-    height: 40px;
+    height: 30px;
     border-radius: 5px;
     overflow: hidden;
 }

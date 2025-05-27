@@ -83,4 +83,3 @@ This method is for those who want to modify the code or test the latest unreleas
 
 -   Add more support for educational platforms.
 -   Fix bugs and improve stability.
--   Add multi-language support for the UI.

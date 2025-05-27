@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>xdAnswers Settings</title>
@@ -7,21 +7,20 @@
 </head>
 <body>
     <div class="header">
-        <h3 id="popup-title">Налаштування xdAnswers</h3>
+        <h3 id="popup-title">xdAnswers Settings</h3>
     </div>
 
     <div class="tab-buttons">
-        <button class="tab-button" data-tab="ai-tab">🧠 ШІ</button>
-        <button class="tab-button active" data-tab="themes-tab">🎨 Теми</button>
-        <button class="tab-button" data-tab="style-tab">⚙️ Стиль</button>
-        <button class="tab-button" data-tab="donate-tab">❤️ Донат</button>
+        <button class="tab-button active" data-tab="ai-tab">🧠 AI</button>
+        <button class="tab-button" data-tab="themes-tab">🎨 Themes</button>
+        <button class="tab-button" data-tab="style-tab">⚙️ Style</button>
+        <button class="tab-button" data-tab="donate-tab">❤️ Donate</button>
     </div>
 
-    <div id="ai-tab" class="tab-content">
+    <div id="ai-tab" class="tab-content active">
         <div class="form-group">
-            <label for="service-type">Сервіс:
-                <span class="info-icon" id="service-type-info-icon-btn" title="Довідка по сервісах">ℹ️</span>
-            </label>
+            <label for="service-type">Service:</label>
+            <span class="info-icon" id="service-type-info-icon-btn" title="💬-Text 🖼️-Image 💰-Paid/Limits 🏠-Own Server 🆓-Free">ℹ️</span>
             <select id="service-type">
                 <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
                 <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
@@ -36,80 +35,73 @@
             </div>
             <div class="form-group">
                 <label for="ollama-model">
-                    Локальна модель: <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
+                    <span>Local Model:</span>
+                    <span id="refresh-models-icon" title="Refresh model list">🔄</span>
                 </label>
                 <select id="ollama-model"></select>
             </div>
         </div>
         <div id="api-settings" class="service-specific-settings">
              <div class="form-group">
-                <label for="api-key">API Ключ:</label>
+                <label for="api-key">API Key:</label>
                 <input type="password" id="api-key">
             </div>
             <div class="form-group">
-                <label for="api-model">Назва моделі:</label>
+                <label for="api-model">Model Name:</label>
                 <input type="text" id="api-model">
             </div>
         </div>
         <div class="form-group prompt-group">
-            <label for="prompt-prefix">Системний промпт:
-                 <span class="info-icon" id="prompt-prefix-info-icon-btn" title="Системна інструкція для ШІ">ℹ️</span>
+            <label for="prompt-prefix">
+                <span>System Prompt:</span>
+                <span class="info-icon" id="prompt-prefix-info-icon-btn" title="This is an instruction for the AI that is added at the beginning of each request. It helps the AI better understand what kind of response you expect.">ℹ️</span>
             </label>
             <textarea id="prompt-prefix"></textarea>
         </div>
     </div>
     
-    <div id="themes-tab" class="tab-content active">
-        <p class="tab-description">Оберіть готову тему або налаштуйте власну у вкладці "Стиль".</p>
-        <div id="themes-grid" class="themes-grid">
-            </div>
+    <div id="themes-tab" class="tab-content">
+        <p class="tab-description">Choose a preset theme or customize your own in the 'Style' tab.</p>
+        <div id="themes-grid" class="themes-grid"></div>
     </div>
 
     <div id="style-tab" class="tab-content">
         <div class="form-group">
             <label>
-                <input type="checkbox" id="glow-effect-toggle" style="vertical-align: middle;">
-                <span style="vertical-align: middle;">Увімкнути ефект світіння</span>
+                <input type="checkbox" id="glow-effect-toggle">
+                <span>Enable glow effect</span>
             </label>
         </div>
         <div class="form-group">
-            <label for="border-color-input">Колір контуру та світіння (HEX):</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="border-color-input" maxlength="7" placeholder="#00ffff">
-            </div>
+            <label for="border-color-input">Border & Glow Color (HEX):</label>
+            <input type="text" id="border-color-input" maxlength="7" placeholder="#00ffff">
         </div>
         <hr class="separator">
         <div class="form-group">
-            <label for="header-color-input">Колір заголовка (HEX):</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="header-color-input" maxlength="7" placeholder="#001f3f">
-            </div>
+            <label for="header-color-input">Header Color (HEX):</label>
+            <input type="text" id="header-color-input" maxlength="7" placeholder="#001f3f">
         </div>
         <div class="form-group">
-            <label for="content-color-input">Колір вікна (HEX):</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="content-color-input" maxlength="7" placeholder="#0a0a14">
-            </div>
+            <label for="content-color-input">Window Color (HEX):</label>
+            <input type="text" id="content-color-input" maxlength="7" placeholder="#0a0a14">
         </div>
         <div class="form-group">
-            <label for="text-color-input">Колір тексту (HEX):</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="text-color-input" maxlength="7" placeholder="#00ff9d">
-            </div>
+            <label for="text-color-input">Text Color (HEX):</label>
+            <input type="text" id="text-color-input" maxlength="7" placeholder="#00ff9d">
         </div>
     </div>
 
     <div id="donate-tab" class="tab-content">
         <div class="donate-content">
-            <p>Якщо вам подобається це розширення, ви можете підтримати розробника.</p>
+            <p>If you like this extension, you can support the developer.</p>
             <a href="https://ko-fi.com/artzab" target="_blank" class="kofi-button">
                 <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Coffee" class="kofi-img">
-                Підтримати на Ko-fi
+                <span>Support on Ko-fi</span>
             </a>
         </div>
     </div>
 
-    <button id="save-settings-btn">Зберегти та закрити</button>
+    <button id="save-settings-btn">Save and Close</button>
 
     <script src="popup.js"></script>
 </body>
