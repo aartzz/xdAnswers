@@ -4,7 +4,7 @@
     "private": true,
     "description": "A script that helps in tests by providing AI-powered answers.",
     "scripts": {
-      "build:firefox": "web-ext build --overwrite-dest",
+      "build:firefox": "web-ext build --artifacts-dir ./build --overwrite-dest",
       "build:chrome": "cd ./build && zip -r ../xdAnswers-chrome.zip .",
       "version": "node scripts/sync-version.js && git add manifest.json"
     },
