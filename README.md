@@ -29,7 +29,7 @@ Under the **Assets** section of the latest release, download the appropriate fil
 
 **Step 3: Install the File in Your Browser**
 
-#### 🖥️ Google Chrome (Desktop)
+#### 🖥️ Google Chrome (Dektop)
 
 1.  Download the `...chrome...zip` file and **unzip it** into a new folder.
 2.  Open Chrome and navigate to `chrome://extensions`.
@@ -79,6 +79,6 @@ This method is for those who want to modify the code or test the latest unreleas
 
 ## 📝 To-Do
 
--   Add support for Vseosvita, Kahoot, and other educational platforms.
+-   Add more support for educational platforms.
 -   Fix bugs and improve stability.
 -   Add multi-language support for the UI.
