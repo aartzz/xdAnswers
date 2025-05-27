@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
     OpenAI: { apiKey: '', model: 'gpt-4o' },
     Gemini: { apiKey: '', model: 'gemini-2.0-flash' },
     MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-large-2411' },
-    promptPrefix: 'I am providing a question with answer choices. Answer this question directly, without explanation.',
+    promptPrefix: 'Я даю питання, ти повинен на його відповісти, написавши тільки варіант відповіді, без пояснень.',
     customization: {
         glowEffect: true,
         ...PREDEFINED_THEMES['Default']
