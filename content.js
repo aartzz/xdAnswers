@@ -118,28 +118,33 @@
         OpenAI: { apiKey: '', model: 'gpt-4o' },
         Gemini: { apiKey: '', model: 'gemini-2.0-flash' },
         MistralAI: { apiKey: '0RBrYMEMvvazK5iZ9sckIdLSoBnv7Yuj', model: 'pixtral-large-2411' },
-        promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.'
+        promptPrefix: 'Я даю питання з варіантами відповіді. Дай відповідь на це питання, прямо, без пояснень.',
+        customization: {
+            glowEffect: true,
+            borderColor: '#00ffff',
+            contentColor: '#0a0a14',
+            headerColor: '#001f3f',
+            textColor: '#00ff9d'
+        }
     };
-
+    
     async function loadSettings() {
         const data = await chrome.storage.local.get('xdAnswers_settings');
         let loadedSettings = { ...DEFAULT_SETTINGS };
         if (data.xdAnswers_settings) {
             try {
                 const parsedSettings = JSON.parse(data.xdAnswers_settings);
-                loadedSettings = { ...loadedSettings, ...parsedSettings };
-                for (const serviceKey in DEFAULT_SETTINGS) {
-                    if (typeof DEFAULT_SETTINGS[serviceKey] === 'object' && DEFAULT_SETTINGS[serviceKey] !== null) {
-                        loadedSettings[serviceKey] = { ...DEFAULT_SETTINGS[serviceKey], ...(loadedSettings[serviceKey] || {}) };
+                loadedSettings = {
+                    ...DEFAULT_SETTINGS,
+                    ...parsedSettings,
+                    customization: {
+                        ...DEFAULT_SETTINGS.customization,
+                        ...(parsedSettings.customization || {})
                     }
-                }
+                };
             } catch (e) {
-                console.error("xdAnswers: Failed to parse settings, using defaults.", e);
+                console.error("xdAnswers: Failed to parse settings.", e);
             }
-        }
-        const validServices = ['Ollama', 'OpenAI', 'Gemini', 'MistralAI'];
-        if (!validServices.includes(loadedSettings.activeService)) {
-            loadedSettings.activeService = DEFAULT_SETTINGS.activeService;
         }
         return loadedSettings;
     }
@@ -173,16 +178,17 @@
 
     // --- Стилі та UI ---
     function updateHelperBaseStyles() {
+         const custom = settings.customization;
          addStyle(`
             :root {
-                --futuristic-bg: #0a0a14;
-                --futuristic-border: #00ffff;
-                --futuristic-text: #00ff9d;
-                --futuristic-glow: 0 0 5px var(--futuristic-border), 0 0 10px var(--futuristic-border), 0 0 15px var(--futuristic-border);
+                --futuristic-bg: ${custom.contentColor};
+                --futuristic-border: ${custom.borderColor};
+                --futuristic-text: ${custom.textColor};
+                --futuristic-glow: ${custom.glowEffect ? `0 0 5px ${custom.borderColor}, 0 0 10px ${custom.borderColor}` : 'none'};
                 --futuristic-font: 'Courier New', Courier, monospace;
+                --header-bg: ${custom.headerColor};
             }
             .ollama-helper-container {
-                /* ВИДАЛЕНО 'all: initial' - ГОЛОВНЕ ВИПРАВЛЕННЯ */
                 margin: 0;
                 padding: 0;
                 border-width: 2px;
@@ -191,7 +197,6 @@
                 text-align: left;
                 transform: none;
                 
-                /* Основні властивості */
                 position: fixed !important;
                 z-index: 2147483647 !important;
                 display: flex !important;
@@ -226,7 +231,7 @@
                 justify-content: space-between !important;
                 align-items: center !important;
                 padding: 8px 10px !important;
-                background-color: #001f3f !important;
+                background-color: var(--header-bg) !important;
                 border-bottom: 1px solid var(--futuristic-border) !important;
                 cursor: move !important;
                 user-select: none; 
@@ -438,17 +443,26 @@
     }
     
     chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-        if (isExtensionModifyingDOM) { sendResponse({status: "dom_update_in_progress"}); return true;}
-
-        if (message.type === "settingsUpdated") {
-            settings = await loadSettings();
-            forceProcessQuestion();
-            sendResponse({ status: "ok" });
-        } else if (message.type === "gform_url_changed") {
-            handlePageContentChange(true); 
-            sendResponse({ status: "ok" });
+        if (isExtensionModifyingDOM) {
+            sendResponse({status: "dom_update_in_progress"});
+            return true;
         }
-        return true; 
+
+        switch (message.type) {
+            case "settingsUpdated":
+                settings = await loadSettings();
+                updateHelperBaseStyles();
+                forceProcessQuestion();
+                sendResponse({ status: "ok" });
+                break;
+
+            case "gform_url_changed":
+                handlePageContentChange(true);
+                sendResponse({ status: "ok" });
+                break;
+        }
+
+        return true;
     });
 
     async function imageToBase64(url) {

@@ -6,46 +6,109 @@
     <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-    <h3>Налаштування xdAnswers</h3>
-    <div class="form-group">
-        <label for="service-type">Сервіс:
-            <span class="info-icon" id="service-type-info-icon-btn" title="Довідка по сервісах">ℹ️</span>
-        </label>
-        <select id="service-type">
-            <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
-            <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
-            <option value="Gemini">Google 💬🖼️ 💰</option>
-            <option value="Ollama">Ollama 🏠</option>
-        </select>
+    <div class="header">
+        <h3 id="popup-title">Налаштування xdAnswers</h3>
     </div>
-    <div id="ollama-settings" class="service-specific-settings">
+
+    <div class="tab-buttons">
+        <button class="tab-button" data-tab="ai-tab">🧠 ШІ</button>
+        <button class="tab-button active" data-tab="themes-tab">🎨 Теми</button>
+        <button class="tab-button" data-tab="style-tab">⚙️ Стиль</button>
+        <button class="tab-button" data-tab="donate-tab">❤️ Донат</button>
+    </div>
+
+    <div id="ai-tab" class="tab-content">
         <div class="form-group">
-            <label for="ollama-host">Ollama Host:</label>
-            <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
-        </div>
-        <div class="form-group">
-            <label for="ollama-model">
-                Локальна модель: <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
+            <label for="service-type">Сервіс:
+                <span class="info-icon" id="service-type-info-icon-btn" title="Довідка по сервісах">ℹ️</span>
             </label>
-            <select id="ollama-model"></select>
+            <select id="service-type">
+                <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
+                <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
+                <option value="Gemini">Google 💬🖼️ 💰</option>
+                <option value="Ollama">Ollama 🏠</option>
+            </select>
+        </div>
+        <div id="ollama-settings" class="service-specific-settings">
+            <div class="form-group">
+                <label for="ollama-host">Ollama Host:</label>
+                <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
+            </div>
+            <div class="form-group">
+                <label for="ollama-model">
+                    Локальна модель: <span id="refresh-models-icon" title="Оновити список моделей">🔄</span>
+                </label>
+                <select id="ollama-model"></select>
+            </div>
+        </div>
+        <div id="api-settings" class="service-specific-settings">
+             <div class="form-group">
+                <label for="api-key">API Ключ:</label>
+                <input type="password" id="api-key">
+            </div>
+            <div class="form-group">
+                <label for="api-model">Назва моделі:</label>
+                <input type="text" id="api-model">
+            </div>
+        </div>
+        <div class="form-group prompt-group">
+            <label for="prompt-prefix">Системний промпт:
+                 <span class="info-icon" id="prompt-prefix-info-icon-btn" title="Системна інструкція для ШІ">ℹ️</span>
+            </label>
+            <textarea id="prompt-prefix"></textarea>
         </div>
     </div>
-    <div id="api-settings" class="service-specific-settings">
-         <div class="form-group">
-            <label for="api-key">API Ключ:</label>
-            <input type="password" id="api-key">
+    
+    <div id="themes-tab" class="tab-content active">
+        <p class="tab-description">Оберіть готову тему або налаштуйте власну у вкладці "Стиль".</p>
+        <div id="themes-grid" class="themes-grid">
+            </div>
+    </div>
+
+    <div id="style-tab" class="tab-content">
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="glow-effect-toggle" style="vertical-align: middle;">
+                <span style="vertical-align: middle;">Увімкнути ефект світіння</span>
+            </label>
         </div>
         <div class="form-group">
-            <label for="api-model">Назва моделі:</label>
-            <input type="text" id="api-model">
+            <label for="border-color-input">Колір контуру та світіння (HEX):</label>
+            <div class="color-input-wrapper">
+                <input type="text" id="border-color-input" maxlength="7" placeholder="#00ffff">
+            </div>
+        </div>
+        <hr class="separator">
+        <div class="form-group">
+            <label for="header-color-input">Колір заголовка (HEX):</label>
+            <div class="color-input-wrapper">
+                <input type="text" id="header-color-input" maxlength="7" placeholder="#001f3f">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="content-color-input">Колір вікна (HEX):</label>
+            <div class="color-input-wrapper">
+                <input type="text" id="content-color-input" maxlength="7" placeholder="#0a0a14">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="text-color-input">Колір тексту (HEX):</label>
+            <div class="color-input-wrapper">
+                <input type="text" id="text-color-input" maxlength="7" placeholder="#00ff9d">
+            </div>
         </div>
     </div>
-    <div class="form-group prompt-group">
-        <label for="prompt-prefix">Системний промпт:
-             <span class="info-icon" id="prompt-prefix-info-icon-btn" title="Системна інструкція для ШІ">ℹ️</span>
-        </label>
-        <textarea id="prompt-prefix"></textarea>
+
+    <div id="donate-tab" class="tab-content">
+        <div class="donate-content">
+            <p>Якщо вам подобається це розширення, ви можете підтримати розробника.</p>
+            <a href="https://ko-fi.com/artzab" target="_blank" class="kofi-button">
+                <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Coffee" class="kofi-img">
+                Підтримати на Ko-fi
+            </a>
+        </div>
     </div>
+
     <button id="save-settings-btn">Зберегти та закрити</button>
 
     <script src="popup.js"></script>
