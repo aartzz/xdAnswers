@@ -2,15 +2,17 @@
 module.exports = {
     sourceDir: './',
     artifactsDir: './build',
+
     ignoreFiles: [
+      'node_modules',
       '.git',
       '.github',
-      'node_modules',
       'package.json',
       'package-lock.json',
-      '.web-ext-config.js',
       'README.md',
+      'scripts',
+      '.web-ext-config.js',
       'chrome_package',
-      'chrome-extension.zip'
+      '*.zip'
     ],
   };
