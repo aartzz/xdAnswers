@@ -29,6 +29,88 @@
         }
     }
 
+    // --- Автономний модуль для перетягування ---
+    const Draggable = (function() {
+        let instance;
+
+        function createDraggable(container, handle, onDragStartCallback) {
+            let isDragging = false;
+            let startX, startY, initialTop, initialLeft;
+
+            const onMouseDown = (e) => {
+                if (e.target.tagName === 'BUTTON' || (e.target.parentElement && e.target.parentElement.tagName === 'BUTTON')) {
+                    return;
+                }
+                e.preventDefault();
+                isDragging = true;
+                
+                if (onDragStartCallback) {
+                    onDragStartCallback();
+                }
+
+                const rect = container.getBoundingClientRect();
+                initialTop = rect.top;
+                initialLeft = rect.left;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                container.style.top = `${initialTop}px`;
+                container.style.left = `${initialLeft}px`;
+                container.style.right = 'auto';
+                container.style.bottom = 'auto';
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp, { once: true });
+            };
+
+            const onMouseMove = (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                container.style.transform = `translate(${dx}px, ${dy}px)`;
+            };
+
+            const onMouseUp = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                
+                document.removeEventListener('mousemove', onMouseMove);
+
+                const currentTransform = new DOMMatrix(getComputedStyle(container).transform);
+                const finalTop = initialTop + currentTransform.m42;
+                const finalLeft = initialLeft + currentTransform.m41;
+
+                container.style.transform = '';
+                container.style.top = `${finalTop}px`;
+                container.style.left = `${finalLeft}px`;
+            };
+
+            const destroy = () => {
+                handle.removeEventListener('mousedown', onMouseDown);
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+
+            handle.addEventListener('mousedown', onMouseDown);
+
+            return { destroy };
+        }
+
+        return {
+            init: function(container, handle, onDragStartCallback) {
+                if (instance) instance.destroy();
+                instance = createDraggable(container, handle, onDragStartCallback);
+            },
+            destroy: function() {
+                if (instance) {
+                    instance.destroy();
+                    instance = null;
+                }
+            }
+        };
+    })();
+
     // --- Конфігурація та Налаштування ---
     const DEFAULT_SETTINGS = {
         activeService: 'MistralAI',
@@ -69,14 +151,12 @@
     let lastProcessedNaurokText = '';
     let processedGFormQuestionIds = new Set();
     let lastRequestBody = null;
-    let isDragging = false;
-    let dragOffsetX, dragOffsetY;
     let observerDebounceTimeout = null;
     let isHelperWindowMaximized = false;
     let lastProcessedVseosvitaKey = '';
     let currentHelperParentNode = null;
     let isManuallyPositioned = false;
-    let isExtensionModifyingDOM = false; // Головний прапорець для блокування MutationObserver
+    let isExtensionModifyingDOM = false;
 
     const defaultHelperState = {
         width: '350px', height: 'auto', maxHeight: '400px',
@@ -102,23 +182,32 @@
                 --futuristic-font: 'Courier New', Courier, monospace;
             }
             .ollama-helper-container {
-                all: initial !important; 
-                position: fixed !important; 
-                width: ${isHelperWindowMaximized ? maximizedHelperState.width : defaultHelperState.width} !important;
-                height: ${isHelperWindowMaximized ? maximizedHelperState.height : defaultHelperState.height} !important;
-                max-height: ${isHelperWindowMaximized ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight} !important;
+                /* ВИДАЛЕНО 'all: initial' - ГОЛОВНЕ ВИПРАВЛЕННЯ */
+                margin: 0;
+                padding: 0;
+                border-width: 2px;
+                border-style: solid;
+                font-weight: normal;
+                text-align: left;
+                transform: none;
+                
+                /* Основні властивості */
+                position: fixed !important;
+                z-index: 2147483647 !important;
+                display: flex !important;
+                flex-direction: column !important;
                 background-color: var(--futuristic-bg) !important;
-                border: 2px solid var(--futuristic-border) !important;
+                border-color: var(--futuristic-border) !important;
                 border-radius: 10px !important;
                 box-shadow: var(--futuristic-glow) !important;
                 color: var(--futuristic-text) !important;
                 font-family: var(--futuristic-font) !important;
-                font-size: 14px !important; 
-                line-height: 1.3 !important; 
-                z-index: 2147483647 !important; 
-                display: flex !important; 
-                flex-direction: column !important;
+                font-size: 14px !important;
+                line-height: 1.3 !important;
                 overflow: hidden !important;
+                width: ${isHelperWindowMaximized ? maximizedHelperState.width : defaultHelperState.width} !important;
+                height: ${isHelperWindowMaximized ? maximizedHelperState.height : defaultHelperState.height} !important;
+                max-height: ${isHelperWindowMaximized ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight} !important;
             }
             .ollama-helper-container *, .ollama-helper-container *:before, .ollama-helper-container *:after {
                 all: revert !important; 
@@ -181,14 +270,7 @@
                 white-space: pre-wrap !important;
                 word-wrap: break-word !important;
             }
-            .ollama-helper-content ul {
-                margin-left: 20px !important;
-                padding-left: 10px !important;
-                list-style-type: disc !important;
-            }
-            .ollama-helper-content li {
-                margin-bottom: 4px !important;
-            }
+            .ollama-helper-content ul, .ollama-helper-content li { list-style: revert !important; margin-left: 20px !important; padding-left: 5px !important; }
             .ollama-helper-content::-webkit-scrollbar { width: 8px !important; }
             .ollama-helper-content::-webkit-scrollbar-track { background: var(--futuristic-bg) !important; }
             .ollama-helper-content::-webkit-scrollbar-thumb {
@@ -231,160 +313,63 @@
         
         answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
         dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
-        resizeHelperBtn = helperContainer.querySelector('#resize-helper-btn');
-        copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
-        showRequestBtn = helperContainer.querySelector('#show-request-btn');
-        refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
-
         attachHelperEventListeners();
         updateHelperBaseStyles(); 
     }
 
-    function attachAndPositionHelper(forcePositionRecalculation = false) {
-        if (isExtensionModifyingDOM && !forcePositionRecalculation) return; 
+    function attachAndPositionHelper() {
+        if (isExtensionModifyingDOM) return;
         isExtensionModifyingDOM = true;
 
-        if (!helperContainer) {
-            createUI(); 
-        }
+        if (!helperContainer) createUI();
+        
+        helperContainer.style.transform = '';
 
         let determinedTargetParent = document.body;
         let useDefaultPositioning = true;
 
         if (location.hostname.includes('vseosvita.ua') &&
             (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
-            
+
             const vseosvitaFullScreenContainer = document.querySelector('.full-screen-container');
-            
+
             if (vseosvitaFullScreenContainer && document.body.contains(vseosvitaFullScreenContainer)) {
                 determinedTargetParent = vseosvitaFullScreenContainer;
-                useDefaultPositioning = false; 
+                useDefaultPositioning = false;
             } else {
                  determinedTargetParent = document.body;
                  useDefaultPositioning = true;
-                 if (currentHelperParentNode !== document.body) isManuallyPositioned = false; 
+                 if (currentHelperParentNode !== document.body) isManuallyPositioned = false;
             }
         } else {
             determinedTargetParent = document.body;
             useDefaultPositioning = true;
             if (currentHelperParentNode !== document.body) isManuallyPositioned = false;
         }
-        
-        // Переміщуємо, тільки якщо батько змінився АБО хелпер ще не в DOM
+
         if (!helperContainer.parentNode || helperContainer.parentNode !== determinedTargetParent) {
-            if (helperContainer.parentNode) {
-                helperContainer.parentNode.removeChild(helperContainer);
-            }
-            if (determinedTargetParent === document.querySelector('.full-screen-container') && determinedTargetParent.firstChild) {
-                determinedTargetParent.insertBefore(helperContainer, determinedTargetParent.firstChild); // Вставляємо НА ПОЧАТКУ .full-screen-container
-            } else {
-                determinedTargetParent.appendChild(helperContainer); // Інакше в кінець
-            }
-            isManuallyPositioned = false; 
-        } else {
-             // Якщо батько той самий, але це .full-screen-container, переконуємося, що він перший
-            if (determinedTargetParent === document.querySelector('.full-screen-container') && helperContainer !== determinedTargetParent.firstChild) {
-                 determinedTargetParent.insertBefore(helperContainer, determinedTargetParent.firstChild);
-            } else if (determinedTargetParent === document.body) {
-                 determinedTargetParent.appendChild(helperContainer); // Для body завжди в кінець
-            }
+            if (helperContainer.parentNode) helperContainer.parentNode.removeChild(helperContainer);
+            determinedTargetParent.appendChild(helperContainer);
+            isManuallyPositioned = false;
         }
         currentHelperParentNode = determinedTargetParent;
-
-        helperContainer.style.setProperty('display', 'flex', 'important');
-        helperContainer.style.setProperty('position', 'fixed', 'important'); 
-        helperContainer.style.setProperty('z-index', '2147483647', 'important');
         
-        updateHelperBaseStyles(); 
+        updateHelperBaseStyles();
 
-        if (!isManuallyPositioned || forcePositionRecalculation) {
-            if (useDefaultPositioning) { 
+        if (useDefaultPositioning) {
+            if (!isManuallyPositioned) {
                 if (isHelperWindowMaximized) {
-                    helperContainer.style.top = maximizedHelperState.top;
-                    helperContainer.style.left = maximizedHelperState.left;
-                    helperContainer.style.bottom = 'auto';
-                    helperContainer.style.right = 'auto';
+                    Object.assign(helperContainer.style, { top: maximizedHelperState.top, left: maximizedHelperState.left, bottom: 'auto', right: 'auto' });
                 } else {
-                    helperContainer.style.bottom = defaultHelperState.bottom;
-                    helperContainer.style.right = defaultHelperState.right;
-                    helperContainer.style.top = 'auto'; 
-                    helperContainer.style.left = 'auto';
-                }
-            } else { 
-                // Для Всеосвіти, коли "вшито", прив'язуємо до правого нижнього кута
-                // батьківського елемента (.full-screen-container)
-                helperContainer.style.bottom = '10px'; 
-                helperContainer.style.right = '10px';
-                helperContainer.style.top = 'auto'; 
-                helperContainer.style.left = 'auto'; 
-                
-                if (!isHelperWindowMaximized) { 
-                     helperContainer.style.width = defaultHelperState.width; 
-                     helperContainer.style.maxHeight = defaultHelperState.maxHeight;
+                    Object.assign(helperContainer.style, { top: 'auto', left: 'auto', bottom: defaultHelperState.bottom, right: defaultHelperState.right });
                 }
             }
-            if (forcePositionRecalculation && !isDragging) isManuallyPositioned = false;
+        } else {
+            Object.assign(helperContainer.style, { top: 'auto', left: 'auto', bottom: '10px', right: '10px' });
+            isManuallyPositioned = false;
         }
-        isExtensionModifyingDOM = false;
-    }
-
-    function attachDragLogic() {
-        if (!dragHeader || !helperContainer) return;
         
-        dragHeader.onmousedown = null; 
-        document.onmousemove = null; 
-        document.onmouseup = null;
-        dragHeader.ontouchstart = null;
-        document.ontouchmove = null;
-        document.ontouchend = null;
-
-        dragHeader.onmousedown = function(event) {
-            if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
-            isDragging = true;
-            isManuallyPositioned = true; 
-            const rect = helperContainer.getBoundingClientRect();
-            dragOffsetX = event.clientX - rect.left;
-            dragOffsetY = event.clientY - rect.top;
-            document.body.style.userSelect = 'none';
-        };
-        document.onmousemove = function(event) {
-            if (isDragging) {
-                let newTop = event.clientY - dragOffsetY;
-                let newLeft = event.clientX - dragOffsetX;
-                helperContainer.style.top = newTop + 'px';
-                helperContainer.style.left = newLeft + 'px';
-                helperContainer.style.right = 'auto';
-                helperContainer.style.bottom = 'auto';
-            }
-        };
-        document.onmouseup = function() {
-            if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
-        };
-        dragHeader.ontouchstart = function(event) {
-            if (event.target.tagName === 'BUTTON' || (event.target.parentElement && event.target.parentElement.tagName === 'BUTTON')) return;
-            isDragging = true;
-            isManuallyPositioned = true; 
-            const touch = event.touches[0];
-            const rect = helperContainer.getBoundingClientRect();
-            dragOffsetX = touch.clientX - rect.left;
-            dragOffsetY = touch.clientY - rect.top;
-            document.body.style.userSelect = 'none';
-            event.preventDefault();
-        };
-        document.ontouchmove = function(event) {
-            if (isDragging) {
-                const touch = event.touches[0];
-                let newTop = touch.clientY - dragOffsetY;
-                let newLeft = touch.clientX - dragOffsetX;
-                helperContainer.style.top = newTop + 'px';
-                helperContainer.style.left = newLeft + 'px';
-                helperContainer.style.right = 'auto';
-                helperContainer.style.bottom = 'auto';
-            }
-        };
-        document.ontouchend = function() {
-            if (isDragging) { isDragging = false; document.body.style.userSelect = ''; }
-        };
+        isExtensionModifyingDOM = false;
     }
 
     function attachHelperEventListeners() {
@@ -394,21 +379,13 @@
         copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
         showRequestBtn = helperContainer.querySelector('#show-request-btn');
         refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
-        dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
 
-        if (!resizeHelperBtn || !dragHeader) return; 
-
-        resizeHelperBtn.onclick = null;
-        copyAnswerBtn.onclick = null;
-        showRequestBtn.onclick = null;
-        refreshAnswerBtn.onclick = null;
-
-        attachDragLogic(); 
+        if (!resizeHelperBtn) return;
 
         resizeHelperBtn.onclick = () => {
             isHelperWindowMaximized = !isHelperWindowMaximized;
             isManuallyPositioned = false; 
-            attachAndPositionHelper(true); 
+            attachAndPositionHelper(); 
             resizeHelperBtn.textContent = isHelperWindowMaximized ? '➖' : '➕';
         };
         copyAnswerBtn.onclick = async () => {
@@ -690,8 +667,7 @@
             }
             if (!helperContainer) createUI();
 
-
-            attachAndPositionHelper(isNavigationEvent); 
+            attachAndPositionHelper(); 
 
             let siteProcessed = false;
             if (location.hostname.includes('docs.google.com')) {
@@ -1043,11 +1019,9 @@
 
                 if (!triggerHandlePageChange) {
                     for (const mutation of mutationsList) {
-                        // Ігноруємо мутації, якщо їх ціль - наш хелпер або його нащадки
                         if (helperContainer && (mutation.target === helperContainer || helperContainer.contains(mutation.target))) {
                             continue;
                         }
-                        // Ігноруємо мутації, якщо наш хелпер додається або видаляється
                         if (helperContainer && 
                             ( (mutation.addedNodes && Array.from(mutation.addedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer)))) ||
                               (mutation.removedNodes && Array.from(mutation.removedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer))))
@@ -1074,72 +1048,35 @@
         if (isExtensionModifyingDOM && !forceRecreateDOM) return;
         isExtensionModifyingDOM = true;
 
+        Draggable.destroy();
+
         if (!helperContainer || forceRecreateDOM) {
             const existingHelper = document.querySelector('.ollama-helper-container');
-            if (existingHelper) {
-                const oldDragHeader = existingHelper.querySelector('#ollama-helper-drag-header');
-                if (oldDragHeader) {
-                    oldDragHeader.onmousedown = null;
-                    oldDragHeader.ontouchstart = null;
-                    document.onmousemove = null; // Очищаємо глобальні обробники
-                    document.onmouseup = null;
-                    document.ontouchmove = null;
-                    document.ontouchend = null;
-                }
-                existingHelper.remove();
-            }
+            if (existingHelper) existingHelper.remove();
             helperContainer = null; 
             createUI(); 
         } else {
-             answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
-             dragHeader = helperContainer.querySelector('#ollama-helper-drag-header');
-             resizeHelperBtn = helperContainer.querySelector('#resize-helper-btn');
-             copyAnswerBtn = helperContainer.querySelector('#copy-answer-btn');
-             showRequestBtn = helperContainer.querySelector('#show-request-btn');
-             refreshAnswerBtn = helperContainer.querySelector('#refresh-answer-btn');
              attachHelperEventListeners();
              updateHelperBaseStyles();
         }
         
+        Draggable.init(helperContainer, dragHeader, () => {
+            isManuallyPositioned = true;
+        });
+
         initializeObserver(); 
-        attachAndPositionHelper(true); 
+        attachAndPositionHelper(); 
         handlePageContentChange(true); 
         isExtensionModifyingDOM = false;
     }
     
     function handleFullscreenChange() {
-        if (isExtensionModifyingDOM) return;
-
-        if (document.fullscreenElement) {
-            if (helperContainer) { 
-                 if (!document.body.contains(helperContainer) && 
-                     document.fullscreenElement !== helperContainer && 
-                     document.fullscreenElement !== document.documentElement) {
-                    try { document.body.appendChild(helperContainer); } catch (e) { /* ігноруємо */ }
-                } else if (document.fullscreenElement === document.documentElement && 
-                           !document.body.contains(helperContainer)){
-                     try { document.body.appendChild(helperContainer); } catch (e) { /* ігноруємо */ }
-                }
-                helperContainer.style.setProperty('display', 'flex', 'important');
-                helperContainer.style.setProperty('z-index', '2147483647', 'important');
-            }
-        } else {
-            reinitializeExtensionUI(true); 
-        }
+        reinitializeExtensionUI(true);
     }
 
     document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            if (observerDebounceTimeout) {
-                clearTimeout(observerDebounceTimeout); 
-            }
-        } else {
-            // При поверненні на вкладку, перевіряємо, чи є хелпер і чи він у правильному місці
-            if (helperContainer && document.body.contains(helperContainer)) {
-                 handlePageContentChange(true); 
-            } else { 
-                reinitializeExtensionUI(true);
-            }
+        if (document.visibilityState === 'visible') {
+            reinitializeExtensionUI(true);
         }
     });
 
