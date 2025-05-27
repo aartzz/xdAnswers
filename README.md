@@ -42,6 +42,8 @@ Under the **Assets** section of the latest release, download the appropriate fil
 
 > [!WARNING]  
 > For mobile, you need install [Firefox Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
+>
+> For desktop, you need install [ESR](https://www.mozilla.org/firefox/organizations) or [Dev edition](https://www.mozilla.org/firefox/developer) or [Nightly](https://nightly.mozilla.org)
 
 1.  Open your new developer version of Firefox.
 2.  In the address bar, type `about:config` and press Enter.
