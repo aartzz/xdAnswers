@@ -29,15 +29,6 @@ Under the **Assets** section of the latest release, download the appropriate fil
 
 **Step 3: Install the File in Your Browser**
 
-#### 🥝 Kiwi Browser (Android)
-
-1.  Download the `...chrome...zip` file directly to your phone.
-2.  Open Kiwi Browser, tap the three-dot menu, and select **Extensions**.
-3.  Enable **Developer mode** using the toggle switch.
-4.  Tap the **`+ (from .zip / .crx / .user.js)`** button.
-5.  Using your phone's file manager, select the `.zip` file you just downloaded.
-6.  Done! The extension is installed and ready to use.
-
 #### 🖥️ Google Chrome (Desktop)
 
 1.  Download the `...chrome...zip` file and **unzip it** into a new folder.
@@ -47,12 +38,17 @@ Under the **Assets** section of the latest release, download the appropriate fil
 5.  In the file selection window, choose the **folder you just unzipped**.
 6.  Done! The extension's icon will appear in your toolbar.
 
-#### 🦊 Mozilla Firefox (Desktop)
+#### 🦊 Mozilla Firefox (Mobile & Desktop)
 
-1.  Download the `...firefox...xpi` file.
-2.  Open Firefox. The easiest way to install is to **drag and drop** the downloaded `.xpi` file directly onto any Firefox window.
-3.  A prompt will appear asking for confirmation. Click **Add**.
-4.  Done! The extension is now permanently installed.
+> [!WARNING]  
+> For mobile, you need install [Firefox Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
+
+1.  Open your new developer version of Firefox.
+2.  In the address bar, type `about:config` and press Enter.
+3.  A warning page may appear. Click "Accept the Risk and Continue".
+4.  In the search bar at the top of the page, type `xpinstall.signatures.required`.
+5.  You will see the preference listed. Double-click on it to change its value from `true` to **`false`**.
+6.  Now, you can install the add-on permanently. Download the `...firefox...xpi` file from the latest release and simply **drag and drop** it onto any Firefox window. It will install without any verification errors and will remain active after you restart the browser.
 
 ---
 
