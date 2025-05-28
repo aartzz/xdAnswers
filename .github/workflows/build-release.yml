@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        # Завантажуємо всю історію, щоб отримати доступ до всіх тегів та комітів
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -43,8 +46,26 @@ jobs:
           cd chrome_package
           zip -r ../chrome-extension.zip .
           cd ..
-      
-      # КРОК 1: Створюємо сам реліз на GitHub
+
+      # КРОК 1: Генеруємо опис для релізу на основі історії комітів
+      - name: Generate Release Body
+        id: generate_release_body
+        run: |
+          # Отримуємо попередній тег. Якщо його немає, беремо перший коміт в історії.
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 "tags/${{ github.ref_name }}~1" 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          echo "Previous tag: $PREVIOUS_TAG"
+          
+          # Створюємо список комітів у потрібному форматі: "* назва (id)"
+          CHANGELOG=$(git log $PREVIOUS_TAG...${{ github.ref_name }} --pretty=format:'* %s (%h)')
+          
+          # Це спеціальний трюк для передачі багаторядкового тексту між кроками
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+          
+          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+
+      # КРОК 2: Створюємо сам реліз на GitHub
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -53,6 +74,7 @@ jobs:
         with:
           tag_name: ${{ github.ref }} # Використовуємо тег, що запустив workflow
           release_name: Release ${{ github.ref_name }} # Назва релізу, напр. "Release v1.0.1"
+          body: ${{ steps.generate_release_body.outputs.changelog }} # Використовуємо згенерований список комітів
           draft: false # Якщо true, реліз буде чернеткою
           prerelease: false # Якщо true, реліз буде позначено як "pre-release"
 
@@ -73,7 +95,7 @@ jobs:
           echo "Found artifact: $firefox_artifact_path"
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
 
-      # КРОК 2: Завантажуємо артефакт для Firefox у щойно створений реліз
+      # КРОК 3: Завантажуємо артефакт для Firefox у щойно створений реліз
       - name: Upload Firefox Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
@@ -84,7 +106,7 @@ jobs:
           asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
           asset_content_type: application/x-xpinstall
 
-      # КРОК 3: Завантажуємо артефакт для Chrome у той самий реліз
+      # КРОК 4: Завантажуємо артефакт для Chrome у той самий реліз
       - name: Upload Chrome Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
