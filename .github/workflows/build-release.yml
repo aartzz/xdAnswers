@@ -1,4 +1,3 @@
-# Назва нашого workflow
 name: Create Release and Upload Assets
 
 # Умова запуску: workflow активується при створенні нового тегу, що починається з "v"
