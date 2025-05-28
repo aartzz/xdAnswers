@@ -5,8 +5,8 @@
     "description": "A script that helps in tests by providing AI-powered answers.",
     "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation"],
     "host_permissions": [
-      "*://naurok.com.ua/test/testing/*",
-      "*://naurok.ua/test/testing/*",
+      "*://*.naurok.com.ua/*",
+      "*://*.naurok.ua/*",
       "http://localhost/*",
       "https://api.openai.com/*",
       "https://generativelanguage.googleapis.com/*",
