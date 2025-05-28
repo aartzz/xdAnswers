@@ -58,12 +58,12 @@ jobs:
           # Створюємо список комітів у потрібному форматі: "* назва (id)"
           CHANGELOG=$(git log $PREVIOUS_TAG...${{ github.ref_name }} --pretty=format:'* %s (%h)')
           
-          # Це спеціальний трюк для передачі багаторядкового тексту між кроками
-          CHANGELOG="${CHANGELOG//'%'/'%25'}"
-          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
-          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
-          
-          echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT
+          # Офіційний спосіб передачі багаторядкового тексту в GitHub Actions
+          {
+            echo 'changelog<<EOF'
+            echo "$CHANGELOG"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       # КРОК 2: Створюємо сам реліз на GitHub
       - name: Create Release
