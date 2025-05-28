@@ -78,51 +78,90 @@
         function createDraggable(container, handle, onDragStartCallback) {
             let isDragging = false;
             let startX, startY, initialTop, initialLeft;
-            const onMouseDown = (e) => {
+
+            // Уніфікована функція для отримання координат з подій миші та дотику
+            const getCoords = (e) => {
+                if (e.touches && e.touches.length) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            };
+
+            const onDragStart = (e) => {
+                // Ігнорувати, якщо клік був на кнопці
                 if (e.target.tagName === 'BUTTON' || (e.target.parentElement && e.target.parentElement.tagName === 'BUTTON')) {
                     return;
                 }
-                e.preventDefault();
+                // Для сенсорних подій зупиняємо стандартну поведінку (прокручування сторінки)
+                if (e.type === 'touchstart') {
+                    e.preventDefault();
+                }
+
                 isDragging = true;
                 if (onDragStartCallback) {
                     onDragStartCallback();
                 }
+
+                const coords = getCoords(e);
                 const rect = container.getBoundingClientRect();
                 initialTop = rect.top;
                 initialLeft = rect.left;
-                startX = e.clientX;
-                startY = e.clientY;
+                startX = coords.x;
+                startY = coords.y;
+
                 container.style.top = `${initialTop}px`;
                 container.style.left = `${initialLeft}px`;
                 container.style.right = 'auto';
                 container.style.bottom = 'auto';
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp, { once: true });
+
+                // Додаємо обробники для руху
+                document.addEventListener('mousemove', onDragMove);
+                document.addEventListener('touchmove', onDragMove, { passive: false });
+
+                // Додаємо обробники для завершення перетягування
+                document.addEventListener('mouseup', onDragEnd, { once: true });
+                document.addEventListener('touchend', onDragEnd, { once: true });
             };
-            const onMouseMove = (e) => {
+
+            const onDragMove = (e) => {
                 if (!isDragging) return;
-                e.preventDefault();
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
+                e.preventDefault(); // Запобігаємо прокручуванню під час перетягування
+
+                const coords = getCoords(e);
+                const dx = coords.x - startX;
+                const dy = coords.y - startY;
                 container.style.transform = `translate(${dx}px, ${dy}px)`;
             };
-            const onMouseUp = () => {
+
+            const onDragEnd = () => {
                 if (!isDragging) return;
                 isDragging = false;
-                document.removeEventListener('mousemove', onMouseMove);
+                // Прибираємо обробники
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('touchmove', onDragMove);
+
                 const currentTransform = new DOMMatrix(getComputedStyle(container).transform);
                 const finalTop = initialTop + currentTransform.m42;
                 const finalLeft = initialLeft + currentTransform.m41;
+
                 container.style.transform = '';
                 container.style.top = `${finalTop}px`;
                 container.style.left = `${finalLeft}px`;
             };
+
             const destroy = () => {
-                handle.removeEventListener('mousedown', onMouseDown);
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
+                handle.removeEventListener('mousedown', onDragStart);
+                handle.removeEventListener('touchstart', onDragStart);
+                document.removeEventListener('mousemove', onDragMove);
+                document.removeEventListener('touchmove', onDragMove);
+                document.removeEventListener('mouseup', onDragEnd);
+                document.removeEventListener('touchend', onDragEnd);
             };
-            handle.addEventListener('mousedown', onMouseDown);
+
+            // Додаємо обробники для початку перетягування
+            handle.addEventListener('mousedown', onDragStart);
+            handle.addEventListener('touchstart', onDragStart, { passive: false });
+
             return { destroy };
         }
         return {
