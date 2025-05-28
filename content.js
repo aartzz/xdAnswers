@@ -580,7 +580,7 @@
         }, isNavigationEvent ? 100 : 500); 
     }
 
-    async function processNaurokQuestion() { 
+    async function processNaurokQuestion() {
         if (isExtensionModifyingDOM || isProcessingAI) return;
         if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
         if (!answerContentDiv) return;
@@ -598,11 +598,25 @@
         isExtensionModifyingDOM = true; isProcessingAI = true; lastProcessedNaurokText = currentText;
         answerContentDiv.innerHTML = '<div class="loader"></div>';
 
+        // Явно ініціалізуємо всі дані для нового питання, щоб запобігти витоку даних
+        const questionData = {
+            text: currentText,
+            optionsText: '',
+            base64Images: [],
+            isMultiQuiz: false,
+            questionType: "radio" // Тип за замовчуванням
+        };
+        // Локальний масив для збору URL-адрес перед конвертацією
+        let allImageUrls = []; 
+
         const mainImageElement = document.querySelector('.test-content-image img');
-        const isMultiQuiz = document.querySelector(".question-option-inner-multiple") !== null ||
+        questionData.isMultiQuiz = document.querySelector(".question-option-inner-multiple") !== null ||
             document.querySelector("div[ng-if*='multiquiz']") !== null;
+        if (questionData.isMultiQuiz) {
+            questionData.questionType = "checkbox";
+        }
+
         const optionElements = document.querySelectorAll('.test-option');
-        let allImageUrls = [];
         if (mainImageElement && mainImageElement.src) {
             console.log('[xdAnswers Debug] Naurok: Found main image:', mainImageElement.src);
             allImageUrls.push(mainImageElement.src);
@@ -624,18 +638,16 @@
             }
         });
         console.log('[xdAnswers Debug] Naurok: Total images found:', allImageUrls.length);
-        const optionsText = optionLabels.join('\n');
+        
+        questionData.optionsText = optionLabels.join('\n');
+
         const imagePromises = allImageUrls.map(url => imageToBase64(url));
         try {
-            const base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
-            console.log('[xdAnswers Debug] Naurok: Successfully converted', base64Images.length, 'images to Base64.');
-            const questionData = {
-                text: currentText,
-                optionsText: optionsText,
-                base64Images: base64Images,
-                isMultiQuiz: isMultiQuiz,
-                questionType: isMultiQuiz ? "checkbox" : "radio"
-            };
+            // Конвертовані зображення присвоюємо напряму в questionData
+            questionData.base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
+            console.log('[xdAnswers Debug] Naurok: Successfully converted', questionData.base64Images.length, 'images to Base64.');
+            
+            // Викликаємо getAnswer з уже готовим об'єктом questionData
             const answer = await getAnswer(questionData);
             answerContentDiv.innerHTML = formatAIResponse(answer);
         } catch (err) {
@@ -646,7 +658,7 @@
             if(!document.fullscreenElement) attachAndPositionHelper();
         }
     }
-
+    
     async function processGFormQuestionsSequentially() { 
         if (isExtensionModifyingDOM || isProcessingAI) return;
         if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
