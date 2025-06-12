@@ -25,8 +25,8 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        # Використовуємо npm ci для швидшої та надійнішої установки в CI
-        run: npm ci
+        # Використовуємо npm install, оскільки немає package-lock.json
+        run: npm install
 
       - name: Build extensions for Firefox and Chrome
         # Тепер ми просто запускаємо npm-скрипти, які роблять всю роботу
