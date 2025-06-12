@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "xdAnswers",
-  "version": "4.6",
+  "version": "4.10.4",
   "description": "A script that helps in tests by providing AI-powered answers.",
   "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation"],
   "host_permissions": [
@@ -16,8 +16,19 @@
     "*://vseosvita.ua/*",
     "*://*.digitaloceanspaces.com/*"
   ],
-  "background": {
-    "service_worker": "background.js"
+  "action": {
+    "default_title": "xdAnswers Settings",
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
   },
   "content_scripts": [
     {
@@ -35,19 +46,5 @@
       "run_at": "document_end",
       "all_frames": true
     }
-  ],
-  "action": {
-    "default_title": "xdAnswers Settings",
-    "default_icon": {
-      "16": "images/icon16.png",
-      "48": "images/icon48.png",
-      "128": "images/icon128.png"
-    },
-    "default_popup": "popup.html"
-  },
-  "icons": {
-    "16": "images/icon16.png",
-    "48": "images/icon48.png",
-    "128": "images/icon128.png"
-  }
+  ]
 }

@@ -27,3 +27,5 @@ Desktop.ini
 *.njsproj
 *.sln
 *.swp
+/manifest.json
+/dist_chrome

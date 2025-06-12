@@ -1,14 +1,19 @@
 {
     "name": "xdanswers-extension",
-    "version": "4.10.3",
+    "version": "4.10.4",
     "private": true,
     "description": "A script that helps in tests by providing AI-powered answers.",
     "scripts": {
-      "build:firefox": "web-ext build --source-dir . --artifacts-dir ./build --overwrite-dest --ignore-files \"node_modules/\" \".git/\" \".github/\" \"scripts/\" \"build/\" \"package.json\" \"package-lock.json\" \"README.md\" \"*.zip\" \"*.xpi\" \".web-ext-config.js\"",
-      "build:chrome": "cd ./build && zip -r ../xdAnswers-chrome.zip .",
-      "version": "node scripts/sync-version.js && git add manifest.json"
+      "prebuild:firefox": "node scripts/build-manifest.js firefox",
+      "build:firefox": "npm run prebuild:firefox && web-ext build --source-dir . --artifacts-dir ./build --overwrite-dest",
+      "prebuild:chrome": "node scripts/build-manifest.js chrome && mkdir -p ./dist_chrome",
+      "build:chrome": "npm run prebuild:chrome && cpr . ./dist_chrome -o && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip .",
+      "postbuild:chrome": "rm -rf ./dist_chrome",
+      "clean": "rm -f manifest.json",
+      "version": "node scripts/sync-version.js && git add manifest.common.json"
     },
     "devDependencies": {
-      "web-ext": "^7.11.0"
+      "web-ext": "^7.11.0",
+      "cpr": "^3.0.1"
     }
-  }
+}

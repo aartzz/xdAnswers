@@ -25,27 +25,15 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        # Використовуємо npm ci для швидшої та надійнішої установки в CI
+        run: npm ci
 
-      - name: Build for Firefox
+      - name: Build extensions for Firefox and Chrome
+        # Тепер ми просто запускаємо npm-скрипти, які роблять всю роботу
         run: |
-          cp manifest.firefox.json manifest.json
-          npm run build:firefox # Команда має створювати архів у папці ./build
-
-      - name: Package for Chrome
-        run: |
-          mkdir chrome_package
-          cp manifest.chrome.json chrome_package/manifest.json
-          cp background.js chrome_package/
-          cp content.js chrome_package/
-          cp popup.html chrome_package/
-          cp popup.js chrome_package/
-          cp popup.css chrome_package/
-          cp -r images chrome_package/
-          cd chrome_package
-          zip -r ../chrome-extension.zip .
-          cd ..
-
+          npm run build:firefox
+          npm run build:chrome
+        
       # КРОК 1: Генеруємо опис для релізу на основі історії комітів
       - name: Generate Release Body
         id: generate_release_body
@@ -81,17 +69,13 @@ jobs:
       - name: Get Firefox artifact path
         id: get_firefox_path
         run: |
-          firefox_artifact_path=$(find build -maxdepth 1 \( -name "*.zip" -o -name "*.xpi" \) | head -n 1)
-          
+          # web-ext створює архів у папці build, знаходимо його
+          firefox_artifact_path=$(find build -name "*.zip" -o -name "*.xpi" | head -n 1)
           if [ -z "$firefox_artifact_path" ]; then
             echo "::error::Firefox artifact (.zip or .xpi) not found in build/ directory."
-            echo "--- Directory contents for debugging ---"
-            ls -R
-            echo "----------------------------------------"
             exit 1
           fi
-          
-          echo "Found artifact: $firefox_artifact_path"
+          echo "Found Firefox artifact: $firefox_artifact_path"
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
 
       # КРОК 3: Завантажуємо артефакт для Firefox у щойно створений реліз
@@ -100,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для завантаження, отриманий з кроку "Create Release"
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для завантаження
           asset_path: ${{ steps.get_firefox_path.outputs.path }}
           asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
           asset_content_type: application/x-xpinstall
@@ -112,6 +96,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # Використовуємо той самий URL
-          asset_path: ./chrome-extension.zip
+          # Шлях до архіву тепер фіксований завдяки нашому npm-скрипту
+          asset_path: ./build/xdAnswers-chrome.zip
           asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
           asset_content_type: application/zip
