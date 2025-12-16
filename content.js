@@ -17,6 +17,10 @@
         }
     };
 
+    // --- Cache for JustClass API Answers ---
+    let justClassApiCache = null;
+    let justClassHash = null;
+
     async function loadSettings() {
         const data = await chrome.storage.local.get('xdAnswers_settings');
         let loadedSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -79,7 +83,6 @@
             let isDragging = false;
             let startX, startY, initialTop, initialLeft;
 
-            // Уніфікована функція для отримання координат з подій миші та дотику
             const getCoords = (e) => {
                 if (e.touches && e.touches.length) {
                     return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -88,11 +91,9 @@
             };
 
             const onDragStart = (e) => {
-                // Ігнорувати, якщо клік був на кнопці
                 if (e.target.tagName === 'BUTTON' || (e.target.parentElement && e.target.parentElement.tagName === 'BUTTON')) {
                     return;
                 }
-                // Для сенсорних подій зупиняємо стандартну поведінку (прокручування сторінки)
                 if (e.type === 'touchstart') {
                     e.preventDefault();
                 }
@@ -114,18 +115,15 @@
                 container.style.right = 'auto';
                 container.style.bottom = 'auto';
 
-                // Додаємо обробники для руху
                 document.addEventListener('mousemove', onDragMove);
                 document.addEventListener('touchmove', onDragMove, { passive: false });
-
-                // Додаємо обробники для завершення перетягування
                 document.addEventListener('mouseup', onDragEnd, { once: true });
                 document.addEventListener('touchend', onDragEnd, { once: true });
             };
 
             const onDragMove = (e) => {
                 if (!isDragging) return;
-                e.preventDefault(); // Запобігаємо прокручуванню під час перетягування
+                e.preventDefault();
 
                 const coords = getCoords(e);
                 const dx = coords.x - startX;
@@ -136,7 +134,6 @@
             const onDragEnd = () => {
                 if (!isDragging) return;
                 isDragging = false;
-                // Прибираємо обробники
                 document.removeEventListener('mousemove', onDragMove);
                 document.removeEventListener('touchmove', onDragMove);
 
@@ -158,7 +155,6 @@
                 document.removeEventListener('touchend', onDragEnd);
             };
 
-            // Додаємо обробники для початку перетягування
             handle.addEventListener('mousedown', onDragStart);
             handle.addEventListener('touchstart', onDragStart, { passive: false });
 
@@ -171,7 +167,7 @@
     })();
 
     let isProcessingAI = false;
-    let lastProcessedNaurokText = '';
+    let lastProcessedNaurokText = ''; 
     let processedGFormQuestionIds = new Set();
     let lastRequestBody = null;
     let observerDebounceTimeout = null;
@@ -268,19 +264,20 @@
         isExtensionModifyingDOM = true;
         if (!helperContainer) createUI();
         helperContainer.style.transform = '';
-        let determinedTargetParent = document.body, useDefaultPositioning = true;
+        
+        let determinedTargetParent = document.body;
+        let useDefaultPositioning = true;
+
         if (location.hostname.includes('vseosvita.ua') && (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
             const vseosvitaFullScreenContainer = document.querySelector('.full-screen-container');
             if (vseosvitaFullScreenContainer && document.body.contains(vseosvitaFullScreenContainer)) {
                 determinedTargetParent = vseosvitaFullScreenContainer; useDefaultPositioning = false;
             } else {
-                 determinedTargetParent = document.body; useDefaultPositioning = true;
                  if (currentHelperParentNode !== document.body) isManuallyPositioned = false;
             }
-        } else {
-            determinedTargetParent = document.body; useDefaultPositioning = true;
-            if (currentHelperParentNode !== document.body) isManuallyPositioned = false;
         }
+        
+        // Force attach to body if not already there
         if (!helperContainer.parentNode || helperContainer.parentNode !== determinedTargetParent) {
             if (helperContainer.parentNode) helperContainer.parentNode.removeChild(helperContainer);
             determinedTargetParent.appendChild(helperContainer);
@@ -288,6 +285,7 @@
         }
         currentHelperParentNode = determinedTargetParent;
         updateHelperBaseStyles();
+
         if (useDefaultPositioning) {
             if (!isManuallyPositioned) {
                 Object.assign(helperContainer.style, isHelperWindowMaximized ? 
@@ -295,8 +293,9 @@
                     { top: 'auto', left: 'auto', bottom: defaultHelperState.bottom, right: defaultHelperState.right });
             }
         } else {
-            Object.assign(helperContainer.style, { top: 'auto', left: 'auto', bottom: '10px', right: '10px' });
-            isManuallyPositioned = false;
+            if (!isManuallyPositioned) {
+                Object.assign(helperContainer.style, { top: 'auto', left: 'auto', bottom: '10px', right: '10px' });
+            }
         }
         isExtensionModifyingDOM = false;
     }
@@ -308,6 +307,11 @@
         let showReqBtn = helperContainer.querySelector('#show-request-btn');
         let refreshAnsBtn = helperContainer.querySelector('#refresh-answer-btn');
         if (!resizeBtn) return;
+        
+        Draggable.init(helperContainer, dragHeader, () => {
+             isManuallyPositioned = true;
+        });
+
         resizeBtn.onclick = () => {
             isHelperWindowMaximized = !isHelperWindowMaximized; isManuallyPositioned = false; 
             attachAndPositionHelper(); resizeBtn.textContent = isHelperWindowMaximized ? '➖' : '➕';
@@ -371,35 +375,16 @@
     });
 
     async function imageToBase64(url) {
-        console.log('[xdAnswers Debug] imageToBase64: Attempting for URL:', url);
         try {
-            const response = await makeRequest({
-                method: 'GET',
-                url: url,
-                responseType: 'blob'
-            });
-            console.log('[xdAnswers Debug] imageToBase64: Response from makeRequest for URL', url, response); 
-
+            const response = await makeRequest({ method: 'GET', url: url, responseType: 'blob' });
             if (response && response.success && response.data) {
                 if (typeof response.data === 'string' && response.data.startsWith('data:')) {
                     const base64Part = response.data.split(',', 2)[1];
-                    if (base64Part) {
-                        console.log('[xdAnswers Debug] imageToBase64: Conversion SUCCESS for URL:', url, '(Base64 part length:', base64Part.length, ')');
-                        return base64Part;
-                    } else {
-                        console.warn('[xdAnswers Debug] imageToBase64: Base64 part is empty after split for URL:', url, 'Data received:', response.data.substring(0, 100) + "...");
-                        return null;
-                    }
-                } else {
-                     console.warn('[xdAnswers Debug] imageToBase64: response.data is not a valid Data URL string for URL:', url, 'Received data type:', typeof response.data, 'Data preview:', String(response.data).substring(0,100)+"...");
-                    return null;
+                    return base64Part || null;
                 }
-            } else {
-                console.warn('[xdAnswers Debug] imageToBase64: makeRequest was not successful or no data for URL:', url, 'Response success:', response ? response.success : 'no response', 'Response data:', response ? response.data : 'no response');
-                return null;
             }
+            return null;
         } catch (error) {
-            console.error('[xdAnswers Debug] imageToBase64: CRITICAL ERROR converting image to Base64 for URL:', url, error);
             return null;
         }
     }
@@ -413,20 +398,15 @@
             const listItemMatch = line.match(/^[\*\-]\s+(.*)/);
             if (listItemMatch) {
                 if (!inList) { htmlOutput += '<ul>'; inList = true; }
-                let itemContent = listItemMatch[1].trim();
-                itemContent = itemContent
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') 
-                    .replace(/__(.*?)__/g, '<b>$1</b>')   
-                    .replace(/\*(.*?)\*/g, '<i>$1</i>')     
-                    .replace(/_(.*?)_/g, '<i>$1</i>');
+                let itemContent = listItemMatch[1].trim()
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/__(.*?)__/g, '<b>$1</b>')
+                    .replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/_(.*?)_/g, '<i>$1</i>');
                 htmlOutput += `<li>${itemContent}</li>`;
             } else {
                 if (inList) { htmlOutput += '</ul>'; inList = false; }
                 let regularLine = line
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                    .replace(/__(.*?)__/g, '<b>$1</b>')
-                    .replace(/\*(.*?)\*/g, '<i>$1</i>')
-                    .replace(/_(.*?)_/g, '<i>$1</i>');
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/__(.*?)__/g, '<b>$1</b>')
+                    .replace(/\*(.*?)\*/g, '<i>$1</i>').replace(/_(.*?)_/g, '<i>$1</i>');
                 htmlOutput += regularLine + (i < lines.length - 1 && line.trim() !== '' ? '<br>' : '');
             }
         }
@@ -437,13 +417,14 @@
     async function getAnswer(questionData) {
         const service = settings.activeService;
         let responseText = "", instruction = questionData.customPromptPrefix || settings.promptPrefix;
-        console.log('[xdAnswers Debug] Preparing to get answer. Instruction:', instruction, 'Question Data:', questionData);
         
         if (!questionData.customPromptPrefix) {
             if (["short_text", "paragraph", "open_ended"].includes(questionData.questionType)) {
                 instruction = "Provide a detailed answer to the following open-ended question:";
             } else if (questionData.isMultiQuiz) {
                 instruction += `\nThis question may have MULTIPLE correct answers. List them.`;
+            } else if (questionData.questionType === 'matching') {
+                instruction += `\nThis is a matching task. Match items from Column A to Column B.`;
             }
         }
         try {
@@ -453,10 +434,8 @@
             else if (service === 'MistralAI') responseText = await getAnswerFromMistralAI(instruction, questionData.text, questionData.optionsText, questionData.base64Images);
             else responseText = 'Unknown service selected.';
         } catch (error) { 
-            console.error('[xdAnswers Debug] Error getting answer from AI service:', service, error);
-            responseText = `Service error ${service}. Check console for details. Error: ${error.message}`; 
+            responseText = `Service error ${service}. Error: ${error.message}`; 
         }
-        console.log('[xdAnswers Debug] Received response from AI:', responseText.substring(0,100) + "...");
         return responseText;
     }
 
@@ -465,14 +444,8 @@
         let prompt = `${instruction}\n\nQuestion: ${questionText}`;
         if (optionsText) prompt += `\n\nOptions:\n${optionsText}`;
         const requestBody = { model: settings.Ollama.model, prompt: prompt, stream: false };
-        if (base64Images && base64Images.length > 0) {
-            requestBody.images = base64Images;
-            console.log('[xdAnswers Debug] Ollama: Sending', base64Images.length, 'images.');
-        } else {
-            console.log('[xdAnswers Debug] Ollama: No images to send.');
-        }
+        if (base64Images && base64Images.length > 0) requestBody.images = base64Images;
         lastRequestBody = { ...requestBody };
-        console.log('[xdAnswers Debug] Ollama Request Body:', JSON.stringify(lastRequestBody, (key, value) => (key === 'images' && Array.isArray(value)) ? value.map(img => img.substring(0,30) + '...') : value, 2));
         try {
             const response = await makeRequest({ method: 'POST', url: `${settings.Ollama.host}/api/generate`, headers: { 'Content-Type': 'application/json' }, data: JSON.stringify(requestBody), timeout: 60000 });
             return JSON.parse(response.data).response.trim();
@@ -486,13 +459,9 @@
         const contentForUserMessage = [{ type: 'text', text: userTextContent }];
         if (base64Images && base64Images.length > 0) {
             base64Images.forEach(img_b64 => contentForUserMessage.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img_b64}` } }));
-            console.log('[xdAnswers Debug] OpenAI: Preparing', base64Images.length, 'images for request.');
-        } else {
-            console.log('[xdAnswers Debug] OpenAI: No images to send.');
         }
         const requestBody = { model: settings.OpenAI.model, messages: [{ role: 'system', content: systemInstruction }, { role: 'user', content: contentForUserMessage }], max_tokens: 500 };
         lastRequestBody = { messages: requestBody.messages };
-        console.log('[xdAnswers Debug] OpenAI Request Body:', JSON.stringify(lastRequestBody, (key, value) => (key === 'url' && typeof value === 'string' && value.startsWith('data:image')) ? value.substring(0,50) + '...' : value, 2));
         try {
             const response = await makeRequest({ method: 'POST', url: 'https://api.openai.com/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.OpenAI.apiKey}` }, data: JSON.stringify(requestBody), timeout: 60000 });
             return JSON.parse(response.data).choices[0].message.content.trim();
@@ -506,121 +475,184 @@
         const userParts = [{ text: userQueryText }];
         if (base64Images && base64Images.length > 0) {
             base64Images.forEach(img_b64 => userParts.push({ inline_data: { mime_type: 'image/jpeg', data: img_b64 } }));
-            console.log('[xdAnswers Debug] Gemini: Preparing', base64Images.length, 'images for request.');
-        } else {
-            console.log('[xdAnswers Debug] Gemini: No images to send.');
         }
-        const requestBody = {
-            contents: [{ role: "user", parts: userParts }],
-            systemInstruction: { parts: [{ text: systemInstructionText }] },
-            safetySettings: [
-                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-            ]
-        };
-        lastRequestBody = { contents: requestBody.contents, systemInstruction: requestBody.systemInstruction };
-        console.log('[xdAnswers Debug] Gemini Request Body:', JSON.stringify(lastRequestBody, (key, value) => (key === 'data' && typeof value === 'string') ? value.substring(0,30) + '...' : value, 2));
+        const requestBody = { contents: [{ role: "user", parts: userParts }], systemInstruction: { parts: [{ text: systemInstructionText }] }, safetySettings: [ { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" }, { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" } ] };
+        lastRequestBody = requestBody;
         try {
             const response = await makeRequest({ method: 'POST', url: `https://generativelanguage.googleapis.com/v1beta/models/${settings.Gemini.model}:generateContent?key=${settings.Gemini.apiKey}`, headers: { 'Content-Type': 'application/json' }, data: JSON.stringify(requestBody), timeout: 60000 });
-            const d = JSON.parse(response.data);
-            if (d.candidates && d.candidates[0].content && d.candidates[0].content.parts && d.candidates[0].content.parts[0]) return d.candidates[0].content.parts[0].text.trim();
-            if (d.promptFeedback && d.promptFeedback.blockReason) return `Request blocked by Gemini: ${d.promptFeedback.blockReason}`;
-            if (d.candidates && d.candidates[0].finishReason !== "STOP") return `Gemini finished with reason: ${d.candidates[0].finishReason}`;
-            if (!d.candidates || d.candidates.length === 0) return "Gemini provided no answer candidates.";
-            return "Unknown Gemini response.";
+            return JSON.parse(response.data).candidates[0].content.parts[0].text.trim();
         } catch (error) { return `Gemini API Error: ${error.message}`; }
     }
 
     async function getAnswerFromMistralAI(systemInstruction, questionText, optionsText, base64Images) {
-        if (!settings.MistralAI.apiKey || !settings.MistralAI.model) return "API Key or Model for Mistral AI not specified.";
+        if (!settings.MistralAI.apiKey || !settings.MistralAI.model) return "API Key or Model for MistralAI not specified.";
         let userTextContent = `Question: ${questionText}`;
         if (optionsText) userTextContent += `\n\nOptions:\n${optionsText}`;
         const contentForUserMessage = [{ type: 'text', text: userTextContent }];
         if (base64Images && base64Images.length > 0) {
             base64Images.forEach(img_b64 => contentForUserMessage.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${img_b64}` } }));
-            console.log('[xdAnswers Debug] MistralAI: Preparing', base64Images.length, 'images for request.');
-        } else {
-            console.log('[xdAnswers Debug] MistralAI: No images to send.');
         }
         const requestBody = { model: settings.MistralAI.model, messages: [{ role: 'system', content: systemInstruction }, { role: 'user', content: contentForUserMessage }], max_tokens: 500 };
         lastRequestBody = { messages: requestBody.messages };
-        console.log('[xdAnswers Debug] MistralAI Request Body:', JSON.stringify(lastRequestBody, (key, value) => (key === 'url' && typeof value === 'string' && value.startsWith('data:image')) ? value.substring(0,50) + '...' : value, 2));
         try {
             const response = await makeRequest({ method: 'POST', url: 'https://api.mistral.ai/v1/chat/completions', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${settings.MistralAI.apiKey}` }, data: JSON.stringify(requestBody), timeout: 60000 });
             return JSON.parse(response.data).choices[0].message.content.trim();
         } catch (error) { return `MistralAI API Error: ${error.message}`; }
     }
-    
+
     function forceProcessQuestion() {
         if (isExtensionModifyingDOM) return;
-        processedGFormQuestionIds.clear(); lastProcessedNaurokText = ''; lastProcessedVseosvitaKey = '';
+        processedGFormQuestionIds.clear();
+        lastProcessedNaurokText = '';
+        lastProcessedVseosvitaKey = '';
         if (answerContentDiv) answerContentDiv.innerHTML = 'Updating...';
-        else if (helperContainer) { 
-            const tempDiv = helperContainer.querySelector('#ollama-answer-content');
-            if (tempDiv) tempDiv.innerHTML = 'Updating...';
-        }
-        handlePageContentChange(true); 
+        handlePageContentChange(true);
     }
 
-    let isHandlePageContentRunning = false; 
+    // --- JustClass API Utils ---
+    
+    function cleanText(str) {
+        if (!str) return "";
+        // Remove HTML tags
+        let clean = str.replace(/<[^>]*>/g, ' ');
+        // Decode entities
+        const txt = document.createElement('textarea');
+        txt.innerHTML = clean;
+        clean = txt.value;
+        // Normalize spaces and lowercase
+        return clean.replace(/\s+/g, ' ').trim().toLowerCase();
+    }
+
+    async function fetchJustClassAPIData() {
+        const match = location.href.match(/hw\/([a-zA-Z0-9]+)/);
+        if (!match) return;
+        
+        const hash = match[1];
+        if (hash === justClassHash && justClassApiCache) return; 
+        
+        justClassHash = hash;
+        const apiUrl = `https://api.justschool.me/api/public/homework/by-hash/${hash}`;
+        
+        try {
+            const response = await makeRequest({ method: 'GET', url: apiUrl });
+            if (response && response.success) {
+                const data = JSON.parse(response.data);
+                justClassApiCache = parseJustClassData(data);
+            }
+        } catch (e) {
+            console.error("[xdAnswers] Failed to fetch JustClass API:", e);
+        }
+    }
+
+    function parseJustClassData(data) {
+        const cheatSheet = {};
+        if (!data || !data.sections) return cheatSheet;
+
+        data.sections.forEach(section => {
+            if (!section.trainings) return;
+            section.trainings.forEach(training => {
+                const locale = training.defaultLocale || 'uk';
+                const translation = training.translations && training.translations[locale];
+                if (!translation || !translation.payload) return;
+
+                // 1. Radio / Checkbox questions
+                if (training.type === 'radio-question' || training.type === 'checkbox-question') {
+                    if (translation.payload.questions) {
+                        translation.payload.questions.forEach(q => {
+                            const qText = cleanText(q.question);
+                            const correctAnswers = q.answers
+                                .filter(a => a.correct)
+                                .map(a => a.text.trim());
+                            
+                            if (correctAnswers.length > 0) {
+                                cheatSheet[qText] = {
+                                    type: 'simple',
+                                    answers: correctAnswers
+                                };
+                            }
+                        });
+                    }
+                }
+                
+                // 2. Matching questions (point-group)
+                if (training.type === 'point-group') {
+                    if (translation.payload.rows) {
+                        translation.payload.rows.forEach(row => {
+                            if (row.items && row.items.length === 2) {
+                                const item1 = row.items[0];
+                                const item2 = row.items[1];
+                                const text1 = cleanText(item1.text);
+                                const text2 = cleanText(item2.text);
+                                cheatSheet[text1] = { type: 'match_item', pair: item2.text };
+                                cheatSheet[text2] = { type: 'match_item', pair: item1.text };
+                            }
+                        });
+                    }
+                }
+            });
+        });
+        return cheatSheet;
+    }
+
     function handlePageContentChange(isNavigationEvent = false) {
         if (observerDebounceTimeout) clearTimeout(observerDebounceTimeout);
         observerDebounceTimeout = setTimeout(() => {
-            if (isExtensionModifyingDOM || isHandlePageContentRunning) return; 
-            isHandlePageContentRunning = true;
-            if (!document.body) { isHandlePageContentRunning = false; return; }
-            if (!helperContainer) createUI();
-            attachAndPositionHelper(); 
-            let siteProcessed = false;
-            if (location.hostname.includes('docs.google.com')) { processGFormQuestionsSequentially(); siteProcessed = true; }
-            else if (location.hostname.includes('naurok.com.ua') || location.hostname.includes('naurok.ua')) { processNaurokQuestion(); siteProcessed = true; }
-            else if (location.hostname.includes('vseosvita.ua') && (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) { processVseosvitaQuestion(); siteProcessed = true; }
-            if ((isNavigationEvent || !siteProcessed) && !document.fullscreenElement) attachAndPositionHelper();
-            isHandlePageContentRunning = false;
-        }, isNavigationEvent ? 100 : 500); 
+            if (isExtensionModifyingDOM) return;
+            
+            if (!document.fullscreenElement) {
+                if (location.hostname.includes('naurok') || 
+                    location.hostname.includes('docs.google.com') || 
+                    location.hostname.includes('vseosvita.ua') || 
+                    location.hostname.includes('justclass.com.ua')) {
+                    attachAndPositionHelper();
+                }
+            }
+
+            if (location.hostname.includes('naurok')) {
+                processNaurokQuestion();
+            } else if (location.hostname.includes('docs.google.com')) {
+                processGFormQuestionsSequentially();
+            } else if (location.hostname.includes('vseosvita.ua')) {
+                processVseosvitaQuestion();
+            } else if (location.hostname.includes('justclass.com.ua')) {
+                processJustClassQuestion();
+            }
+        }, 500);
     }
 
+    // ... (processNaurok, processGForm, processVseosvita remain the same) ...
     async function processNaurokQuestion() {
         if (isExtensionModifyingDOM || isProcessingAI) return;
         if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
         if (!answerContentDiv) return;
-        
-        const questionTextElement = document.querySelector('.test-content-text-inner');
-        if (!questionTextElement) {
-            if(!document.fullscreenElement) attachAndPositionHelper(); 
-            return;
-        }
-        const currentText = questionTextElement.innerText.trim();
-        if (currentText === lastProcessedNaurokText || currentText === '') {
-            if(helperContainer && getComputedStyle(helperContainer).display !== 'none' && !document.fullscreenElement) attachAndPositionHelper();
-            return;
-        }
-        isExtensionModifyingDOM = true; isProcessingAI = true; lastProcessedNaurokText = currentText;
+
+        const questionContent = document.querySelector('.test-content-text');
+        if (!questionContent) return;
+
+        const currentQuestionText = questionContent.innerText.trim();
+        if (currentQuestionText === lastProcessedNaurokText && currentQuestionText !== '') return;
+
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
+        lastProcessedNaurokText = currentQuestionText;
         answerContentDiv.innerHTML = '<div class="loader"></div>';
 
-        // Явно ініціалізуємо всі дані для нового питання, щоб запобігти витоку даних
-        const questionData = {
-            text: currentText,
-            optionsText: '',
-            base64Images: [],
+        let questionData = {
+            text: currentQuestionText,
+            optionsText: "",
+            questionType: "unknown",
             isMultiQuiz: false,
-            questionType: "radio" // Тип за замовчуванням
+            base64Images: [],
+            customPromptPrefix: null
         };
-        // Локальний масив для збору URL-адрес перед конвертацією
-        let allImageUrls = []; 
 
+        let allImageUrls = [];
         const mainImageElement = document.querySelector('.test-content-image img');
-        questionData.isMultiQuiz = document.querySelector(".question-option-inner-multiple") !== null ||
-            document.querySelector("div[ng-if*='multiquiz']") !== null;
-        if (questionData.isMultiQuiz) {
-            questionData.questionType = "checkbox";
-        }
+        questionData.isMultiQuiz = document.querySelector(".question-option-inner-multiple") !== null || document.querySelector("div[ng-if*='multiquiz']") !== null;
+        if (questionData.isMultiQuiz) { questionData.questionType = "checkbox"; }
 
         const optionElements = document.querySelectorAll('.test-option');
-        if (mainImageElement && mainImageElement.src) {
-            console.log('[xdAnswers Debug] Naurok: Found main image:', mainImageElement.src);
-            allImageUrls.push(mainImageElement.src);
-        }
+        if (mainImageElement && mainImageElement.src) { allImageUrls.push(mainImageElement.src); }
 
         let optionLabels = [];
         optionElements.forEach((opt, index) => {
@@ -629,200 +661,150 @@
             if (imageDiv && imageDiv.style.backgroundImage) {
                 const urlMatch = imageDiv.style.backgroundImage.match(/url\("?(.+?)"?\)/);
                 if (urlMatch && urlMatch[1]) {
-                    console.log('[xdAnswers Debug] Naurok: Found option image:', urlMatch[1]);
                     allImageUrls.push(urlMatch[1]);
                     optionLabels.push(`Option ${index + 1} (image)`);
                 }
-            } else if (textDiv) {
-                optionLabels.push(textDiv.innerText.trim());
-            }
+            } else if (textDiv) { optionLabels.push(textDiv.innerText.trim()); }
         });
-        console.log('[xdAnswers Debug] Naurok: Total images found:', allImageUrls.length);
-        
         questionData.optionsText = optionLabels.join('\n');
 
         const imagePromises = allImageUrls.map(url => imageToBase64(url));
         try {
-            // Конвертовані зображення присвоюємо напряму в questionData
             questionData.base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
-            console.log('[xdAnswers Debug] Naurok: Successfully converted', questionData.base64Images.length, 'images to Base64.');
-            
-            // Викликаємо getAnswer з уже готовим об'єктом questionData
             const answer = await getAnswer(questionData);
             answerContentDiv.innerHTML = formatAIResponse(answer);
         } catch (err) {
-            console.error("Error processing Naurok question:", err);
             answerContentDiv.innerHTML = formatAIResponse("Error processing question.");
         } finally {
-            isProcessingAI = false; isExtensionModifyingDOM = false;
-            if(!document.fullscreenElement) attachAndPositionHelper();
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
         }
     }
-    
-    async function processGFormQuestionsSequentially() { 
+
+    async function processGFormQuestionsSequentially() {
         if (isExtensionModifyingDOM || isProcessingAI) return;
         if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
         if (!answerContentDiv) return;
-        
-        isExtensionModifyingDOM = true; isProcessingAI = true;
 
-        const questionBlocks = document.querySelectorAll('div.Qr7Oae');
-        if (!questionBlocks.length) {
-            isProcessingAI = false; isExtensionModifyingDOM = false;
-            if (answerContentDiv.innerHTML.includes("loader") || 
-                answerContentDiv.innerText === 'Updating...' || 
-                answerContentDiv.innerText === 'Waiting for question...') {
-                answerContentDiv.innerHTML = formatAIResponse('No questions found on page.');
-            }
-            if(!document.fullscreenElement) attachAndPositionHelper();
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
+
+        const visibleQuestions = Array.from(document.querySelectorAll('div[role="listitem"]')).filter(el => el.offsetParent !== null);
+        if (visibleQuestions.length === 0) {
+            isExtensionModifyingDOM = false;
+            isProcessingAI = false;
             return;
         }
 
-        let accumulatedAnswersHTML = answerContentDiv.innerHTML;
-        if (['Updating...', 
-             'Waiting for question...',
-             'No questions found on page.',
-             'All questions on this page have been processed. Press 🔄 to reprocess all.'
-            ].some(s => accumulatedAnswersHTML.includes(s))) {
-            accumulatedAnswersHTML = "";
-        }
-        
-        const processingQuestionText = 'Processing question';
-        const processingRegex = new RegExp(`${processingQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} \\d+\\.\\.\\. <div class="loader-inline"></div>\\n?`, "g");
-        accumulatedAnswersHTML = accumulatedAnswersHTML.replace(processingRegex, "");
-
         let newQuestionsFoundThisRun = 0;
-        let questionNumberForDisplay = (accumulatedAnswersHTML.match(/^\d+:/gm) || []).length;
+        let questionNumberForDisplay = processedGFormQuestionIds.size;
+        let accumulatedAnswersHTML = answerContentDiv.innerHTML === 'Waiting for question...' || answerContentDiv.innerHTML === 'Updating...' ? '' : answerContentDiv.innerHTML;
 
-        for (let i = 0; i < questionBlocks.length; i++) {
-            const questionBlock = questionBlocks[i];
-            const questionTextElement = questionBlock.querySelector('.M7eMe, .ThX1ff, div[role="heading"] span');
-            if (!questionTextElement) continue;
-            const currentQuestionText = questionTextElement.innerText.trim();
+        try {
+            for (const questionBlock of visibleQuestions) {
+                const questionTitleElement = questionBlock.querySelector('div[role="heading"] span.M7eMe');
+                const currentQuestionText = questionTitleElement ? questionTitleElement.innerText.trim() : '';
+                let uniqueId = null;
+                const dataParams = questionBlock.getAttribute('data-params');
+                if (dataParams) {
+                    const match = dataParams.match(/%.@\.\[(\d+),"/);
+                    if (match && match[1]) uniqueId = `param-${match[1]}`;
+                }
+                if (!uniqueId) {
+                    const hiddenInput = questionBlock.querySelector('input[type="hidden"][name^="entry."]');
+                    if (hiddenInput && hiddenInput.name) uniqueId = hiddenInput.name;
+                }
+                if (!uniqueId) uniqueId = currentQuestionText + questionBlock.innerHTML.slice(0,100);
 
-            let uniqueId = null;
-            const dataParams = questionBlock.dataset.params;
-            if (dataParams) {
-                const match = dataParams.match(/%.@\.\[(\d+),"/);
-                if (match && match[1]) uniqueId = `param-${match[1]}`;
-            }
-            if (!uniqueId) {
-                const hiddenInput = questionBlock.querySelector('input[type="hidden"][name^="entry."]');
-                if (hiddenInput && hiddenInput.name) uniqueId = hiddenInput.name;
-            }
-            if (!uniqueId) uniqueId = currentQuestionText + questionBlock.innerHTML.slice(0,100);
+                if (currentQuestionText === '' || uniqueId === '') continue;
+                if (processedGFormQuestionIds.has(uniqueId)) continue;
 
-            if (currentQuestionText === '' || uniqueId === '') continue;
-            if (processedGFormQuestionIds.has(uniqueId)) continue;
+                newQuestionsFoundThisRun++;
+                questionNumberForDisplay++;
+                answerContentDiv.innerHTML = accumulatedAnswersHTML + (accumulatedAnswersHTML.endsWith('\n') || accumulatedAnswersHTML === "" ? "" : "\n") + `Processing Question ${questionNumberForDisplay}... <div class="loader-inline"></div>\n`;
+                answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
 
-            newQuestionsFoundThisRun++;
-            questionNumberForDisplay++;
+                const mainImageElement = questionBlock.querySelector('img.HxhGpf');
+                const isRadioQuiz = questionBlock.querySelector('div[role="radiogroup"]') !== null;
+                const isCheckboxQuiz = questionBlock.querySelector('div[role="listbox"], div.Y6Myld div[role="list"]') !== null;
+                const isShortText = questionBlock.querySelector('input.whsOnd[type="text"]') !== null;
+                const isParagraph = questionBlock.querySelector('textarea.KHxj8b') !== null;
 
-            answerContentDiv.innerHTML = accumulatedAnswersHTML +
-                (accumulatedAnswersHTML.endsWith('\n') || accumulatedAnswersHTML === "" ? "" : "\n") +
-                `${processingQuestionText} ${questionNumberForDisplay}... <div class="loader-inline"></div>\n`;
-            answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
+                let questionType = "unknown";
+                if (isRadioQuiz) questionType = "radio";
+                else if (isCheckboxQuiz) questionType = "checkbox";
+                else if (isShortText) questionType = "short_text";
+                else if (isParagraph) questionType = "paragraph";
 
-            const mainImageElement = questionBlock.querySelector('img.HxhGpf');
-            const isRadioQuiz = questionBlock.querySelector('div[role="radiogroup"]') !== null;
-            const isCheckboxQuiz = questionBlock.querySelector('div[role="listbox"], div.Y6Myld div[role="list"]') !== null;
-            const isShortText = questionBlock.querySelector('input.whsOnd[type="text"]') !== null;
-            const isParagraph = questionBlock.querySelector('textarea.KHxj8b') !== null;
-            let questionType = "unknown";
-            if (isRadioQuiz) questionType = "radio";
-            else if (isCheckboxQuiz) questionType = "checkbox";
-            else if (isShortText) questionType = "short_text";
-            else if (isParagraph) questionType = "paragraph";
+                let allImageUrls = [];
+                if (mainImageElement && mainImageElement.src) { allImageUrls.push(mainImageElement.src); }
 
-            let allImageUrls = [];
-            if (mainImageElement && mainImageElement.src) {
-                 console.log('[xdAnswers Debug] GForm: Found main image:', mainImageElement.src);
-                allImageUrls.push(mainImageElement.src);
-            }
-            let optionLabels = [];
-            if (isRadioQuiz || isCheckboxQuiz) {
-                const gformOptionContainers = questionBlock.querySelectorAll('div[role="radiogroup"] .docssharedWizToggleLabeledContainer, div[role="listbox"] .docssharedWizToggleLabeledContainer, .Y6Myld div[role="list"] .docssharedWizToggleLabeledContainer, .UHZXDe');
-                gformOptionContainers.forEach((optContainer, optIdx) => {
-                    const textEl = optContainer.querySelector('span.aDTYNe, span.snByac');
-                    const imgEl = optContainer.querySelector('img.QU5LQc');
-                    if (imgEl && imgEl.src) {
-                        console.log('[xdAnswers Debug] GForm: Found option image:', imgEl.src);
-                        allImageUrls.push(imgEl.src);
-                        let lblText = `Option (image ${allImageUrls.length})`;
-                        if (textEl && textEl.innerText.trim()) {
-                            lblText = `${textEl.innerText.trim()} (labeled as Option ${optIdx + 1}, is image ${allImageUrls.length})`;
+                let optionLabels = [];
+                if (isRadioQuiz || isCheckboxQuiz) {
+                    const gformOptionContainers = questionBlock.querySelectorAll('div[role="radiogroup"] .docssharedWizToggleLabeledContainer, div[role="listbox"] .docssharedWizToggleLabeledContainer, .Y6Myld div[role="list"] .docssharedWizToggleLabeledContainer, .UHZXDe');
+                    gformOptionContainers.forEach((optContainer, optIdx) => {
+                        const textEl = optContainer.querySelector('span.aDTYNe, span.snByac');
+                        const imgEl = optContainer.querySelector('img.QU5LQc');
+                        if (imgEl && imgEl.src) {
+                            allImageUrls.push(imgEl.src);
+                            optionLabels.push(`Option ${optIdx + 1} (image)`);
+                        } else if (textEl) {
+                            optionLabels.push(textEl.innerText.trim());
                         }
-                        optionLabels.push(lblText);
-                    } else if (textEl && textEl.innerText.trim()) {
-                        optionLabels.push(textEl.innerText.trim());
-                    }
-                });
+                    });
+                }
+
+                let questionData = {
+                    text: currentQuestionText,
+                    optionsText: optionLabels.join('\n'),
+                    questionType: questionType,
+                    isMultiQuiz: isCheckboxQuiz,
+                    base64Images: [],
+                    customPromptPrefix: null
+                };
+
+                const imagePromises = allImageUrls.map(url => imageToBase64(url));
+                questionData.base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
+
+                const answer = await getAnswer(questionData);
+                const formattedAnswer = formatAIResponse(answer);
+                
+                accumulatedAnswersHTML = answerContentDiv.innerHTML.replace(`Processing Question ${questionNumberForDisplay}... <div class="loader-inline"></div>\n`, "");
+                accumulatedAnswersHTML += `<b>Q${questionNumberForDisplay}:</b> ${currentQuestionText}<br><b>A:</b> ${formattedAnswer}<br><hr>`;
+                answerContentDiv.innerHTML = accumulatedAnswersHTML;
+                answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
+                processedGFormQuestionIds.add(uniqueId);
             }
-            console.log('[xdAnswers Debug] GForm: Total images found:', allImageUrls.length);
-            const optionsText = optionLabels.length > 0 ? optionLabels.join('\n') : null;
-            const imagePromises = allImageUrls.map(url => imageToBase64(url));
-            const base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
-            console.log('[xdAnswers Debug] GForm: Successfully converted', base64Images.length, 'images to Base64.');
-            const questionData = {
-                text: currentQuestionText,
-                optionsText: optionsText,
-                base64Images: base64Images,
-                isMultiQuiz: isCheckboxQuiz,
-                questionType: questionType
-            };
-
-            const aiResponseText = await getAnswer(questionData);
-            
-            const currentProcessingRegex = new RegExp(`${processingQuestionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} ${questionNumberForDisplay}\\.\\.\\. <div class="loader-inline"></div>\\n?`);
-            accumulatedAnswersHTML = answerContentDiv.innerHTML.replace(currentProcessingRegex, "");
-
-            accumulatedAnswersHTML += `${questionNumberForDisplay}: ${formatAIResponse(aiResponseText)}\n`;
-            answerContentDiv.innerHTML = accumulatedAnswersHTML;
-            answerContentDiv.scrollTop = answerContentDiv.scrollHeight;
-            processedGFormQuestionIds.add(uniqueId);
-        }
-
-        if (answerContentDiv.innerHTML.includes("loader-inline")) {
-            answerContentDiv.innerHTML = answerContentDiv.innerHTML.replace(processingRegex, "");
-        }
-
-        if (!newQuestionsFoundThisRun && questionBlocks.length > 0) {
-            if (accumulatedAnswersHTML.trim() === '') {
-                answerContentDiv.innerHTML = 'All questions on this page have been processed. Press 🔄 to reprocess all.';
+        } catch (err) {
+            answerContentDiv.innerHTML += `<br>Error processing questions.`;
+        } finally {
+            if (newQuestionsFoundThisRun === 0 && processedGFormQuestionIds.size === 0) {
+                answerContentDiv.innerHTML = 'No active questions found on the page.';
             }
-        } else if (questionBlocks.length === 0 && accumulatedAnswersHTML.trim() === '') {
-            answerContentDiv.innerHTML = 'No questions found on the page.';
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
         }
-        isProcessingAI = false; isExtensionModifyingDOM = false;
-        if(!document.fullscreenElement) attachAndPositionHelper();
     }
 
     async function processVseosvitaQuestion() {
         if (isExtensionModifyingDOM || isProcessingAI) return;
         if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
-        if (!answerContentDiv) { return; }
+        if (!answerContentDiv) return;
 
         const questionContainer = document.querySelector('div[id^="i-test-question-"]');
-        if (!questionContainer) {
-            if (!document.fullscreenElement) attachAndPositionHelper();
-            return;
-        }
+        if (!questionContainer) return;
 
-        const questionNumberElement = document.querySelector('span.v-numbertest span.occasional_class occ1 span.occasional_class occ2'); 
+        const questionNumberElement = document.querySelector('span.v-numbertest span.occasional_class occ1 span.occasional_class occ2');
         const questionTitleElement = questionContainer.querySelector('.v-test-questions-title .content-box p, .v-test-questions-title .content-box div');
-        
-        const currentQuestionNumberText = questionNumberElement ? questionNumberElement.innerText.trim() : Math.random().toString(); 
+        const currentQuestionNumberText = questionNumberElement ? questionNumberElement.innerText.trim() : Math.random().toString();
         const currentQuestionTitleText = questionTitleElement ? questionTitleElement.innerText.trim() : '';
-        
-        const questionTextSample = currentQuestionTitleText.substring(0, 50); 
+        const questionTextSample = currentQuestionTitleText.substring(0, 50);
         const currentVseosvitaKey = `${currentQuestionNumberText}#${questionTextSample}`;
 
-        if (currentVseosvitaKey === lastProcessedVseosvitaKey && currentQuestionTitleText !== '') { 
-             if (helperContainer && getComputedStyle(helperContainer).display !== 'none' && !document.fullscreenElement) attachAndPositionHelper(); 
-            return;
-        }
-        
-        isExtensionModifyingDOM = true; isProcessingAI = true;
+        if (currentVseosvitaKey === lastProcessedVseosvitaKey && currentQuestionTitleText !== '') return;
+
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
         lastProcessedVseosvitaKey = currentVseosvitaKey;
         answerContentDiv.innerHTML = '<div class="loader"></div>';
 
@@ -830,126 +812,263 @@
         let optionsTextForAI = "";
         let questionType = "unknown";
         let isMultiQuiz = false;
-        let customPromptPrefix = null; 
+        let customPromptPrefix = null;
 
         const radioBlock = questionContainer.querySelector('.v-test-questions-radio-block');
         const checkboxBlock = questionContainer.querySelector('.v-test-questions-checkbox-block');
-        const matchingBlock = questionContainer.querySelector('.v-block-answers-cross-wrapper');
+        const matchingBlock = questionContainer.querySelector('.v-test-questions-matching-block');
+        const inputBlock = questionContainer.querySelector('.v-test-questions-input-block');
 
-        if (matchingBlock) {
+        let allImageUrls = [];
+        const mainImage = questionContainer.querySelector('.v-test-questions-title img');
+        if (mainImage) allImageUrls.push(mainImage.src);
+
+        if (radioBlock) {
+            questionType = "radio";
+            const options = radioBlock.querySelectorAll('.v-test-questions-radio-item');
+            options.forEach(opt => {
+                const text = opt.querySelector('label') ? opt.querySelector('label').innerText : '';
+                optionsTextForAI += `- ${text}\n`;
+                const img = opt.querySelector('img');
+                if (img) allImageUrls.push(img.src);
+            });
+        } else if (checkboxBlock) {
+            questionType = "checkbox";
+            isMultiQuiz = true;
+            const options = checkboxBlock.querySelectorAll('.v-test-questions-checkbox-item');
+            options.forEach(opt => {
+                const text = opt.querySelector('label') ? opt.querySelector('label').innerText : '';
+                optionsTextForAI += `- ${text}\n`;
+                const img = opt.querySelector('img');
+                if (img) allImageUrls.push(img.src);
+            });
+        } else if (matchingBlock) {
             questionType = "matching";
-            customPromptPrefix = "Match the items. Provide the answer in the format 'Number - Letter'. For example: 1-A, 2-C, 3-B. Do not write anything else, only the pairs.";
-            let leftColumnText = "Tasks:\n";
-            const leftItems = matchingBlock.querySelectorAll('.v-block-answers-cross_row .v-col-6:not(.v-col-last) .v-block-answers-cross-block');
-            leftItems.forEach(item => {
-                const num = item.querySelector('.rk-cross__item .numb-item')?.innerText.trim();
-                const text = item.querySelector('.n-kahoot-p')?.innerText.trim();
-                if (num && text) leftColumnText += `${num}. ${text}\n`;
-            });
-            let rightColumnText = "\nOptions:\n";
-            const rightItems = matchingBlock.querySelectorAll('.v-block-answers-cross_row .v-col-6.v-col-last .v-block-answers-cross-block');
-            rightItems.forEach(item => {
-                const letter = item.querySelector('.rk-cross__item .numb-item')?.innerText.trim();
-                const text = item.querySelector('.n-kahoot-p')?.innerText.trim();
-                if (letter && text) rightColumnText += `${letter}. ${text}\n`;
-            });
-            optionsTextForAI = leftColumnText + rightColumnText;
-        } else if (radioBlock || checkboxBlock) {
-            questionType = radioBlock ? "radio" : "checkbox";
-            isMultiQuiz = !!checkboxBlock;
-            const options = questionContainer.querySelectorAll('.v-test-questions-radio-block, .v-test-questions-checkbox-block');
-            options.forEach((opt, index) => {
-                const text = opt.querySelector('label p, label div')?.innerText.trim();
-                if (text) optionsTextForAI += `${index + 1}. ${text}\n`;
-            });
-        } else {
-             questionType = "open_ended";
+            customPromptPrefix = "Це завдання на встановлення відповідності. Знайди пари між лівою та правою колонками.";
+            const leftCol = matchingBlock.querySelectorAll('.v-test-questions-matching-left .v-test-questions-matching-item');
+            const rightCol = matchingBlock.querySelectorAll('.v-test-questions-matching-right .v-test-questions-matching-item');
+            
+            questionTextForAI += "\nЛіва колонка:\n";
+            leftCol.forEach((item, i) => { questionTextForAI += `${i+1}. ${item.innerText}\n`; });
+            optionsTextForAI += "\nПрава колонка:\n";
+            rightCol.forEach((item, i) => { optionsTextForAI += `${String.fromCharCode(65+i)}. ${item.innerText}\n`; });
+        } else if (inputBlock) {
+            questionType = "short_text";
         }
-        
-        optionsTextForAI = optionsTextForAI.trim();
-        const base64Images = []; 
-        console.log('[xdAnswers Debug] Vseosvita: Image processing is currently not implemented for this site. Sending 0 images.');
 
-        const questionData = {
+        let questionData = {
             text: questionTextForAI,
             optionsText: optionsTextForAI,
-            base64Images: base64Images,
-            isMultiQuiz: isMultiQuiz,
             questionType: questionType,
-            customPromptPrefix: customPromptPrefix 
+            isMultiQuiz: isMultiQuiz,
+            base64Images: [],
+            customPromptPrefix: customPromptPrefix
         };
-        
+
+        const imagePromises = allImageUrls.map(url => imageToBase64(url));
         try {
+            questionData.base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
             const answer = await getAnswer(questionData);
-            if (answerContentDiv) answerContentDiv.innerHTML = formatAIResponse(answer);
+            answerContentDiv.innerHTML = formatAIResponse(answer);
         } catch (error) {
-            console.error("Error processing Vseosvita question:", error);
-            if (answerContentDiv) answerContentDiv.innerHTML = formatAIResponse("Error processing question.");
+            answerContentDiv.innerHTML = formatAIResponse("Error processing question.");
         } finally {
-            isProcessingAI = false; isExtensionModifyingDOM = false;
-            if (!document.fullscreenElement) attachAndPositionHelper(); 
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
         }
     }
 
-    let observer; 
-    let previousVseosvitaFsContainerState = false; 
+    // --- REFACTORED JUSTCLASS LOGIC FOR MULTIPLE QUESTIONS ---
+    async function processJustClassQuestion() {
+        if (!helperContainer || !helperContainer.parentNode) {
+            attachAndPositionHelper();
+        }
 
-    function initializeObserver() {
-        if (observer) observer.disconnect(); 
-        const observerTarget = document.documentElement; 
-        if (observerTarget) {
-            observer = new MutationObserver((mutationsList) => {
-                if (isExtensionModifyingDOM) return; 
-                let triggerHandlePageChange = false;
-                if (location.hostname.includes('vseosvita.ua')) {
-                    const vseosvitaFsContainer = document.querySelector('.full-screen-container');
-                    const isVseosvitaFsPresent = vseosvitaFsContainer && document.body.contains(vseosvitaFsContainer);
-                    if (isVseosvitaFsPresent !== previousVseosvitaFsContainerState) {
-                        triggerHandlePageChange = true;
-                        previousVseosvitaFsContainerState = isVseosvitaFsPresent;
-                    }
-                }
-                if (!triggerHandlePageChange) {
-                    for (const mutation of mutationsList) {
-                        if (helperContainer && (mutation.target === helperContainer || helperContainer.contains(mutation.target))) continue;
-                        if (helperContainer && ((mutation.addedNodes && Array.from(mutation.addedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer)))) || (mutation.removedNodes && Array.from(mutation.removedNodes).some(node => node === helperContainer || (node.contains && node.contains(helperContainer)))))) continue; 
-                        if (mutation.type === 'childList' && (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
-                            triggerHandlePageChange = true; break; 
+        if (isExtensionModifyingDOM || isProcessingAI) return;
+        if (!answerContentDiv && helperContainer) answerContentDiv = helperContainer.querySelector('#ollama-answer-content');
+        if (!answerContentDiv) return;
+
+        // Fetch API if needed
+        await fetchJustClassAPIData();
+
+        const mainContainer = document.querySelector('justkids-homework-training, justkids-training-preview, .main');
+        // Less strict check: allow processing if JustClass text is present
+        if (!mainContainer && !document.body.innerText.includes('JustClass')) return;
+
+        const currentTextContent = mainContainer ? mainContainer.innerText : document.body.innerText;
+        // Include 'from' counter in hash to detect page switches
+        const counterElement = document.querySelector('.from.ng-star-inserted');
+        const counterText = counterElement ? counterElement.innerText : '';
+        const currentJustClassKey = `justclass-${counterText}-${currentTextContent.substring(0, 100)}`;
+        
+        // Only run if content actually changed
+        if (currentJustClassKey === lastProcessedNaurokText) return;
+
+        isExtensionModifyingDOM = true;
+        isProcessingAI = true;
+        lastProcessedNaurokText = currentJustClassKey;
+
+        answerContentDiv.innerHTML = '<div class="loader"></div>';
+
+        // --- Build Output for ALL Visible Questions ---
+        let outputHTML = "";
+        let foundAnyApiAnswer = false;
+
+        // 1. Process Simple Questions (Radio/Checkbox)
+        const questionsOnPage = document.querySelectorAll('.question');
+        questionsOnPage.forEach((q, idx) => {
+            const titleEl = q.querySelector('.title');
+            if (titleEl) {
+                const rawTitle = titleEl.innerText;
+                const cleanTitle = cleanText(rawTitle);
+                
+                // Lookup in API cache
+                let cached = null;
+                if (justClassApiCache) {
+                    cached = justClassApiCache[cleanTitle];
+                    // Fallback fuzzy search
+                    if (!cached) {
+                        for (const k in justClassApiCache) {
+                            if (k.includes(cleanTitle) || cleanTitle.includes(k)) {
+                                cached = justClassApiCache[k];
+                                break;
+                            }
                         }
                     }
                 }
-                if (triggerHandlePageChange) handlePageContentChange(true); 
+
+                if (cached && cached.type === 'simple') {
+                    foundAnyApiAnswer = true;
+                    // Build nice output with spacing
+                    outputHTML += `<div style="margin-bottom: 25px; border-bottom: 1px solid #444; padding-bottom: 15px;">`;
+                    outputHTML += `<b>Q:</b> ${rawTitle.length > 50 ? rawTitle.substring(0,50)+'...' : rawTitle}<br>`;
+                    outputHTML += `<b>A:</b> <span style="color:#00ff9d; font-weight:bold;">${cached.answers.join(', ')}</span>`;
+                    outputHTML += `</div>`;
+                }
+            }
+        });
+
+        // 2. Process Matching Questions (Point Groups)
+        const matchingGroups = document.querySelectorAll('justkids-point-group');
+        matchingGroups.forEach((group, idx) => {
+            let matchesFoundInThisGroup = [];
+            const items = group.querySelectorAll('.item .content');
+            
+            items.forEach(item => {
+                const itemText = item.innerText.trim();
+                const cleanItem = cleanText(itemText);
+                
+                if (justClassApiCache) {
+                    const cached = justClassApiCache[cleanItem];
+                    if (cached && cached.type === 'match_item') {
+                        // Prevent duplicates (A-B vs B-A)
+                        const pairText = `${itemText} <span style="color:yellow">⟷</span> ${cached.pair}`;
+                        let isDuplicate = false;
+                        matchesFoundInThisGroup.forEach(m => {
+                            // Simple duplicate check string based
+                            if (m.includes(itemText) && m.includes(cached.pair)) isDuplicate = true;
+                        });
+
+                        if (!isDuplicate) {
+                            matchesFoundInThisGroup.push(pairText);
+                        }
+                    }
+                }
+            });
+
+            if (matchesFoundInThisGroup.length > 0) {
+                foundAnyApiAnswer = true;
+                outputHTML += `<div style="margin-bottom: 25px; border-bottom: 1px solid #444; padding-bottom: 15px;">`;
+                outputHTML += `<b>Matching Task:</b><ul>`;
+                matchesFoundInThisGroup.forEach(m => outputHTML += `<li>${m}</li>`);
+                outputHTML += `</ul></div>`;
+            }
+        });
+
+        // --- Result Handling ---
+        if (foundAnyApiAnswer) {
+            answerContentDiv.innerHTML = outputHTML;
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
+            return;
+        }
+
+        // --- Fallback to AI if NO API answers found on screen ---
+        // Extract text for AI
+        let aiQuestionText = "";
+        let aiOptionsText = "";
+        let imageUrls = [];
+
+        const textBlocks = document.querySelectorAll('justkids-text');
+        textBlocks.forEach(block => { aiQuestionText += block.innerText + "\n"; });
+
+        questionsOnPage.forEach((q, idx) => {
+            const title = q.querySelector('.title');
+            if (title) aiQuestionText += `Question ${idx+1}: ${title.innerText}\n`;
+            const answers = q.querySelectorAll('.answers mat-radio-button, .answers mat-checkbox');
+            if (answers.length > 0) {
+                aiOptionsText += `\nOptions for Q${idx+1}:\n`;
+                answers.forEach(opt => aiOptionsText += `- ${opt.innerText.trim()}\n`);
+            }
+        });
+
+        const contentImages = (mainContainer || document.body).querySelectorAll('img');
+        contentImages.forEach(img => {
+            if (!imageUrls.includes(img.src) && img.width > 50 && img.height > 50 && !img.src.includes('icon') && !img.src.includes('logo')) {
+                imageUrls.push(img.src);
+            }
+        });
+
+        const questionData = {
+            text: aiQuestionText.trim(),
+            optionsText: aiOptionsText.trim(),
+            questionType: (matchingGroups.length > 0) ? 'matching' : 'multiple_choice',
+            isMultiQuiz: false,
+            base64Images: [],
+            customPromptPrefix: null
+        };
+
+        const imagePromises = imageUrls.map(url => imageToBase64(url));
+        try {
+            questionData.base64Images = (await Promise.all(imagePromises)).filter(img => img !== null);
+            const answer = await getAnswer(questionData);
+            answerContentDiv.innerHTML = formatAIResponse(answer);
+        } catch (err) {
+            answerContentDiv.innerHTML = formatAIResponse("Error processing question.");
+        } finally {
+            isProcessingAI = false;
+            isExtensionModifyingDOM = false;
+        }
+    }
+
+    let observer;
+    function initializeObserver() {
+        if (observer) observer.disconnect();
+        const observerTarget = document.documentElement;
+        if (observerTarget) {
+            observer = new MutationObserver((mutationsList) => {
+                if (isExtensionModifyingDOM) return;
+                handlePageContentChange();
             });
             observer.observe(observerTarget, { childList: true, subtree: true });
         }
     }
 
-    function reinitializeExtensionUI(forceRecreateDOM = false) {
-        if (isExtensionModifyingDOM && !forceRecreateDOM) return;
-        isExtensionModifyingDOM = true;
-        Draggable.destroy();
-        if (!helperContainer || forceRecreateDOM) {
-            const existing = document.querySelector('.ollama-helper-container');
-            if (existing) existing.remove();
-            helperContainer = null; 
-            createUI(); 
-        } else {
-             attachHelperEventListeners(); updateHelperBaseStyles();
-        }
-        Draggable.init(helperContainer, dragHeader, () => { isManuallyPositioned = true; });
-        initializeObserver(); attachAndPositionHelper(); handlePageContentChange(true); 
-        isExtensionModifyingDOM = false;
-    }
+    initializeObserver();
+    window.addEventListener('load', () => handlePageContentChange(true));
+    window.addEventListener('popstate', () => handlePageContentChange(true));
     
-    function handleFullscreenChange() { reinitializeExtensionUI(true); }
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'visible') {
-            reinitializeExtensionUI(true);
+    let lastUrl = location.href;
+    new MutationObserver(() => {
+        const url = location.href;
+        if (url !== lastUrl) {
+            lastUrl = url;
+             const match = url.match(/hw\/([a-zA-Z0-9]+)/);
+             if (match && match[1] !== justClassHash) {
+                 justClassApiCache = null;
+                 justClassHash = null;
+             }
+            handlePageContentChange(true);
         }
-    });
-
-    reinitializeExtensionUI(true); 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-
+    }).observe(document, {subtree: true, childList: true});
 })();

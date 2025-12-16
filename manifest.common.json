@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "xdAnswers",
-  "version": "4.10.5",
+  "version": "4.10.8",
   "description": "A script that helps in tests by providing AI-powered answers.",
   "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation"],
   "host_permissions": [
@@ -14,7 +14,10 @@
     "*://*.googleusercontent.com/*",
     "*://docs.google.com/forms/*",
     "*://vseosvita.ua/*",
-    "*://*.digitaloceanspaces.com/*"
+    "*://*.digitaloceanspaces.com/*",
+    "*://*.justclass.com.ua/*",
+    "*://justclass.com.ua/*",
+    "https://api.justschool.me/*"
   ],
   "action": {
     "default_title": "xdAnswers Settings",
@@ -40,7 +43,8 @@
         "*://docs.google.com/forms/d/e/*/viewform*",
         "*://docs.google.com/forms/d/e/*/formResponse*",
         "*://vseosvita.ua/test/go-olp*",
-        "*://vseosvita.ua/test/start/*"
+        "*://vseosvita.ua/test/start/*",
+        "*://justclass.com.ua/hw/*"
       ],
       "js": ["content.js"],
       "run_at": "document_end",
