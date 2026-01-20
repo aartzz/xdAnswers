@@ -37,16 +37,37 @@
     {
       "matches": [
         "*://naurok.com.ua/test/testing/*",
-        "*://naurok.ua/test/testing/*",
+        "*://naurok.ua/test/testing/*"
+      ],
+      "js": ["utils.js", "providers/naurok.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://vseosvita.ua/test/go-olp*",
+        "*://vseosvita.ua/test/start/*"
+      ],
+      "js": ["utils.js", "providers/vseosvita.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
         "*://docs.google.com/forms/u/*/d/e/*/viewform*",
         "*://docs.google.com/forms/u/*/d/e/*/formResponse*",
         "*://docs.google.com/forms/d/e/*/viewform*",
-        "*://docs.google.com/forms/d/e/*/formResponse*",
-        "*://vseosvita.ua/test/go-olp*",
-        "*://vseosvita.ua/test/start/*",
+        "*://docs.google.com/forms/d/e/*/formResponse*"
+      ],
+      "js": ["utils.js", "providers/gforms.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
         "*://justclass.com.ua/hw/*"
       ],
-      "js": ["content.js"],
+      "js": ["utils.js", "providers/justclass.js"],
       "run_at": "document_end",
       "all_frames": true
     }
