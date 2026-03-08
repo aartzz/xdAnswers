@@ -3,8 +3,7 @@ name: Debug
 on:
   push:
     branches:
-      - '**'
-  workflow_dispatch:
+      - "**"
 
 jobs:
   build:
@@ -17,26 +16,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build extensions
+      - name: Build extensions for Firefox and Chrome
         run: |
           npm run build:firefox
           npm run build:chrome
 
+      - name: Get Firefox artifact path
+        id: get_firefox_path
+        run: |
+          firefox_artifact_path=$(find build -name "*.zip" -o -name "*.xpi" | head -n 1)
+          if [ -z "$firefox_artifact_path" ]; then
+            echo "::error::Firefox artifact (.zip or .xpi) not found in build/ directory."
+            exit 1
+          fi
+          echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
+
       - name: Upload Firefox artifact
         uses: actions/upload-artifact@v4
         with:
-          name: firefox-build
-          path: |
-            build/*.xpi
-            build/*.zip
+          name: xdAnswers-firefox
+          path: ${{ steps.get_firefox_path.outputs.path }}
 
       - name: Upload Chrome artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chrome-build
-          path: build/xdAnswers-chrome.zip
+          name: xdAnswers-chrome
+          path: ./build/xdAnswers-chrome.zip
