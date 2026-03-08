@@ -1,21 +1,19 @@
-name: Create Release and Upload Assets
+name: Build & Release
 
-# Умова запуску: workflow активується при створенні нового тегу, що починається з "v"
 on:
   push:
     tags:
-      - 'v*' # Наприклад, v1.0, v1.2.3, v2.0-beta
+      - 'v*'
 
 jobs:
   build-and-release:
     permissions:
-      contents: write # Потрібен дозвіл на створення релізу та завантаження файлів
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # Завантажуємо всю історію, щоб отримати доступ до всіх тегів та комітів
         with:
           fetch-depth: 0
 
@@ -25,16 +23,13 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        # Використовуємо npm install, оскільки немає package-lock.json
         run: npm install
 
       - name: Build extensions for Firefox and Chrome
-        # Тепер ми просто запускаємо npm-скрипти, які роблять всю роботу
         run: |
           npm run build:firefox
           npm run build:chrome
         
-      # КРОК 1: Генеруємо опис для релізу на основі історії комітів
       - name: Generate Release Body
         id: generate_release_body
         run: |
@@ -52,20 +47,18 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      # КРОК 2: Створюємо сам реліз на GitHub
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }} # Використовуємо тег, що запустив workflow
-          release_name: Release ${{ github.ref_name }} # Назва релізу, напр. "Release v1.0.1"
-          body: ${{ steps.generate_release_body.outputs.changelog }} # Використовуємо згенерований список комітів
-          draft: false # Якщо true, реліз буде чернеткою
-          prerelease: false # Якщо true, реліз буде позначено як "pre-release"
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref_name }}
+          body: ${{ steps.generate_release_body.outputs.changelog }}
+          draft: false
+          prerelease: false
 
-      # Визначаємо шлях до зібраного файлу Firefox
       - name: Get Firefox artifact path
         id: get_firefox_path
         run: |
@@ -78,25 +71,22 @@ jobs:
           echo "Found Firefox artifact: $firefox_artifact_path"
           echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
 
-      # КРОК 3: Завантажуємо артефакт для Firefox у щойно створений реліз
       - name: Upload Firefox Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # URL для завантаження
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.get_firefox_path.outputs.path }}
           asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
           asset_content_type: application/x-xpinstall
 
-      # КРОК 4: Завантажуємо артефакт для Chrome у той самий реліз
       - name: Upload Chrome Artifact to Release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # Використовуємо той самий URL
-          # Шлях до архіву тепер фіксований завдяки нашому npm-скрипту
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/xdAnswers-chrome.zip
           asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
           asset_content_type: application/zip
