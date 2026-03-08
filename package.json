@@ -1,19 +1,21 @@
 {
-    "name": "xdanswers-extension",
-    "version": "4.11.0",
-    "private": true,
-    "description": "A script that helps in tests by providing AI-powered answers.",
-    "scripts": {
+  "name": "xdanswers-extension",
+  "version": "4.11.0",
+  "private": true,
+  "description": "A script that helps in tests by providing AI-powered answers.",
+  "scripts": {
     "prebuild:firefox": "node scripts/build-manifest.js firefox",
     "build:firefox": "npm run prebuild:firefox && web-ext build --source-dir . --artifacts-dir ./build --overwrite-dest && npm run clean",
+
     "prebuild:chrome": "rm -rf dist_chrome && mkdir -p dist_chrome/images",
-    "build:chrome": "npm run prebuild:chrome && node scripts/build-manifest.js chrome && cp background.js content.js popup.html popup.js popup.css manifest.json ./dist_chrome/ && cp -r images/* ./dist_chrome/images/ && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip . && cd .. && npm run clean",
+    "build:chrome": "npm run prebuild:chrome && node scripts/build-manifest.js chrome && cp background.js popup.html popup.js popup.css manifest.json ./dist_chrome/ && cp -r images/* ./dist_chrome/images/ && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip . && cd .. && npm run clean && npm run postbuild:chrome",
     "postbuild:chrome": "rm -rf ./dist_chrome",
+
     "clean": "rm -f manifest.json",
     "version": "node scripts/sync-version.js && git add manifest.common.json"
-    },
-    "devDependencies": {
-      "web-ext": "^7.11.0",
-      "cpr": "^3.0.1"
-    }
+  },
+  "devDependencies": {
+    "web-ext": "^7.11.0",
+    "cpr": "^3.0.1"
+  }
 }
