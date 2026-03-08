@@ -322,11 +322,8 @@
         let useDefaultPositioning = true;
 
         if (!targetContainerOverride && location.hostname.includes('vseosvita.ua') && (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
-            const vseosvitaFullScreenContainer = document.querySelector('.full-screen-container');
-            if (vseosvitaFullScreenContainer && document.body.contains(vseosvitaFullScreenContainer)) {
-                determinedTargetParent = vseosvitaFullScreenContainer;
-                useDefaultPositioning = false;
-            }
+            determinedTargetParent = document.body;
+            useDefaultPositioning = true;
         }
 
         if (!container.parentNode || container.parentNode !== determinedTargetParent) {

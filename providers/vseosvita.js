@@ -10,38 +10,124 @@
 
     function initVseosvita() {
         let lastProcessedKey = "";
-        window.xdAnswers.onRefresh = () => { lastProcessedKey = ""; checkQuestion(); };
+        let debounceTimer = null;
 
-        function checkQuestion() {
-            if (window.xdAnswers.isProcessingAI) return;
-            const questionElement = document.querySelector('.vseosvita-test-content') || document.querySelector('.test-question-text');
-            if (questionElement) {
-                const currentText = questionElement.innerText;
-                const imgs = questionElement.querySelectorAll('img');
-                const currentKey = currentText + "_" + imgs.length;
+        window.xdAnswers.onRefresh = () => {
+            lastProcessedKey = "";
+            checkQuestion(true);
+        };
 
-                if (currentKey !== lastProcessedKey) {
-                    lastProcessedKey = currentKey;
-                    const questionData = { text: currentText, base64Images: [], questionType: 'unknown' };
-                    const imgPromises = [];
-                    imgs.forEach(img => imgPromises.push(window.xdAnswers.imageToBase64(img.src)));
-
-                    Promise.all(imgPromises).then(images => {
-                        questionData.base64Images = images.filter(img => img !== null);
-                        window.xdAnswers.processQuestion(questionData);
-                        const fsContainer = document.querySelector('.full-screen-container');
-                        if (fsContainer) window.xdAnswers.attachAndPositionHelper(fsContainer);
-                    });
-                }
-            }
+        function getText(el) {
+            return (el?.innerText || el?.textContent || '').replace(/\s+/g, ' ').trim();
         }
+
+        function collectOptions(questionRoot) {
+            const optionSelectors = [
+                '.answer-text',
+                '.v-test-questions-select-block .t-text-guest',
+                '.v-test-questions-select-block .t-text',
+                '.t-test-questions .t-text-guest',
+                '.t-test-questions .t-text',
+                '.test-answer',
+                'label[for]'
+            ];
+
+            const seen = new Set();
+            const options = [];
+            for (const selector of optionSelectors) {
+                questionRoot.querySelectorAll(selector).forEach(el => {
+                    const text = getText(el);
+                    if (!text) return;
+                    if (seen.has(text)) return;
+                    seen.add(text);
+                    options.push(text);
+                });
+            }
+
+            if (options.length === 0) {
+                const choiceBlocks = questionRoot.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+                choiceBlocks.forEach(input => {
+                    const wrap = input.closest('label, .answer-item, .v-test-questions-select-block, .test-answer') || input.parentElement;
+                    const text = getText(wrap).replace(/^[A-ZА-ЯІЇЄҐ]\s*[\)\.]\s*/i, '').trim();
+                    if (text && !seen.has(text)) {
+                        seen.add(text);
+                        options.push(text);
+                    }
+                });
+            }
+
+            return options;
+        }
+
+        function detectQuestionData() {
+            const questionRoot = document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .test-question-text, .vseosvita-test-content');
+            if (!questionRoot) return null;
+
+            const titleNode = questionRoot.querySelector('.v-test-questions-title .content-box, .v-test-questions-title, .test-question-text, .question-text');
+            const text = getText(titleNode || questionRoot);
+            if (!text) return null;
+
+            const options = collectOptions(questionRoot);
+            const imgs = Array.from(questionRoot.querySelectorAll('img')).map(img => img.src).filter(Boolean);
+
+            let questionType = 'unknown';
+            if (questionRoot.querySelector('.row_draggable-question, .draggable-question-box')) {
+                questionType = 'ordering';
+            } else if (questionRoot.querySelector('input[type="checkbox"]')) {
+                questionType = 'quiz';
+            } else if (questionRoot.querySelector('input[type="radio"]')) {
+                questionType = 'quiz';
+            } else if (questionRoot.querySelector('.matching-question, .matching-block')) {
+                questionType = 'matching';
+            }
+
+            return {
+                root: questionRoot,
+                text,
+                options,
+                optionsText: options.join('\n'),
+                base64ImageSources: imgs,
+                questionType,
+                isMultiQuiz: questionRoot.querySelector('input[type="checkbox"]') !== null
+            };
+        }
+
+        function checkQuestion(force = false) {
+            if (window.xdAnswers.isProcessingAI && !force) return;
+            const questionData = detectQuestionData();
+            if (!questionData) return;
+
+            const currentKey = JSON.stringify({
+                text: questionData.text,
+                options: questionData.options,
+                type: questionData.questionType,
+                images: questionData.base64ImageSources
+            });
+
+            if (!force && currentKey === lastProcessedKey) return;
+            lastProcessedKey = currentKey;
+
+            const imgPromises = questionData.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src));
+            Promise.all(imgPromises).then(images => {
+                window.xdAnswers.processQuestion({
+                    text: questionData.text,
+                    optionsText: questionData.optionsText,
+                    base64Images: images.filter(Boolean),
+                    questionType: questionData.questionType,
+                    isMultiQuiz: questionData.isMultiQuiz
+                });
+                window.xdAnswers.attachAndPositionHelper();
+            });
+        }
+
         const observer = new MutationObserver(() => {
             if (window.xdAnswers.isExtensionModifyingDOM) return;
-            checkQuestion();
-            const fsContainer = document.querySelector('.full-screen-container');
-            window.xdAnswers.attachAndPositionHelper(fsContainer);
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => checkQuestion(false), 250);
+            window.xdAnswers.attachAndPositionHelper();
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         checkQuestion();
     }
 })();
