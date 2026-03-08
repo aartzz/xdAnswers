@@ -21,7 +21,44 @@
             return (el?.innerText || el?.textContent || '').replace(/\s+/g, ' ').trim();
         }
 
+        function collectMatchingOptions(questionRoot) {
+            const wrapper = questionRoot.querySelector('.v-block-answers-cross-wrapper');
+            if (!wrapper) return [];
+
+            const items = [];
+            const seen = new Set();
+
+            wrapper.querySelectorAll('.v-block-answers-cross-block').forEach(block => {
+                const key = getText(block.querySelector('.numb-item'));
+                const value = getText(block.querySelector('.n-kahoot-p, p'));
+                const combined = key && value ? `${key}. ${value}` : value || key;
+                if (!combined || seen.has(combined)) return;
+                seen.add(combined);
+                items.push({ key, combined });
+            });
+
+            const numericItems = items
+                .filter(item => /^\d+$/.test(item.key))
+                .sort((a, b) => Number(a.key) - Number(b.key))
+                .map(item => item.combined);
+
+            const alphaItems = items
+                .filter(item => item.key && !/^\d+$/.test(item.key))
+                .sort((a, b) => a.key.localeCompare(b.key, 'uk'))
+                .map(item => item.combined);
+
+            const otherItems = items
+                .filter(item => !item.key)
+                .map(item => item.combined)
+                .sort((a, b) => a.localeCompare(b, 'uk'));
+
+            return [...numericItems, ...alphaItems, ...otherItems];
+        }
+
         function collectOptions(questionRoot) {
+            const matchingOptions = collectMatchingOptions(questionRoot);
+            if (matchingOptions.length) return matchingOptions;
+
             const optionSelectors = [
                 '.answer-text',
                 '.v-test-questions-select-block .t-text-guest',
@@ -77,7 +114,7 @@
                 questionType = 'quiz';
             } else if (questionRoot.querySelector('input[type="radio"]')) {
                 questionType = 'quiz';
-            } else if (questionRoot.querySelector('.matching-question, .matching-block')) {
+            } else if (questionRoot.querySelector('.matching-question, .matching-block, .v-block-answers-cross-wrapper')) {
                 questionType = 'matching';
             }
 
@@ -97,9 +134,13 @@
             const questionData = detectQuestionData();
             if (!questionData) return;
 
+            const keyOptions = ['ordering', 'matching'].includes(questionData.questionType)
+                ? [...questionData.options].sort((a, b) => a.localeCompare(b, 'uk'))
+                : questionData.options;
+
             const currentKey = JSON.stringify({
                 text: questionData.text,
-                options: questionData.options,
+                options: keyOptions,
                 type: questionData.questionType,
                 images: questionData.base64ImageSources
             });
