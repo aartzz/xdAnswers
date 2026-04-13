@@ -22,18 +22,29 @@
                 const button = document.createElement('button');
                 button.className = 'xd-btn xd-solve-btn';
                 button.innerText = '✨ Solve';
-                button.style.cssText = `background:transparent;border:1px solid #00ffff;color:#00ff9d;padding:5px 10px;border-radius:5px;cursor:pointer;margin-top:10px;font-family:'Courier New',monospace;font-weight:bold;z-index:9999;position:relative;`;
+                button.style.cssText = `background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.5);color:#6366f1;padding:6px 14px;border-radius:6px;cursor:pointer;margin-top:10px;font-family:system-ui,-apple-system,sans-serif;font-weight:600;font-size:13px;z-index:9999;position:relative;transition:all 0.15s;`;
                 
                 button.onclick = (e) => {
                     e.preventDefault(); e.stopPropagation();
-                    const questionText = container.innerText;
+                    const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
+                    const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
+                    
+                    const optionLabels = container.querySelectorAll('[role="radio"], [role="checkbox"], [role="option"]');
+                    const options = Array.from(optionLabels).map(el => el.innerText.trim()).filter(Boolean);
+                    const optionsText = options.join('\n');
+
+                    optionLabels.forEach(el => el.setAttribute('data-xd-option', 'true'));
+
                     const imgPromises = [];
                     container.querySelectorAll('img').forEach(img => {
                          if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
                     });
                     Promise.all(imgPromises).then(images => {
                          window.xdAnswers.processQuestion({
-                             text: questionText, base64Images: images.filter(i => i !== null), questionType: 'general'
+                             text: questionText,
+                             optionsText: optionsText || undefined,
+                             base64Images: images.filter(i => i !== null),
+                             questionType: options.length > 0 ? 'quiz' : 'general'
                          });
                     });
                 };
