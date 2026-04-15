@@ -1204,7 +1204,7 @@ confidence: 0-100%
             'height:' + (isMax ? maximizedHelperState.height : defaultHelperState.height) + ' !important;' +
             'max-height:' + (isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight) + ' !important;' +
             '}' +
-            '.ollama-helper-container *,.ollama-helper-container *:before,.ollama-helper-container *:after{' +
+            '.ollama-helper-container *:not(.xd-loader),.ollama-helper-container *:before,.ollama-helper-container *:after:not(.xd-loader){' +
             'all:revert !important;font-family:var(--xd-font) !important;font-size:inherit !important;line-height:inherit !important;' +
             'color:var(--xd-text) !important;box-sizing:border-box !important;margin:0 !important;padding:0 !important;' +
             'background:none !important;border:none !important;}' +
