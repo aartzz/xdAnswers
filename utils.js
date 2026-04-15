@@ -1306,6 +1306,9 @@ confidence: 0-100%
 
         window.xdAnswers.attachHelperEventListeners();
         window.xdAnswers.updateHelperBaseStyles();
+        // Set current model name in footer
+        const footerModelEl = container.querySelector('#xd-footer-model');
+        if (footerModelEl) footerModelEl.textContent = window.xdAnswers.settings.model || 'select model ↗';
     };
 
     window.xdAnswers.attachHelperEventListeners = function() {
