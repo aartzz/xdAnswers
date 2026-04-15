@@ -11,13 +11,33 @@ const PREDEFINED_THEMES = {
 const DEFAULT_BASE_URLS = {
     openai: 'https://api.openai.com/v1',
     anthropic: 'https://api.anthropic.com/v1',
-    google: 'https://generativelanguage.googleapis.com/v1beta'
+    google: 'https://generativelanguage.googleapis.com/v1beta',
+    deepseek: 'https://api.deepseek.com/v1',
+    groq: 'https://api.groq.com/openai/v1',
+    openrouter: 'https://openrouter.ai/api/v1',
+    cerebras: 'https://api.cerebras.ai/v1',
+    together: 'https://api.together.xyz/v1',
+    fireworks: 'https://api.fireworks.ai/inference/v1',
+    mistral: 'https://api.mistral.ai/v1'
+};
+
+const API_FORMAT_MAP = {
+    openai: 'openai', anthropic: 'anthropic', google: 'google',
+    deepseek: 'openai', groq: 'openai', openrouter: 'openai',
+    cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai'
 };
 
 const API_PROVIDERS = [
-    { id: 'openai', name: 'OpenAI-compatible', hint: 'OpenAI / OpenRouter / custom OpenAI API', logo: 'openai' },
+    { id: 'openai', name: 'OpenAI', hint: 'OpenAI API', logo: 'openai' },
     { id: 'anthropic', name: 'Anthropic', hint: 'Claude Messages API', logo: 'anthropic' },
-    { id: 'google', name: 'Google (Gemini)', hint: 'Generative Language API', logo: 'google' }
+    { id: 'google', name: 'Google (Gemini)', hint: 'Generative Language API', logo: 'google' },
+    { id: 'deepseek', name: 'DeepSeek', hint: 'DeepSeek API', logo: 'deepseek' },
+    { id: 'groq', name: 'Groq', hint: 'Groq API (fast inference)', logo: 'groq' },
+    { id: 'openrouter', name: 'OpenRouter', hint: 'OpenRouter API (multi-provider)', logo: 'openrouter' },
+    { id: 'cerebras', name: 'Cerebras', hint: 'Cerebras API (fast inference)', logo: 'cerebras' },
+    { id: 'together', name: 'Together AI', hint: 'Together API', logo: 'together-ai' },
+    { id: 'fireworks', name: 'Fireworks AI', hint: 'Fireworks API', logo: 'fireworks-ai' },
+    { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' }
 ];
 
 const PROVIDER_ICON_MAP = {
@@ -29,7 +49,10 @@ const PROVIDER_ICON_MAP = {
     'meta': 'meta', 'moonshotai': 'moonshot', 'z-ai': 'zhipu',
     'mistralai': 'mistral', 'mistral': 'mistral',
     'aisingapore': 'ai-singapore', 'allenai': 'allennlp',
-    'swiss-ai': 'swissai'
+    'swiss-ai': 'swissai',
+    'groq': 'groq', 'openrouter': 'openrouter',
+    'cerebras': 'cerebras', 'together': 'together-ai',
+    'fireworks': 'fireworks-ai'
 };
 
 const NON_CHAT_TYPES = new Set(['embedding', 'rerank', 'audio', 'image', 'video', 'tts', 'stt', 'speech']);
@@ -125,12 +148,17 @@ function processModels(rawModels, format) {
     });
 }
 
+const DEFAULT_PROMPT = 'Відповідай на тестові питання. Відповідь — ТІЛЬКИ валідний JSON об\'єкт, без markdown, без ```json, без зайвого тексту.\n\nФормат:\n{"answer": "правильна відповідь", "explanation": "коротке пояснення (1-3 речення)", "solution": "Дано: ... Розв\'язок: ...", "confidence": "0-100%"}\n\nПравила:\n- answer: точний текст правильного варіанту, якщо є варіанти відповідей\n- Для кількох правильних відповідей розділяй "; "\n- Відповідай мовою питання\n- solution пиши тільки для задач з розрахунками (фізика, хімія, математика)\n- confidence необов\'язкове\n- Виводь ТІЛЬКИ JSON об\'єкт, нічого більше';
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
 const DEFAULT_SETTINGS = {
-    apiFormat: 'openai',
-    baseUrl: DEFAULT_BASE_URLS.openai,
-    apiKey: '',
+    providers: [],
+    activeProviderId: '',
     model: 'gpt-4o',
-    promptPrefix: 'Відповідай на тестові питання. Відповідь — ТІЛЬКИ валідний JSON об\'єкт, без markdown, без ```json, без зайвого тексту.\n\nФормат:\n{"answer": "правильна відповідь", "explanation": "коротке пояснення (1-3 речення)", "solution": "Дано: ... Розв\'язок: ...", "confidence": "0-100%"}\n\nПравила:\n- answer: точний текст правильного варіанту, якщо є варіанти відповідей\n- Для кількох правильних відповідей розділяй "; "\n- Відповідай мовою питання\n- solution пиши тільки для задач з розрахунками (фізика, хімія, математика)\n- confidence необов\'язкове\n- Виводь ТІЛЬКИ JSON об\'єкт, нічого більше',
+    promptPrefix: DEFAULT_PROMPT,
     autoAnswer: false,
     autoAnswerCooldown: 2000,
     highlightCorrect: true,
@@ -144,28 +172,53 @@ const DEFAULT_SETTINGS = {
 let settings;
 let uiElements = {};
 
+function getActiveProvider(s) {
+    if (!s.providers || !s.providers.length) return null;
+    return s.providers.find(p => p.id === s.activeProviderId) || s.providers[0];
+}
+
 async function loadSettings() {
     const data = await chrome.storage.local.get('xdAnswers_settings');
     let loaded = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     if (data.xdAnswers_settings) {
         try {
             const parsed = JSON.parse(data.xdAnswers_settings);
+
+            // Migration from old flat format (apiFormat/baseUrl/apiKey at root)
+            if (parsed.apiFormat && !parsed.providers) {
+                const oldDefaults = {
+                    openai: 'https://api.openai.com/v1',
+                    anthropic: 'https://api.anthropic.com',
+                    google: 'https://generativelanguage.googleapis.com'
+                };
+                let baseUrl = parsed.baseUrl || DEFAULT_BASE_URLS[parsed.apiFormat] || '';
+                if (oldDefaults[parsed.apiFormat] === baseUrl) {
+                    baseUrl = DEFAULT_BASE_URLS[parsed.apiFormat];
+                }
+                const meta = getApiProviderMeta(parsed.apiFormat);
+                const migratedProvider = {
+                    id: generateId(),
+                    type: parsed.apiFormat,
+                    name: meta.name,
+                    baseUrl: baseUrl,
+                    apiKey: parsed.apiKey || ''
+                };
+                parsed.providers = [migratedProvider];
+                parsed.activeProviderId = migratedProvider.id;
+                parsed.model = parsed.model || 'gpt-4o';
+                delete parsed.apiFormat;
+                delete parsed.baseUrl;
+                delete parsed.apiKey;
+            }
+
             loaded = {
                 ...loaded,
                 ...parsed,
+                providers: parsed.providers || [],
                 customization: { ...loaded.customization, ...(parsed.customization || {}) }
             };
             if (typeof loaded.promptPrefix !== 'string' || !loaded.promptPrefix.trim()) {
                 loaded.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
-            }
-            // Migration: fix old base URLs missing version prefix
-            const oldDefaults = {
-                openai: 'https://api.openai.com/v1',
-                anthropic: 'https://api.anthropic.com',
-                google: 'https://generativelanguage.googleapis.com'
-            };
-            if (loaded.apiFormat && oldDefaults[loaded.apiFormat] === loaded.baseUrl) {
-                loaded.baseUrl = DEFAULT_BASE_URLS[loaded.apiFormat];
             }
         } catch (e) {
             console.error('Failed to parse settings', e);
@@ -194,12 +247,8 @@ function applyThemeToPopup() {
 
 function populateUI() {
     const el = uiElements;
-    renderProviderDropdown();
-    updateProviderTrigger();
-    el.baseUrl.value = settings.baseUrl;
-    el.apiKey.value = settings.apiKey;
+    renderActiveProviderSelector();
     el.modelName.value = settings.model;
-    el.promptPrefix.value = settings.promptPrefix;
 
     el.autoAnswerToggle.checked = settings.autoAnswer;
     el.autoAnswerCooldown.value = settings.autoAnswerCooldown;
@@ -214,50 +263,313 @@ function populateUI() {
     el.textColor.value = settings.customization.textColor;
 
     populateThemesGrid();
+    renderProvidersTab();
     applyThemeToPopup();
 }
 
-function renderProviderDropdown() {
-    const dropdown = uiElements.apiFormatDropdown;
-    if (!dropdown) return;
-    dropdown.innerHTML = API_PROVIDERS.map(provider => {
-        const active = provider.id === settings.apiFormat ? ' active' : '';
-        return `<button type="button" class="provider-option${active}" data-provider-id="${provider.id}">
+function renderActiveProviderSelector() {
+    const trigger = uiElements.activeProviderTrigger;
+    const dropdown = uiElements.activeProviderDropdown;
+    if (!trigger || !dropdown) return;
+
+    const active = getActiveProvider(settings);
+    if (active) {
+        const logo = getProviderLogo(active);
+        const isOther = active.type === 'other';
+        const hintLine = isOther ? escapeHTML(active.baseUrl) : (getApiProviderMeta(active.type)?.hint || '');
+        trigger.innerHTML = `<span class="provider-trigger-value">
+            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+            <span class="provider-option-text">
+                <span class="provider-option-title">${escapeHTML(active.name)}</span>
+                <span class="provider-option-hint">${hintLine}</span>
+            </span>
+        </span><span class="provider-caret">▾</span>`;
+    } else {
+        trigger.innerHTML = `<span class="provider-trigger-value">
+            <span class="provider-option-text">
+                <span class="provider-option-title">No provider configured</span>
+                <span class="provider-option-hint">Go to Providers tab to add one</span>
+            </span>
+        </span><span class="provider-caret">▾</span>`;
+    }
+
+    dropdown.innerHTML = settings.providers.map(p => {
+        const isActive = p.id === settings.activeProviderId ? ' active' : '';
+        const logo = getProviderLogo(p);
+        const isOther = p.type === 'other';
+        const hint = isOther ? escapeHTML(p.baseUrl) : (getApiProviderMeta(p.type)?.hint || '');
+        return `<button type="button" class="provider-option${isActive}" data-provider-id="${p.id}">
             <span class="provider-option-main">
-                <img class="provider-icon large" src="https://models.dev/logos/${provider.logo}.svg" alt="" loading="lazy">
+                <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
                 <span class="provider-option-text">
-                    <span class="provider-option-title">${escapeHTML(provider.name)}</span>
-                    <span class="provider-option-hint">${escapeHTML(provider.hint)}</span>
+                    <span class="provider-option-title">${escapeHTML(p.name)}</span>
+                    <span class="provider-option-hint">${hint}</span>
                 </span>
             </span>
         </button>`;
     }).join('');
 
+    if (!settings.providers.length) {
+        dropdown.innerHTML = '<div class="provider-empty">No providers configured</div>';
+    }
+
     dropdown.querySelectorAll('.provider-option').forEach(button => {
         button.addEventListener('click', async () => {
-            settings.apiFormat = button.dataset.providerId;
-            const meta = getApiProviderMeta(settings.apiFormat);
-            if (!uiElements.baseUrl.value || Object.values(DEFAULT_BASE_URLS).includes(uiElements.baseUrl.value)) {
-                uiElements.baseUrl.value = DEFAULT_BASE_URLS[settings.apiFormat];
-            }
-            updateProviderTrigger();
+            settings.activeProviderId = button.dataset.providerId;
+            renderActiveProviderSelector();
             dropdown.classList.add('hidden');
-            await autoSave({ apiFormat: settings.apiFormat, baseUrl: uiElements.baseUrl.value });
+            allModels = [];
+            await autoSave({ activeProviderId: settings.activeProviderId });
         });
     });
 }
 
-function updateProviderTrigger() {
-    const trigger = uiElements.apiFormatTrigger;
-    if (!trigger) return;
-    const meta = getApiProviderMeta(settings.apiFormat);
-    trigger.innerHTML = `<span class="provider-trigger-value">
-        <img class="provider-icon large" src="https://models.dev/logos/${meta.logo}.svg" alt="" loading="lazy">
-        <span class="provider-option-text">
-            <span class="provider-option-title">${escapeHTML(meta.name)}</span>
-            <span class="provider-option-hint">${escapeHTML(meta.hint)}</span>
-        </span>
-    </span><span class="provider-caret">▾</span>`;
+function renderProvidersTab() {
+    const container = uiElements.providersContainer;
+    if (!container) return;
+
+    const standard = settings.providers.filter(p => p.type !== 'other');
+    const custom = settings.providers.filter(p => p.type === 'other');
+
+    let html = '<div class="providers-section">';
+    html += '<div class="providers-section-header">Providers</div>';
+    if (standard.length) {
+        html += standard.map(p => renderProviderCard(p)).join('');
+    } else {
+        html += '<div class="provider-empty-hint">No providers added yet</div>';
+    }
+    html += '<button type="button" class="add-provider-btn" data-section="standard">+ Add Provider</button>';
+    html += '</div>';
+
+    html += '<div class="providers-section">';
+    html += '<div class="providers-section-header">Other <span class="providers-section-hint">Custom OpenAI-compatible endpoints</span></div>';
+    if (custom.length) {
+        html += custom.map(p => renderProviderCard(p)).join('');
+    }
+    html += '<button type="button" class="add-provider-btn" data-section="other">+ Add Custom Provider</button>';
+    html += '</div>';
+
+    container.innerHTML = html;
+    attachProviderCardListeners(container);
+}
+
+function getProviderLogo(p) {
+    if (p.type === 'other') return 'openai';
+    const meta = getApiProviderMeta(p.type);
+    return meta ? meta.logo : 'openai';
+}
+
+function renderProviderCard(p) {
+    const logo = getProviderLogo(p);
+    const isActive = p.id === settings.activeProviderId;
+    const activeBadge = isActive ? '<span class="provider-active-badge">active</span>' : '';
+    const keyPreview = p.apiKey ? '••••' + p.apiKey.slice(-4) : 'no key';
+    const isOther = p.type === 'other';
+    const urlLine = isOther ? `<span class="provider-card-url">${escapeHTML(p.baseUrl)}</span>` : '';
+
+    return `<div class="provider-card${isActive ? ' active' : ''}" data-id="${p.id}">
+        <div class="provider-card-header">
+            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+            <div class="provider-card-info">
+                <span class="provider-card-name">${escapeHTML(p.name)}${activeBadge}</span>
+                ${urlLine}
+                <span class="provider-card-key">${keyPreview}</span>
+            </div>
+            <div class="provider-card-actions">
+                <button type="button" class="provider-card-btn provider-activate-btn" data-id="${p.id}" title="Set active">✓</button>
+                <button type="button" class="provider-card-btn provider-edit-btn" data-id="${p.id}" title="Edit">✎</button>
+                <button type="button" class="provider-card-btn provider-delete-btn" data-id="${p.id}" title="Delete">✕</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function attachProviderCardListeners(container) {
+    container.querySelectorAll('.provider-activate-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            settings.activeProviderId = btn.dataset.id;
+            allModels = [];
+            renderProvidersTab();
+            renderActiveProviderSelector();
+            await autoSave({ activeProviderId: settings.activeProviderId });
+        });
+    });
+
+    container.querySelectorAll('.provider-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const provider = settings.providers.find(p => p.id === btn.dataset.id);
+            if (provider) showProviderForm(provider);
+        });
+    });
+
+    container.querySelectorAll('.provider-delete-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            settings.providers = settings.providers.filter(p => p.id !== btn.dataset.id);
+            if (settings.activeProviderId === btn.dataset.id) {
+                settings.activeProviderId = settings.providers[0]?.id || '';
+            }
+            renderProvidersTab();
+            renderActiveProviderSelector();
+            await autoSave();
+        });
+    });
+
+    container.querySelectorAll('.add-provider-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const isOther = btn.dataset.section === 'other';
+            showProviderForm(null, isOther);
+        });
+    });
+}
+
+function showProviderForm(existing, isOther) {
+    const container = uiElements.providersContainer;
+    if (!container) return;
+
+    const isEdit = !!existing;
+    const initialType = existing?.type || (isOther ? 'other' : 'openai');
+    const isOtherType = initialType === 'other';
+    const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (DEFAULT_BASE_URLS[initialType] || ''));
+    const urlDisplay = isOtherType ? '' : ' style="display:none"';
+
+    const providerListHtml = isOther
+        ? `<div class="pf-type-selected">
+                <img class="provider-icon large" src="https://models.dev/logos/openai.svg" alt="" loading="lazy">
+                <span class="provider-option-text"><span class="provider-option-title">Custom (OpenAI-compatible)</span></span>
+            </div>`
+        : (() => {
+            const sel = API_PROVIDERS.find(p => p.id === initialType) || API_PROVIDERS[0];
+            return `<button type="button" class="pf-type-trigger" id="pf-type-trigger">
+                <span class="provider-trigger-value">
+                    <img class="provider-icon large" src="https://models.dev/logos/${sel.logo}.svg" alt="" loading="lazy">
+                    <span class="provider-option-text">
+                        <span class="provider-option-title">${escapeHTML(sel.name)}</span>
+                        <span class="provider-option-hint">${escapeHTML(sel.hint)}</span>
+                    </span>
+                </span><span class="provider-caret">▾</span>
+            </button>
+            <div class="pf-type-dropdown hidden" id="pf-type-dropdown">
+                ${API_PROVIDERS.map(p => `<button type="button" class="pf-type-option${p.id === initialType ? ' active' : ''}" data-type="${p.id}">
+                    <img class="provider-icon large" src="https://models.dev/logos/${p.logo}.svg" alt="" loading="lazy">
+                    <span class="provider-option-text">
+                        <span class="provider-option-title">${escapeHTML(p.name)}</span>
+                        <span class="provider-option-hint">${escapeHTML(p.hint)}</span>
+                    </span>
+                </button>`).join('')}
+            </div>`;
+        })();
+
+    const formHtml = `<div class="provider-form">
+        <div class="form-group">
+            <label>Provider:</label>
+            <div class="pf-type-wrapper">${providerListHtml}</div>
+            <input type="hidden" id="pf-type" value="${initialType}">
+        </div>
+        <div class="form-group">
+            <label>Name:</label>
+            <input type="text" id="pf-name" value="${escapeHTML(existing?.name || '')}" placeholder="${isOtherType ? 'My Custom Provider' : getApiProviderMeta(initialType)?.name || 'Provider'}">
+        </div>
+        <div class="form-group pf-url-group"${urlDisplay}>
+            <label>Base URL:</label>
+            <input type="text" id="pf-url" value="${escapeHTML(defaultUrl)}" placeholder="https://api.example.com/v1">
+        </div>
+        <div class="form-group">
+            <label>API Key:</label>
+            <input type="password" id="pf-key" value="${escapeHTML(existing?.apiKey || '')}" placeholder="sk-...">
+        </div>
+        <div class="provider-form-actions">
+            <button type="button" id="pf-save" class="pf-btn pf-save-btn">${isEdit ? 'Save' : 'Add'}</button>
+            <button type="button" id="pf-cancel" class="pf-btn pf-cancel-btn">Cancel</button>
+        </div>
+    </div>`;
+
+    const formWrapper = document.createElement('div');
+    formWrapper.className = 'provider-form-overlay';
+    formWrapper.innerHTML = formHtml;
+    container.appendChild(formWrapper);
+
+    const pfType = formWrapper.querySelector('#pf-type');
+    const pfUrl = formWrapper.querySelector('#pf-url');
+    const pfTypeTrigger = formWrapper.querySelector('#pf-type-trigger');
+    const pfTypeDropdown = formWrapper.querySelector('#pf-type-dropdown');
+
+    if (pfTypeTrigger && pfTypeDropdown) {
+        pfTypeTrigger.addEventListener('click', () => {
+            pfTypeDropdown.classList.toggle('hidden');
+        });
+
+        pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newType = btn.dataset.type;
+                const meta = getApiProviderMeta(newType);
+                pfType.value = newType;
+                const logo = meta?.logo || 'openai';
+                pfTypeTrigger.innerHTML = `<span class="provider-trigger-value">
+                    <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+                    <span class="provider-option-text">
+                        <span class="provider-option-title">${escapeHTML(meta?.name || newType)}</span>
+                        <span class="provider-option-hint">${escapeHTML(meta?.hint || '')}</span>
+                    </span>
+                </span><span class="provider-caret">▾</span>`;
+                pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                pfTypeDropdown.classList.add('hidden');
+                pfUrl.value = DEFAULT_BASE_URLS[newType] || '';
+                const nameInput = formWrapper.querySelector('#pf-name');
+                if (!nameInput.value.trim()) nameInput.placeholder = meta?.name || 'Provider';
+            });
+        });
+
+        document.addEventListener('click', function closeTypeDropdown(e) {
+            if (!formWrapper.contains(e.target)) {
+                pfTypeDropdown.classList.add('hidden');
+            }
+            if (!document.contains(formWrapper)) {
+                document.removeEventListener('click', closeTypeDropdown);
+            }
+        });
+    }
+
+    formWrapper.querySelector('#pf-cancel').addEventListener('click', () => {
+        formWrapper.remove();
+    });
+
+    formWrapper.querySelector('#pf-save').addEventListener('click', async () => {
+        const selectedType = isOther ? 'other' : pfType.value;
+        const name = formWrapper.querySelector('#pf-name').value.trim();
+        const key = formWrapper.querySelector('#pf-key').value.trim();
+
+        const isOtherSave = selectedType === 'other';
+        const meta = getApiProviderMeta(selectedType);
+        const finalName = name || (isOtherSave ? 'Custom Provider' : (meta?.name || selectedType));
+        const finalUrl = isOtherSave
+            ? (pfUrl.value.trim() || 'https://api.openai.com/v1')
+            : (DEFAULT_BASE_URLS[selectedType] || '');
+
+        if (isEdit) {
+            existing.type = selectedType;
+            existing.name = finalName;
+            existing.baseUrl = finalUrl;
+            existing.apiKey = key;
+        } else {
+            const newProvider = {
+                id: generateId(),
+                type: selectedType,
+                name: finalName,
+                baseUrl: finalUrl,
+                apiKey: key
+            };
+            settings.providers.push(newProvider);
+            if (!settings.activeProviderId) {
+                settings.activeProviderId = newProvider.id;
+            }
+        }
+
+        formWrapper.remove();
+        renderProvidersTab();
+        renderActiveProviderSelector();
+        await autoSave();
+    });
 }
 
 function populateThemesGrid() {
@@ -297,9 +609,11 @@ async function fetchModels() {
     if (!btn) return;
     btn.classList.add('spinning');
     try {
-        const format = settings.apiFormat;
-        const base = settings.baseUrl.replace(/\/+$/, '');
-        const key = settings.apiKey;
+        const active = getActiveProvider(settings);
+        if (!active) { btn.classList.remove('spinning'); return; }
+        const format = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
+        const base = active.baseUrl.replace(/\/+$/, '');
+        const key = active.apiKey;
         let url, headers = {};
 
         if (format === 'openai') {
@@ -434,8 +748,8 @@ function attachEventListeners() {
         document.getElementById(b.dataset.tab).classList.add('active');
     }));
 
-    el.apiFormatTrigger.onclick = () => {
-        el.apiFormatDropdown.classList.toggle('hidden');
+    el.activeProviderTrigger.onclick = () => {
+        el.activeProviderDropdown.classList.toggle('hidden');
     };
 
     el.fetchModelsBtn.onclick = async () => {
@@ -444,10 +758,7 @@ function attachEventListeners() {
     };
 
     const autoInputs = [
-        { el: el.baseUrl, key: 'baseUrl' },
-        { el: el.apiKey, key: 'apiKey' },
         { el: el.modelName, key: 'model' },
-        { el: el.promptPrefix, key: 'promptPrefix' },
         { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => parseInt(v, 10) || 2000 }
     ];
     for (const { el: inp, key, parse } of autoInputs) {
@@ -456,10 +767,6 @@ function attachEventListeners() {
     el.modelName.addEventListener('input', () => {
         clearTimeout(autoSave._modelTimer);
         autoSave._modelTimer = setTimeout(() => autoSave({ model: el.modelName.value.trim() }), 300);
-    });
-    el.promptPrefix.addEventListener('input', () => {
-        clearTimeout(autoSave._timer);
-        autoSave._timer = setTimeout(() => autoSave({ promptPrefix: el.promptPrefix.value }), 600);
     });
 
     const autoToggles = [
@@ -488,8 +795,8 @@ function attachEventListeners() {
         if (dropdown && !wrapper?.contains(e.target)) {
             dropdown.classList.add('hidden');
         }
-        if (uiElements.apiFormatDropdown && !document.querySelector('.provider-select-wrapper')?.contains(e.target)) {
-            uiElements.apiFormatDropdown.classList.add('hidden');
+        if (el.activeProviderDropdown && !document.querySelector('.provider-select-wrapper')?.contains(e.target)) {
+            el.activeProviderDropdown.classList.add('hidden');
         }
     });
 
@@ -501,11 +808,7 @@ function attachEventListeners() {
 
 async function autoSave(overrides) {
     const el = uiElements;
-    settings.apiFormat = settings.apiFormat || 'openai';
-    settings.baseUrl = el.baseUrl.value;
-    settings.apiKey = el.apiKey.value;
     settings.model = el.modelName.value;
-    settings.promptPrefix = el.promptPrefix.value;
     settings.autoAnswer = el.autoAnswerToggle.checked;
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
@@ -527,13 +830,11 @@ async function autoSave(overrides) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     uiElements = {
-        apiFormatTrigger: document.getElementById('api-format-trigger'),
-        apiFormatDropdown: document.getElementById('api-format-dropdown'),
-        baseUrl: document.getElementById('base-url'),
-        apiKey: document.getElementById('api-key'),
+        activeProviderTrigger: document.getElementById('active-provider-trigger'),
+        activeProviderDropdown: document.getElementById('active-provider-dropdown'),
         modelName: document.getElementById('model-name'),
-        promptPrefix: document.getElementById('prompt-prefix'),
         fetchModelsBtn: document.getElementById('fetch-models-btn'),
+        providersContainer: document.getElementById('providers-container'),
         autoAnswerToggle: document.getElementById('auto-answer-toggle'),
         autoAnswerCooldown: document.getElementById('auto-answer-cooldown'),
         cooldownGroup: document.getElementById('cooldown-group'),

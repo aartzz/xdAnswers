@@ -20,13 +20,25 @@ confidence: 0-100%
     const DEFAULT_BASE_URLS = {
         openai: 'https://api.openai.com/v1',
         anthropic: 'https://api.anthropic.com/v1',
-        google: 'https://generativelanguage.googleapis.com/v1beta'
+        google: 'https://generativelanguage.googleapis.com/v1beta',
+        deepseek: 'https://api.deepseek.com/v1',
+        groq: 'https://api.groq.com/openai/v1',
+        openrouter: 'https://openrouter.ai/api/v1',
+        cerebras: 'https://api.cerebras.ai/v1',
+        together: 'https://api.together.xyz/v1',
+        fireworks: 'https://api.fireworks.ai/inference/v1',
+        mistral: 'https://api.mistral.ai/v1'
+    };
+
+    const API_FORMAT_MAP = {
+        openai: 'openai', anthropic: 'anthropic', google: 'google',
+        deepseek: 'openai', groq: 'openai', openrouter: 'openai',
+        cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai'
     };
 
     const DEFAULT_SETTINGS = {
-        apiFormat: 'openai',
-        baseUrl: DEFAULT_BASE_URLS.openai,
-        apiKey: '',
+        providers: [],
+        activeProviderId: '',
         model: 'gpt-4o',
         promptPrefix: DEFAULT_SYSTEM_PROMPT,
         autoAnswer: false,
@@ -41,6 +53,25 @@ confidence: 0-100%
             textColor: '#cdd6f4'
         }
     };
+
+    function getActiveProvider(s) {
+        if (!s.providers || !s.providers.length) return null;
+        return s.providers.find(p => p.id === s.activeProviderId) || s.providers[0];
+    }
+
+    function getEffectiveSettings(s) {
+        const active = getActiveProvider(s);
+        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix };
+        const apiFormat = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
+        const baseUrl = active.baseUrl || DEFAULT_BASE_URLS[active.type] || DEFAULT_BASE_URLS.openai;
+        return {
+            apiFormat: apiFormat,
+            baseUrl: baseUrl,
+            apiKey: active.apiKey,
+            model: s.model,
+            promptPrefix: s.promptPrefix
+        };
+    }
 
     window.xdAnswers.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
     window.xdAnswers.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -75,13 +106,32 @@ confidence: 0-100%
         if (data.xdAnswers_settings) {
             try {
                 const p = JSON.parse(data.xdAnswers_settings);
-                s = { ...s, ...p, customization: { ...s.customization, ...(p.customization || {}) } };
+
+                // Migration from old flat format
+                if (p.apiFormat && !p.providers) {
+                    const oldDefaults = { openai: 'https://api.openai.com/v1', anthropic: 'https://api.anthropic.com', google: 'https://generativelanguage.googleapis.com' };
+                    let baseUrl = p.baseUrl || DEFAULT_BASE_URLS[p.apiFormat] || '';
+                    if (oldDefaults[p.apiFormat] === baseUrl) {
+                        baseUrl = DEFAULT_BASE_URLS[p.apiFormat];
+                    }
+                    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+                    const providerNames = { openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google (Gemini)' };
+                    p.providers = [{
+                        id: id,
+                        type: p.apiFormat,
+                        name: providerNames[p.apiFormat] || p.apiFormat,
+                        baseUrl: baseUrl,
+                        apiKey: p.apiKey || ''
+                    }];
+                    p.activeProviderId = id;
+                    delete p.apiFormat;
+                    delete p.baseUrl;
+                    delete p.apiKey;
+                }
+
+                s = { ...s, ...p, providers: p.providers || [], customization: { ...s.customization, ...(p.customization || {}) } };
                 if (typeof s.promptPrefix !== 'string' || !s.promptPrefix.trim()) {
                     s.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
-                }
-                const oldDefaults = { openai: 'https://api.openai.com/v1', anthropic: 'https://api.anthropic.com', google: 'https://generativelanguage.googleapis.com' };
-                if (s.apiFormat && oldDefaults[s.apiFormat] === s.baseUrl) {
-                    s.baseUrl = DEFAULT_BASE_URLS[s.apiFormat];
                 }
             } catch (e) {
                 console.error('xdAnswers: Failed to parse settings.', e);
@@ -199,7 +249,14 @@ confidence: 0-100%
 
     function buildHeaders(s) {
         const h = { 'Content-Type': 'application/json' };
-        if (s.apiFormat === 'openai') h['Authorization'] = 'Bearer ' + s.apiKey;
+        if (s.apiFormat === 'openai') {
+            h['Authorization'] = 'Bearer ' + s.apiKey;
+            // OpenRouter needs additional headers
+            if (s.baseUrl && s.baseUrl.includes('openrouter.ai')) {
+                h['HTTP-Referer'] = 'https://xdanswers.app';
+                h['X-Title'] = 'xdAnswers';
+            }
+        }
         else if (s.apiFormat === 'anthropic') {
             h['x-api-key'] = s.apiKey;
             h['anthropic-version'] = '2023-06-01';
@@ -279,7 +336,7 @@ confidence: 0-100%
     // ── AI Calls ──
 
     window.xdAnswers.getAnswer = async function(questionData) {
-        const s = window.xdAnswers.settings;
+        const s = getEffectiveSettings(window.xdAnswers.settings);
         const { systemPrompt, userMsg } = buildMessages(questionData);
         const images = questionData.base64Images || [];
         const body = buildRequestBody(s, systemPrompt, userMsg, images, false);
@@ -301,7 +358,7 @@ confidence: 0-100%
 
     window.xdAnswers.streamAnswer = function(questionData, outerStartTime) {
         return new Promise((resolve, reject) => {
-            const s = window.xdAnswers.settings;
+            const s = getEffectiveSettings(window.xdAnswers.settings);
             const { systemPrompt, userMsg } = buildMessages(questionData);
             const images = questionData.base64Images || [];
             const body = buildRequestBody(s, systemPrompt, userMsg, images, true);

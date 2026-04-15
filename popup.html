@@ -12,6 +12,7 @@
 
     <div class="tab-buttons">
         <button class="tab-button active" data-tab="ai-tab">AI</button>
+        <button class="tab-button" data-tab="providers-tab">Providers</button>
         <button class="tab-button" data-tab="features-tab">Features</button>
         <button class="tab-button" data-tab="themes-tab">Themes</button>
         <button class="tab-button" data-tab="style-tab">Style</button>
@@ -20,19 +21,11 @@
 
     <div id="ai-tab" class="tab-content active">
         <div class="form-group provider-select-group">
-            <label for="api-format-trigger">API Format:</label>
+            <label for="active-provider-trigger">Provider:</label>
             <div class="provider-select-wrapper">
-                <button type="button" id="api-format-trigger" class="provider-select-trigger"></button>
-                <div id="api-format-dropdown" class="provider-dropdown hidden"></div>
+                <button type="button" id="active-provider-trigger" class="provider-select-trigger"></button>
+                <div id="active-provider-dropdown" class="provider-dropdown hidden"></div>
             </div>
-        </div>
-        <div class="form-group">
-            <label for="base-url">Base URL:</label>
-            <input type="text" id="base-url" placeholder="https://api.openai.com/v1">
-        </div>
-        <div class="form-group">
-            <label for="api-key">API Key:</label>
-            <input type="password" id="api-key" placeholder="sk-...">
         </div>
         <div class="form-group model-select-group">
             <label for="model-name">Model: <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch available models">↻</span></label>
@@ -41,10 +34,10 @@
                 <div id="model-dropdown" class="model-dropdown hidden"></div>
             </div>
         </div>
-        <div class="form-group prompt-group">
-            <label for="prompt-prefix">System Prompt:</label>
-            <textarea id="prompt-prefix"></textarea>
-        </div>
+    </div>
+
+    <div id="providers-tab" class="tab-content">
+        <div id="providers-container"></div>
     </div>
 
     <div id="features-tab" class="tab-content">
