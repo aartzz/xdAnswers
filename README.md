@@ -1,87 +1,67 @@
-# 🇺🇦xdAnswers
+# xdAnswers
 
-A free and open-source extension that helps you with tests using the power of artificial intelligence.
+Free, open-source Chrome extension that solves test questions with AI.
 
-> [!IMPORTANT]  
-> This project still in **BETA** testing. If you see bug, [create issue](https://github.com/aartzz/xdAnswers/issues) about it.
+Works out of the box — ships with free providers, no API key needed.
 
-![A screenshot of the extension in action](images/README/ui.png) 
-## 🚀 Key Features
+> **Beta** — bugs happen. [Report them](https://github.com/aartzz/xdAnswers/issues).
 
-* **AI-Powered Answers:** Get answers to test questions using advanced language models.
-* **Multi-Service Support:** Integrates with MistralAI, OpenAI, Google Gemini, and local models via Ollama.
-* **Image Recognition:** The extension can analyze images in both questions and answer options.
-* **Convenient UI:** A floating helper window that you can move and resize.
-* **Flexible Configuration:** Manage Themes, API keys, models, and system prompts through a user-friendly popup window.
+![Screenshot](images/README/ui.png)
 
-## ⚙️ How to Install
+## Features
 
-**Step 1: Go to the Releases Page**
+- **Free by default** — 3 built-in Unturf providers (Hermes, Qwen, Qwen Vision) with no API key
+- **Any OpenAI-compatible API** — OpenAI, Anthropic, Gemini, DeepSeek, Groq, local Ollama, anything
+- **Image recognition** — handles images in questions and answer options
+- **Silent modes** — indicators (dot next to correct answer), page title, or clipboard-only stealth
+- **Auto-answer** — automatically selects the correct option
+- **Floating helper** — draggable, shows answer + reasoning + elapsed time
 
-1.  Navigate to the **[Releases](https://github.com/aartzz/xdAnswers/releases)** page of this repository.
-2.  Find the latest release, which will be marked with a `Latest` tag.
+## Install
 
-**Step 2: Download the Correct File for Your Browser**
+### Desktop (Chrome, Brave, Edge, Vivaldi)
 
-Under the **Assets** section of the latest release, download the appropriate file:
-* For **Chrome, Kiwi, or other Chromium browsers**, download the `xdAnswers-chrome-vX.X.X.zip` file.
-* For **Firefox**, download the `xdAnswers-firefox-vX.X.X.xpi` file.
+1. Go to [Releases](https://github.com/aartzz/xdAnswers/releases), download the latest `xdAnswers-chrome-*.zip`
+2. Unzip it
+3. Open `chrome://extensions`, enable **Developer mode** (top right)
+4. Click **Load unpacked**, select the unzipped folder
 
-**Step 3: Install the File in Your Browser**
+### Mobile (Kiwi Browser)
 
-#### 🖥️ Google Chrome (Dektop)
+1. Install [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) from Play Store
+2. Go to [Releases](https://github.com/aartzz/xdAnswers/releases), download the latest `xdAnswers-chrome-*.zip`
+3. Open `kiwi://extensions`, enable **Developer mode**
+4. Click **Load unpacked**, select the unzipped folder
 
-1.  Download the `...chrome...zip` file and **unzip it** into a new folder.
-2.  Open Chrome and navigate to `chrome://extensions`.
-3.  In the top-right corner, enable **Developer mode**.
-4.  Click the **Load unpacked** button that appears on the left.
-5.  In the file selection window, choose the **folder you just unzipped**.
-6.  Done! The extension's icon will appear in your toolbar.
+### Firefox
 
-#### 🦊 Mozilla Firefox (Mobile & Desktop)
+> [!NOTE]  
+> Requires [Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix) (mobile) or [ESR/Dev/Nightly](https://www.mozilla.org/firefox/organizations) (desktop).
 
-> [!WARNING]  
-> For mobile, you need install [Firefox Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix).
->
-> For desktop, you need install [ESR](https://www.mozilla.org/firefox/organizations) or [Dev edition](https://www.mozilla.org/firefox/developer) or [Nightly](https://nightly.mozilla.org)
+1. In address bar: `about:config` → accept risk → set `xpinstall.signatures.required` to `false`
+2. Download `xdAnswers-firefox-*.xpi` from [Releases](https://github.com/aartzz/xdAnswers/releases)
+3. Drag the `.xpi` file into a Firefox window
 
-1.  Open your new developer version of Firefox.
-2.  In the address bar, type `about:config` and press Enter.
-3.  A warning page may appear. Click "Accept the Risk and Continue".
-4.  In the search bar at the top of the page, type `xpinstall.signatures.required`.
-5.  You will see the preference listed. Double-click on it to change its value from `true` to **`false`**.
-6.  Now, you can install the add-on permanently. Download the `...firefox...xpi` file from the latest release and simply **drag and drop** it onto any Firefox window. It will install without any verification errors and will remain active after you restart the browser.
+### From source
 
----
+```bash
+git clone https://github.com/aartzz/xdAnswers.git
+node scripts/build-manifest.js
+```
+Then load unpacked as above.
 
-### For Developers
+## Usage
 
-This method is for those who want to modify the code or test the latest unreleased changes.
+1. Click the extension icon → settings open
+2. Pick a provider (Unturf Vision is default, works for free)
+3. If using a paid API, paste your key
+4. Open a test on a supported site — the helper appears automatically
 
-1.  Clone the repository or download the source code as a ZIP file and unzip it.
-    ```bash
-    git clone https://github.com/aartzz/xdAnswers.git
-    ```
-2.  Run ``node scripts/build-manifest.js``
-3.  Follow the "Load unpacked" instructions for your browser (Chrome or the "Temporary Add-on" method for Firefox)
+## Supported Sites
 
-## 💡 How to Use
-
-1.  After installation, click the extension's icon in your browser's toolbar to open the settings.
-2.  Select your preferred service (e.g., MistralAI).
-3.  If the service requires an API key (like OpenAI or Gemini), paste it into the appropriate field.
-4.  Click "Save and Close".
-5.  Navigate to a test on one of the supported sites.
-6.  The helper window will appear automatically and display the answer to the current question.
-
-## ✅ Supported Sites
-
--   [🇺🇦 NaUrok](https://naurok.com.ua)
--   [🇺🇦 Vseosvita](https://vseosvita.ua) [BETA]
--   [🇺🇦 JustClass](https://justclass.com.ua) [BETA]
--   [🌐 Google Forms](https://docs.google.com/forms) [BETA]
-
-## 📝 To-Do
-
--   Add more support for educational platforms.
--   Fix bugs and improve stability.
+| Site | URL | Status |
+|------|-----|--------|
+| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable |
+| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta |
+| JustClass | [justclass.com.ua](https://justclass.com.ua) | beta |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta |
