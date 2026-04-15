@@ -18,13 +18,17 @@ const DEFAULT_BASE_URLS = {
     cerebras: 'https://api.cerebras.ai/v1',
     together: 'https://api.together.xyz/v1',
     fireworks: 'https://api.fireworks.ai/inference/v1',
-    mistral: 'https://api.mistral.ai/v1'
+    mistral: 'https://api.mistral.ai/v1',
+    'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
+    'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
+    'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1'
 };
 
 const API_FORMAT_MAP = {
     openai: 'openai', anthropic: 'anthropic', google: 'google',
     deepseek: 'openai', groq: 'openai', openrouter: 'openai',
-    cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai'
+    cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
+    'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai'
 };
 
 const API_PROVIDERS = [
@@ -37,14 +41,18 @@ const API_PROVIDERS = [
     { id: 'cerebras', name: 'Cerebras', hint: 'Cerebras API (fast inference)', logo: 'cerebras' },
     { id: 'together', name: 'Together AI', hint: 'Together API', logo: 'together-ai' },
     { id: 'fireworks', name: 'Fireworks AI', hint: 'Fireworks API', logo: 'fireworks-ai' },
-    { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' }
+    { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' },
+    { id: 'unturf-hermes', name: 'Unturf Hermes', hint: 'Free — Hermes 3 Llama 3.1 8B', logo: 'unturf' },
+    { id: 'unturf-qwen', name: 'Unturf Qwen', hint: 'Free — Qwen3 Coder + Gemma 4', logo: 'unturf' },
+    { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' }
 ];
 
 const PROVIDER_ICON_MAP = {
     'openai': 'openai', 'anthropic': 'anthropic', 'google': 'google',
     'nvidia': 'nvidia', 'ollama-cloud': 'ollama', 'ollamacloud': 'ollama',
     'opencode-zen': 'openai', 'venice': 'venice', 'pollinations': 'pollinations',
-    'publicai': 'openai', 'unturf': 'openai', 'g4f': 'openai',
+    'publicai': 'openai', 'unturf': 'unturf', 'unturf-hermes': 'unturf',
+    'unturf-qwen': 'unturf', 'unturf-vl': 'unturf', 'g4f': 'openai',
     'deepseek-ai': 'deepseek', 'deepseek': 'deepseek',
     'meta': 'meta', 'moonshotai': 'moonshot', 'z-ai': 'zhipu',
     'mistralai': 'mistral', 'mistral': 'mistral',
@@ -174,9 +182,31 @@ function generateId() {
 }
 
 const DEFAULT_SETTINGS = {
-    providers: [],
-    activeProviderId: '',
-    model: 'gpt-4o',
+    providers: [
+        {
+            id: 'unturf-hermes-default',
+            type: 'unturf-hermes',
+            name: 'Unturf Hermes',
+            baseUrl: 'https://hermes.ai.unturf.com/v1',
+            apiKey: 'free'
+        },
+        {
+            id: 'unturf-qwen-default',
+            type: 'unturf-qwen',
+            name: 'Unturf Qwen',
+            baseUrl: 'https://qwen.ai.unturf.com/v1',
+            apiKey: 'free'
+        },
+        {
+            id: 'unturf-vl-default',
+            type: 'unturf-vl',
+            name: 'Unturf Vision',
+            baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
+            apiKey: 'free'
+        }
+    ],
+    activeProviderId: 'unturf-vl-default',
+    model: '',
     promptPrefix: DEFAULT_PROMPT,
     autoAnswer: false,
     autoAnswerCooldown: 2000,
@@ -237,6 +267,12 @@ async function loadSettings() {
                 providers: parsed.providers || [],
                 customization: { ...loaded.customization, ...(parsed.customization || {}) }
             };
+
+            // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
+            if (!loaded.providers || loaded.providers.length === 0) {
+                loaded.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
+                loaded.activeProviderId = DEFAULT_SETTINGS.activeProviderId;
+            }
             if (typeof loaded.promptPrefix !== 'string' || !loaded.promptPrefix.trim()) {
                 loaded.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
             }
@@ -360,6 +396,7 @@ function renderActiveProviderSelector() {
             dropdown.classList.add('hidden');
             allModels = [];
             await autoSave({ activeProviderId: settings.activeProviderId });
+            fetchModels().then(() => renderModelList());
         });
     });
 }
@@ -432,6 +469,7 @@ function attachProviderCardListeners(container) {
             renderProvidersTab();
             renderActiveProviderSelector();
             await autoSave({ activeProviderId: settings.activeProviderId });
+            fetchModels().then(() => renderModelList());
         });
     });
 
@@ -955,6 +993,17 @@ async function autoSave(overrides) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Global fallback for broken model/provider icons
+    document.addEventListener('error', (e) => {
+        const img = e.target;
+        if (img && (img.classList.contains('provider-icon') || img.classList.contains('model-icon'))) {
+            const span = document.createElement('span');
+            span.className = 'provider-icon-fallback';
+            span.textContent = '?';
+            img.replaceWith(span);
+        }
+    }, true);
+
     uiElements = {
         activeProviderTrigger: document.getElementById('active-provider-trigger'),
         activeProviderDropdown: document.getElementById('active-provider-dropdown'),

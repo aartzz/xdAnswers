@@ -28,19 +28,45 @@ confidence: 0-100%
         cerebras: 'https://api.cerebras.ai/v1',
         together: 'https://api.together.xyz/v1',
         fireworks: 'https://api.fireworks.ai/inference/v1',
-        mistral: 'https://api.mistral.ai/v1'
+        mistral: 'https://api.mistral.ai/v1',
+        'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
+        'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
+        'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1'
     };
 
     const API_FORMAT_MAP = {
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'openai', groq: 'openai', openrouter: 'openai',
-        cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai'
+        cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
+        'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai'
     };
 
     const DEFAULT_SETTINGS = {
-        providers: [],
-        activeProviderId: '',
-        model: 'gpt-4o',
+        providers: [
+            {
+                id: 'unturf-hermes-default',
+                type: 'unturf-hermes',
+                name: 'Unturf Hermes',
+                baseUrl: 'https://hermes.ai.unturf.com/v1',
+                apiKey: 'free'
+            },
+            {
+                id: 'unturf-qwen-default',
+                type: 'unturf-qwen',
+                name: 'Unturf Qwen',
+                baseUrl: 'https://qwen.ai.unturf.com/v1',
+                apiKey: 'free'
+            },
+            {
+                id: 'unturf-vl-default',
+                type: 'unturf-vl',
+                name: 'Unturf Vision',
+                baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
+                apiKey: 'free'
+            }
+        ],
+        activeProviderId: 'unturf-vl-default',
+        model: '',
         promptPrefix: DEFAULT_SYSTEM_PROMPT,
         autoAnswer: false,
         autoAnswerCooldown: 2000,
@@ -132,6 +158,12 @@ confidence: 0-100%
                 }
 
                 s = { ...s, ...p, providers: p.providers || [], customization: { ...s.customization, ...(p.customization || {}) } };
+
+                // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
+                if (!s.providers || s.providers.length === 0) {
+                    s.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
+                    s.activeProviderId = DEFAULT_SETTINGS.activeProviderId;
+                }
                 if (typeof s.promptPrefix !== 'string' || !s.promptPrefix.trim()) {
                     s.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
                 }
@@ -146,7 +178,7 @@ confidence: 0-100%
         window.xdAnswers.settings = s;
         // Update footer model name
         const footerModel = document.getElementById('xd-footer-model');
-        if (footerModel && s.model) footerModel.textContent = s.model;
+        if (footerModel) footerModel.textContent = s.model || 'select model ↗';
         return s;
     };
 
@@ -1458,7 +1490,7 @@ confidence: 0-100%
                 window.xdAnswers.updateHelperBaseStyles();
                 // Update footer model name
                 const footerModel = document.getElementById('xd-footer-model');
-                if (footerModel && window.xdAnswers.settings.model) footerModel.textContent = window.xdAnswers.settings.model;
+                if (footerModel) footerModel.textContent = window.xdAnswers.settings.model || 'select model ↗';
                 const silentMode = window.xdAnswers.settings.silentMode || '';
                 if (silentMode !== '') {
                     window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
