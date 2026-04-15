@@ -1230,14 +1230,14 @@ confidence: 0-100%
             'padding:0 4px !important;line-height:1 !important;display:none !important;}' +
             '#silent-mode-inline-select option{background:var(--xd-bg) !important;color:var(--xd-text) !important;}' +
             '.ollama-helper-footer{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
-            'padding:6px 12px !important;background-color:var(--xd-header) !important;border-top:1px solid var(--xd-border) !important;min-height:28px !important;}' +
-            '.xd-footer-elapsed{font-size:11px !important;opacity:0.45 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;flex-shrink:0 !important;}' +
+            'padding:6px 12px !important;background-color:var(--xd-header) !important;border-top:1px solid var(--xd-border) !important;min-height:28px !important;position:relative !important;}' +
+            '.xd-footer-elapsed{font-size:11px !important;opacity:0.45 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;flex-shrink:0 !important;min-width:48px !important;z-index:1 !important;}' +
             '.xd-footer-model{font-size:10px !important;opacity:0.35 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;' +
-            'text-align:center !important;flex:1 1 auto !important;margin:0 8px !important;pointer-events:none !important;min-width:0 !important;}' +
+            'position:absolute !important;left:50% !important;transform:translateX(-50%) !important;max-width:60% !important;pointer-events:none !important;z-index:0 !important;}' +
             '.xd-footer-copy{all:revert !important;background:none !important;border:1px solid rgba(255,255,255,0.15) !important;' +
-            'color:var(--xd-text) !important;font-family:var(--xd-font) !important;font-size:11px !important;' +
-            'border-radius:6px !important;cursor:pointer !important;padding:2px 8px !important;display:flex !important;' +
-            'align-items:center !important;justify-content:center !important;line-height:1 !important;gap:4px !important;}' +
+            'color:var(--xd-text) !important;font-family:var(--xd-font) !important;font-size:13px !important;' +
+            'border-radius:6px !important;cursor:pointer !important;padding:2px 6px !important;display:flex !important;' +
+            'align-items:center !important;justify-content:center !important;line-height:1 !important;flex-shrink:0 !important;}' +
             '.xd-footer-copy:hover{background-color:rgba(255,255,255,0.1) !important;}' +
             '.ollama-helper-content{padding:14px !important;overflow-y:auto !important;flex-grow:1 !important;word-wrap:break-word !important;position:relative !important;}' +
             '.ollama-helper-content ul,.ollama-helper-content li{list-style:revert !important;margin-left:20px !important;padding-left:5px !important;}' +
@@ -1287,15 +1287,13 @@ confidence: 0-100%
             '<option value="ghost">Page title</option>' +
             '<option value="stealth">Stealth</option>' +
             '</select>' +
-            '<button id="show-request-btn" title="Show Request">📝</button>' +
-            '<button id="refresh-answer-btn" title="Refresh">🔄</button>' +
-            '<button id="resize-helper-btn" title="Resize">⬜</button>' +
+            '<button id="refresh-answer-btn" title="Refresh">⟳</button>' +
             '</div></div>' +
             '<div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>' +
             '<div class="ollama-helper-footer" id="ollama-helper-footer">' +
             '<span class="xd-footer-elapsed" id="xd-footer-elapsed"></span>' +
             '<span class="xd-footer-model" id="xd-footer-model"></span>' +
-            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer">📋</button>' +
+            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer">🗎</button>' +
             '</div>';
 
         window.xdAnswers.helperContainer = container;
@@ -1316,11 +1314,9 @@ confidence: 0-100%
         if (!container) return;
         const silentModeBtn = container.querySelector('#silent-mode-btn');
         const silentModeSelect = container.querySelector('#silent-mode-inline-select');
-        const resizeBtn = container.querySelector('#resize-helper-btn');
         const copyBtn = container.querySelector('#copy-answer-btn');
-        const showReqBtn = container.querySelector('#show-request-btn');
         const refreshBtn = container.querySelector('#refresh-answer-btn');
-        if (!resizeBtn) return;
+        if (!refreshBtn) return;
 
         // Initialize silent mode button state
         const currentSilentMode = window.xdAnswers.settings.silentMode || '';
@@ -1409,14 +1405,6 @@ confidence: 0-100%
                 if (miniBtn) miniBtn.remove();
             }
             chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
-            chrome.runtime.sendMessage({ type: 'settingsUpdated' });
-        };
-
-        resizeBtn.onclick = () => {
-            window.xdAnswers.isHelperWindowMaximized = !window.xdAnswers.isHelperWindowMaximized;
-            window.xdAnswers.isManuallyPositioned = false;
-            window.xdAnswers.attachAndPositionHelper();
-            resizeBtn.textContent = window.xdAnswers.isHelperWindowMaximized ? '🗗' : '⬜';
         };
 
         copyBtn.onclick = async () => {
@@ -1424,21 +1412,10 @@ confidence: 0-100%
             if (!div) return;
             const text = div.innerText;
             if (text && text !== 'Waiting for question...' && !div.querySelector('.xd-loader')) {
-                try { await navigator.clipboard.writeText(text); copyBtn.textContent = '✅'; }
-                catch { copyBtn.textContent = '❌'; }
-                setTimeout(() => { copyBtn.textContent = '📋'; }, 1500);
+                try { await navigator.clipboard.writeText(text); copyBtn.textContent = '✓'; }
+                catch { copyBtn.textContent = '✗'; }
+                setTimeout(() => { copyBtn.textContent = '🗎'; }, 1500);
             }
-        };
-
-        showReqBtn.onclick = () => {
-            const body = window.xdAnswers.lastRequestBody;
-            let display = 'No request data.';
-            if (body) {
-                if (body.messages) display = JSON.stringify(body.messages, null, 2);
-                else if (body.contents) display = JSON.stringify(body.contents, null, 2);
-                else if (body.prompt) display = body.prompt;
-            }
-            alert('Request:\n' + display);
         };
 
         refreshBtn.onclick = () => {
