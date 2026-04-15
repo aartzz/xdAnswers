@@ -58,9 +58,28 @@ const PROVIDER_ICON_MAP = {
 const NON_CHAT_TYPES = new Set(['embedding', 'rerank', 'audio', 'image', 'video', 'tts', 'stt', 'speech']);
 
 let allModels = [];
+let modelsDevCache = null; // { modelId: { n, f, a, r, c, l, m, p } }
 
 function getApiProviderMeta(id) {
     return API_PROVIDERS.find(p => p.id === id) || API_PROVIDERS[0];
+}
+
+// Load models.dev cache from storage
+async function loadModelsDevCache() {
+    try {
+        const data = await chrome.storage.local.get('xdAnswers_modelsDev');
+        if (data.xdAnswers_modelsDev) {
+            modelsDevCache = JSON.parse(data.xdAnswers_modelsDev);
+        }
+    } catch {}
+}
+
+// Get models.dev info for a model ID (tries multiple key formats)
+function getModelDevInfo(modelId) {
+    if (!modelsDevCache || !modelId) return null;
+    return modelsDevCache[modelId] ||
+           modelsDevCache[modelId.replace(/^[^/]+\//, '')] ||
+           null;
 }
 
 function escapeHTML(value) {
@@ -162,7 +181,8 @@ const DEFAULT_SETTINGS = {
     autoAnswer: false,
     autoAnswerCooldown: 2000,
     highlightCorrect: true,
-    silentMode: false,
+    silentMode: '',
+    _silentModePreselect: 'indicators',
     customization: {
         glowEffect: false,
         ...PREDEFINED_THEMES['Indigo']
@@ -220,6 +240,10 @@ async function loadSettings() {
             if (typeof loaded.promptPrefix !== 'string' || !loaded.promptPrefix.trim()) {
                 loaded.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
             }
+            // Migrate silentMode: true/false → string
+            if (typeof loaded.silentMode === 'boolean') {
+                loaded.silentMode = loaded.silentMode ? 'ghost' : '';
+            }
         } catch (e) {
             console.error('Failed to parse settings', e);
         }
@@ -236,6 +260,15 @@ async function saveSettingsAndNotify(s) {
     });
 }
 
+function isColorDark(hex) {
+    const c = hex.replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.45;
+}
+
 function applyThemeToPopup() {
     const root = document.documentElement;
     const c = settings.customization;
@@ -243,18 +276,25 @@ function applyThemeToPopup() {
     root.style.setProperty('--header-bg', c.headerColor);
     root.style.setProperty('--popup-text', c.textColor);
     root.style.setProperty('--popup-border', c.borderColor);
+    root.classList.toggle('xd-dark-icons', isColorDark(c.contentColor));
+    root.classList.toggle('xd-light-icons', !isColorDark(c.contentColor));
 }
 
 function populateUI() {
     const el = uiElements;
     renderActiveProviderSelector();
     el.modelName.value = settings.model;
+    renderModelList();
 
     el.autoAnswerToggle.checked = settings.autoAnswer;
     el.autoAnswerCooldown.value = settings.autoAnswerCooldown;
     el.cooldownGroup.style.display = settings.autoAnswer ? 'block' : 'none';
     el.highlightCorrectToggle.checked = settings.highlightCorrect;
-    el.silentModeToggle.checked = settings.silentMode;
+    const silentModeValue = settings.silentMode || '';
+    el.silentModeToggle.checked = silentModeValue !== '';
+    // Select always visible so user can pre-choose mode
+    el.silentModeSelectGroup.style.display = 'block';
+    el.silentModeSelect.value = silentModeValue || 'indicators';
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
     el.borderColor.value = settings.customization.borderColor;
@@ -646,8 +686,8 @@ async function fetchModels() {
 
         const parsed = JSON.parse(fullText);
         allModels = processModels(parsed, format);
-        document.getElementById('model-name').value = '';
-        renderModelDropdown();
+        // Don't reset the input — keep selected model visible
+        renderModelList();
     } catch (e) {
         console.error('Failed to fetch models:', e);
     } finally {
@@ -655,15 +695,45 @@ async function fetchModels() {
     }
 }
 
-function renderModelDropdown() {
-    const dropdown = document.getElementById('model-dropdown');
+function renderModelList() {
+    const list = document.getElementById('model-list');
     const input = document.getElementById('model-name');
-    if (!dropdown || !input) return;
+    if (!list || !input) return;
 
+    const currentValue = settings.model || '';
     const query = input.value.toLowerCase().trim();
-    let filtered = allModels;
+
+    // Merge API models + models.dev cache models
+    let mergedModels = [...allModels];
+
+    // If allModels is empty, build list from models.dev cache for current provider
+    if (!mergedModels.length && modelsDevCache) {
+        const active = getActiveProvider(settings);
+        const provId = active?.type || '';
+        const provKeyLookup = {
+            openai: 'openai', anthropic: 'anthropic', google: 'google',
+            deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
+            cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral'
+        };
+        const devProvId = provKeyLookup[provId] || provId;
+        for (const [key, info] of Object.entries(modelsDevCache)) {
+            // Only take entries where p matches the provider, and key doesn't contain '/'
+            if (key.includes('/')) continue; // skip composite keys
+            if (info.p === devProvId || !devProvId) {
+                mergedModels.push({
+                    id: key,
+                    ownedBy: info.p || 'other',
+                    root: key,
+                    contextLength: info.l?.c || null
+                });
+            }
+        }
+    }
+
+    // Filter by query
+    let filtered = mergedModels;
     if (query) {
-        filtered = allModels.filter(m =>
+        filtered = mergedModels.filter(m =>
             m.id.toLowerCase().includes(query) ||
             formatModelName(m.id).toLowerCase().includes(query) ||
             (m.ownedBy || '').toLowerCase().includes(query)
@@ -678,9 +748,18 @@ function renderModelDropdown() {
     }
 
     const sortedProviders = Object.keys(groups).sort();
-    const MAX_VISIBLE = 50;
+    const MAX_VISIBLE = 60;
     let count = 0;
     let html = '';
+
+    // Add custom model entry if input doesn't match any model exactly
+    const exactMatch = mergedModels.some(m => m.id.toLowerCase() === input.value.trim().toLowerCase());
+    if (input.value.trim() && !exactMatch) {
+        html += `<div class="model-item custom" data-model-id="${escapeHTML(input.value.trim())}">
+            <span class="model-item-main"><span class="provider-icon-fallback">✎</span><span class="model-item-subtext"><span class="model-item-name">${escapeHTML(input.value.trim())}</span><span class="model-item-provider">custom model</span></span></span>
+        </div>`;
+        count++;
+    }
 
     for (const provider of sortedProviders) {
         if (count >= MAX_VISIBLE) break;
@@ -700,9 +779,32 @@ function renderModelDropdown() {
                 ? `<img class="model-icon" src="https://models.dev/logos/${familyIcon}.svg" alt="" loading="lazy">`
                 : `<span class="provider-icon-fallback">${(formatModelName(m.root || m.id)[0] || '?').toUpperCase()}</span>`;
             const providerLabel = escapeHTML(m.ownedBy || 'other');
-            const visionBadge = m.capabilities?.vision ? '<span class="model-ctx">vision</span>' : '';
-            html += `<div class="model-item" data-model-id="${m.id}">
-                <span class="model-item-main">${modelIcon}<span class="model-item-subtext"><span class="model-item-name">${escapeHTML(formatModelName(m.root || m.id))}</span><span class="model-item-provider">${providerLabel}</span></span></span>${visionBadge}${ctxHtml}
+            const isSelected = m.id === currentValue;
+
+            // Enrich with models.dev data
+            const devInfo = getModelDevInfo(m.id);
+            const badges = [];
+            if (devInfo) {
+                if (devInfo.a) badges.push('<span class="model-badge vision" title="Supports image input">🖼️</span>');
+                if (devInfo.r) badges.push('<span class="model-badge reasoning" title="Reasoning/thinking model">🧠</span>');
+                if (devInfo.c) {
+                    const inp = devInfo.c.i, out = devInfo.c.o;
+                    if (inp !== undefined && out !== undefined) {
+                        const costStr = inp < 0.01 ? `$${inp.toFixed(3)}` : `$${inp}`;
+                        badges.push(`<span class="model-badge cost" title="Input: $${inp}/M  Output: $${out}/M">${costStr}/M</span>`);
+                    }
+                }
+                if (devInfo.l && devInfo.l.c && !m.contextLength) {
+                    badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
+                }
+            } else if (m.capabilities?.vision) {
+                badges.push('<span class="model-badge vision" title="Supports image input">🖼️</span>');
+            }
+            const badgesHtml = badges.join('');
+            const selectedClass = isSelected ? ' selected' : '';
+
+            html += `<div class="model-item${selectedClass}" data-model-id="${m.id}">
+                <span class="model-item-main">${modelIcon}<span class="model-item-subtext"><span class="model-item-name">${escapeHTML(formatModelName(m.root || m.id))}</span><span class="model-item-provider">${providerLabel}</span></span></span><span class="model-badges">${badgesHtml}${ctxHtml}</span>
             </div>`;
             count++;
         }
@@ -712,18 +814,23 @@ function renderModelDropdown() {
     if (filtered.length > MAX_VISIBLE) {
         html += `<div class="model-more">+${filtered.length - MAX_VISIBLE} more — type to filter</div>`;
     }
-    if (filtered.length === 0) {
+    if (count === 0 && !input.value.trim()) {
+        html = '<div class="model-empty">No models loaded — click ↻ to fetch from API</div>';
+    } else if (count === 0) {
         html = '<div class="model-empty">No models found</div>';
     }
 
-    dropdown.innerHTML = html;
-    dropdown.classList.remove('hidden');
+    list.innerHTML = html;
 
-    dropdown.querySelectorAll('.model-item').forEach(el => {
+    // Scroll selected into view
+    const selectedEl = list.querySelector('.model-item.selected');
+    if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+
+    list.querySelectorAll('.model-item').forEach(el => {
         el.addEventListener('click', async () => {
             input.value = el.dataset.modelId;
-            dropdown.classList.add('hidden');
             await autoSave({ model: el.dataset.modelId });
+            renderModelList();
         });
     });
 }
@@ -755,6 +862,8 @@ function attachEventListeners() {
     el.fetchModelsBtn.onclick = async () => {
         await autoSave();
         await fetchModels();
+        // Also trigger background models.dev sync
+        chrome.runtime.sendMessage({ type: 'forceModelSync' });
     };
 
     const autoInputs = [
@@ -772,7 +881,6 @@ function attachEventListeners() {
     const autoToggles = [
         { el: el.autoAnswerToggle, key: 'autoAnswer' },
         { el: el.highlightCorrectToggle, key: 'highlightCorrect' },
-        { el: el.silentModeToggle, key: 'silentMode' },
         { el: el.glowEffectToggle, key: 'customization.glowEffect' }
     ];
     for (const { el: toggle, key } of autoToggles) {
@@ -782,19 +890,36 @@ function attachEventListeners() {
         };
     }
 
-    el.modelName.onfocus = () => {
-        if (allModels.length) renderModelDropdown();
+    // Silent mode: checkbox toggles on/off, select chooses mode (always visible)
+    el.silentModeToggle.onchange = () => {
+        const isOn = el.silentModeToggle.checked;
+        // Select always visible — user can pre-choose mode before enabling
+        if (isOn) {
+            autoSave({ silentMode: el.silentModeSelect.value || 'indicators' });
+        } else {
+            autoSave({ silentMode: '' });
+        }
     };
+
+    el.silentModeSelect.onchange = () => {
+        if (el.silentModeToggle.checked) {
+            autoSave({ silentMode: el.silentModeSelect.value });
+        }
+        // When toggle is off, select change just pre-selects mode for next enable
+    };
+
     el.modelName.oninput = () => {
-        if (allModels.length) renderModelDropdown();
+        renderModelList();
+    };
+    el.modelName.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            autoSave({ model: el.modelName.value.trim() });
+            renderModelList();
+        }
     };
 
     document.addEventListener('click', (e) => {
-        const dropdown = document.getElementById('model-dropdown');
-        const wrapper = document.querySelector('.model-select-wrapper');
-        if (dropdown && !wrapper?.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
         if (el.activeProviderDropdown && !document.querySelector('.provider-select-wrapper')?.contains(e.target)) {
             el.activeProviderDropdown.classList.add('hidden');
         }
@@ -812,7 +937,8 @@ async function autoSave(overrides) {
     settings.autoAnswer = el.autoAnswerToggle.checked;
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
-    settings.silentMode = el.silentModeToggle.checked;
+    settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
+    settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
     if (overrides) {
@@ -840,6 +966,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         cooldownGroup: document.getElementById('cooldown-group'),
         highlightCorrectToggle: document.getElementById('highlight-correct-toggle'),
         silentModeToggle: document.getElementById('silent-mode-toggle'),
+        silentModeSelect: document.getElementById('silent-mode-select'),
+        silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
         themesGrid: document.getElementById('themes-grid'),
         glowEffectToggle: document.getElementById('glow-effect-toggle'),
         borderColor: document.getElementById('border-color-input'),
@@ -849,6 +977,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     settings = await loadSettings();
+    await loadModelsDevCache();
     populateUI();
     attachEventListeners();
+    // Auto-sync models.dev cache if missing
+    if (!modelsDevCache) {
+        chrome.runtime.sendMessage({ type: 'forceModelSync' }, () => {
+            setTimeout(async () => {
+                await loadModelsDevCache();
+                renderModelList();
+            }, 2000);
+        });
+    }
+    // Auto-fetch models from provider API
+    if (!allModels.length) {
+        fetchModels().then(() => renderModelList());
+    }
 });
