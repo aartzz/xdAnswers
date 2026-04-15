@@ -416,6 +416,7 @@ confidence: 0-100%
             const startTime = outerStartTime || Date.now();
             const contentDiv = window.xdAnswers.answerContentDiv;
             let thinkingStarted = false;
+            let thinkingDone = false;
             let streamTimerInterval = null;
             let statusCleared = false;
 
@@ -424,14 +425,17 @@ confidence: 0-100%
                 return sec >= 60 ? Math.floor(sec / 60) + 'm ' + (sec % 60) + 's' : sec + 's';
             }
 
-            // Single timer that always updates footer + thinking/content timer
+            // Single timer that always updates footer + thinking timer (stops thinking timer when thinking ends)
             function startStreamTimer() {
                 if (streamTimerInterval) return;
                 streamTimerInterval = setInterval(() => {
                     const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
                     if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
-                    const thinkingTimer = contentDiv?.querySelector('.xd-thinking-timer');
-                    if (thinkingTimer) thinkingTimer.textContent = '(' + getElapsed() + ')';
+                    // Only update thinking timer while thinking is still in progress
+                    if (!thinkingDone) {
+                        const thinkingTimer = contentDiv?.querySelector('.xd-thinking-timer');
+                        if (thinkingTimer) thinkingTimer.textContent = '(' + getElapsed() + ')';
+                    }
                 }, 1000);
             }
 
@@ -507,6 +511,7 @@ confidence: 0-100%
                             if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
                         }
                         if (ev.content) {
+                            if (thinkingStarted && !thinkingDone) thinkingDone = true;
                             fullContent += ev.content;
                             updateStreamUI();
                         }
