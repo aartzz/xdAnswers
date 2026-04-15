@@ -11,6 +11,7 @@ confidence: 0-100%
 
 Правила:
 - answer: точний текст правильного варіанту, якщо є варіанти відповідей
+- Якщо варіанти позначені як [зображення] — в answer вкажи ЛІТЕРУ варіанту (A, B, C...)
 - Для кількох правильних відповідей розділяй "; "
 - Відповідай мовою питання
 - solution пиши тільки для задач з розрахунками (фізика, хімія, математика)
@@ -44,7 +45,8 @@ confidence: 0-100%
         autoAnswer: false,
         autoAnswerCooldown: 2000,
         highlightCorrect: true,
-        silentMode: false,
+        silentMode: '',
+        _silentModePreselect: 'indicators',
         customization: {
             glowEffect: false,
             borderColor: '#6366f1',
@@ -133,11 +135,18 @@ confidence: 0-100%
                 if (typeof s.promptPrefix !== 'string' || !s.promptPrefix.trim()) {
                     s.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
                 }
+                // Migrate silentMode: true/false → string
+                if (typeof s.silentMode === 'boolean') {
+                    s.silentMode = s.silentMode ? 'ghost' : '';
+                }
             } catch (e) {
                 console.error('xdAnswers: Failed to parse settings.', e);
             }
         }
         window.xdAnswers.settings = s;
+        // Update footer model name
+        const footerModel = document.getElementById('xd-footer-model');
+        if (footerModel && s.model) footerModel.textContent = s.model;
         return s;
     };
 
@@ -228,7 +237,13 @@ confidence: 0-100%
         }
 
         userMsg += 'Питання: ' + questionData.text;
-        if (questionData.optionsText) userMsg += '\nВаріанти:\n' + questionData.optionsText;
+        if (questionData.optionsText) {
+            userMsg += '\nВаріанти:\n' + questionData.optionsText;
+            // Якщо є варіанти-зображення, підкажемо AI що вони серед прикріплених картинок
+            if (questionData.optionsText.includes('[зображення]') && (questionData.base64Images || []).length > 0) {
+                userMsg += '\nУВАГА: Варіанти позначені [зображення] — це картинки серед прикріплених зображень. Спочатку йде картинка запитання, потім картинки варіантів у порядку A, B, C...';
+            }
+        }
 
         return { systemPrompt, userMsg };
     }
@@ -364,17 +379,32 @@ confidence: 0-100%
             const body = buildRequestBody(s, systemPrompt, userMsg, images, true);
             window.xdAnswers.lastRequestBody = body;
 
-            let fullContent = '';
+             let fullContent = '';
             let fullThinking = '';
             const startTime = outerStartTime || Date.now();
             const contentDiv = window.xdAnswers.answerContentDiv;
             let thinkingStarted = false;
-            let thinkingTimerInterval = null;
+            let streamTimerInterval = null;
             let statusCleared = false;
 
             function getElapsed() {
                 const sec = Math.floor((Date.now() - startTime) / 1000);
                 return sec >= 60 ? Math.floor(sec / 60) + 'm ' + (sec % 60) + 's' : sec + 's';
+            }
+
+            // Single timer that always updates footer + thinking/content timer
+            function startStreamTimer() {
+                if (streamTimerInterval) return;
+                streamTimerInterval = setInterval(() => {
+                    const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+                    if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
+                    const thinkingTimer = contentDiv?.querySelector('.xd-thinking-timer');
+                    if (thinkingTimer) thinkingTimer.textContent = '(' + getElapsed() + ')';
+                }, 1000);
+            }
+
+            function stopStreamTimer() {
+                if (streamTimerInterval) { clearInterval(streamTimerInterval); streamTimerInterval = null; }
             }
 
             function clearStatus() {
@@ -385,6 +415,8 @@ confidence: 0-100%
                 const loader = contentDiv?.querySelector('.xd-loader');
                 if (status) status.remove();
                 if (loader) loader.remove();
+                // Start persistent stream timer when status is cleared
+                 startStreamTimer();
             }
 
             function ensureThinkingUI() {
@@ -393,19 +425,11 @@ confidence: 0-100%
                 thinkingStarted = true;
                 contentDiv.innerHTML =
                     '<div class="xd-thinking">' +
-                    '<div class="xd-thinking-header">💭 Thinking... (0s)</div>' +
-                    '<div class="xd-thinking-content" style="display:none;"></div>' +
+                    '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking... <span class="xd-thinking-timer">(0s)</span> <span class="xd-thinking-chars"></span> <span class="xd-thinking-toggle">▼</span></div>' +
+                    '<div class="xd-thinking-content" style="display:none !important;"></div>' +
                     '</div>';
                 const header = contentDiv.querySelector('.xd-thinking-header');
-                header.style.cursor = 'pointer';
-                header.addEventListener('click', function() {
-                    const c = this.nextElementSibling;
-                    c.style.display = c.style.display === 'none' ? 'block' : 'none';
-                });
-                thinkingTimerInterval = setInterval(() => {
-                    const h = contentDiv.querySelector('.xd-thinking-header');
-                    if (h) h.textContent = '💭 Thinking... (' + getElapsed() + ')';
-                }, 1000);
+                header.addEventListener('click', function() { toggleThinkingContent(this); });
             }
 
             function updateStreamUI() {
@@ -415,6 +439,13 @@ confidence: 0-100%
                 const elapsed = getElapsed();
                 let html = '';
                 
+                // Thinking block always first (at the top)
+                if (thinkingStarted) {
+                    html += '<div class="xd-thinking">' +
+                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">▼</span></div>' +
+                        '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
+                }
+
                 const parsed = parsePartialLabeled(fullContent) || salvagePartialJSON(fullContent);
                 
                 if (parsed) {
@@ -422,21 +453,12 @@ confidence: 0-100%
                 } else if (fullContent.trim()) {
                     html += '<div class="xd-answer xd-answer-partial">' + window.xdAnswers.renderMarkdown(fullContent) + '</div>';
                 } else {
-                    html += '<div class="xd-waiting">⏳ Waiting for answer... (' + elapsed + ')</div>';
-                }
-
-                if (thinkingStarted) {
-                    html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking (' + elapsed + ')</div>' +
-                        '<div class="xd-thinking-content" style="display:none;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
+                    html += '<div class="xd-waiting">⏳ Waiting for answer...</div>';
                 }
                 
                 contentDiv.innerHTML = html;
                 const th = contentDiv.querySelector('.xd-thinking-header');
-                if (th) th.addEventListener('click', function() {
-                    const c = this.nextElementSibling;
-                    c.style.display = c.style.display === 'none' ? 'block' : 'none';
-                });
+                if (th) th.addEventListener('click', function() { toggleThinkingContent(this); });
             }
 
             const cancel = window.xdAnswers.streamRequest(
@@ -449,20 +471,21 @@ confidence: 0-100%
                             fullThinking += ev.thinking;
                             const tc = contentDiv?.querySelector('.xd-thinking-content');
                             if (tc) tc.innerHTML = window.xdAnswers.renderMarkdown(fullThinking);
+                            const chars = contentDiv?.querySelector('.xd-thinking-chars');
+                            if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
                         }
                         if (ev.content) {
-                            if (thinkingTimerInterval) { clearInterval(thinkingTimerInterval); thinkingTimerInterval = null; }
                             fullContent += ev.content;
                             updateStreamUI();
                         }
                     }
                 },
                 () => {
-                    if (thinkingTimerInterval) clearInterval(thinkingTimerInterval);
+                    stopStreamTimer();
                     resolve({ content: fullContent, thinking: fullThinking });
                 },
                 (error, details) => {
-                    if (thinkingTimerInterval) clearInterval(thinkingTimerInterval);
+                    stopStreamTimer();
                     reject(new Error(error + (details ? '\n' + details : '')));
                 }
             );
@@ -706,88 +729,268 @@ confidence: 0-100%
         const selectors = [
             '[data-xd-option="true"]',
             '.question-option-inner-content',
+            '.question-option-inner',
             '.answer-text',
             '.t-text-guest',
             '.t-text',
             '.test-answer',
-            'label[for]'
+            'label[for]',
+            '.v-test-questions-select-block .t-text',
+            '.v-test-questions-select-block .t-text-guest',
+            '.n-kahoot-p',
+            '.v-block-answers-cross-block .numb-item',
+            '.justkids-answer-text',
+            '[role="radio"] span',
+            '[role="checkbox"] span',
+            '[role="option"] span'
         ];
         for (const sel of selectors) {
             const els = document.querySelectorAll(sel);
             if (els.length > 1) return Array.from(els);
         }
+        // Fallback: find all radio/checkbox labels
+        const inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+        if (inputs.length > 1) {
+            const labels = Array.from(inputs).map(inp => {
+                const label = inp.closest('label') || inp.parentElement;
+                return label || null;
+            }).filter(Boolean);
+            if (labels.length > 1) return labels;
+        }
         return [];
     }
 
     function normalizeText(t) {
-        return (t || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        return (t || '').replace(/\s+/g, ' ').trim().toLowerCase()
+            .replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, '')  // zero-width / nbsp
+            .replace(/[.,;:!?()\-–—]/g, '')                     // strip punctuation for matching
+            .trim();
+    }
+
+    function levenshtein(a, b) {
+        if (a.length === 0) return b.length;
+        if (b.length === 0) return a.length;
+        const matrix = [];
+        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+        for (let i = 1; i <= b.length; i++) {
+            for (let j = 1; j <= a.length; j++) {
+                const cost = b[i - 1] === a[j - 1] ? 0 : 1;
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j - 1] + cost
+                );
+            }
+        }
+        return matrix[b.length][a.length];
+    }
+
+    function textSimilarity(a, b) {
+        if (!a || !b) return 0;
+        if (a === b) return 1;
+        const maxLen = Math.max(a.length, b.length);
+        if (maxLen === 0) return 1;
+        // Exact substring match
+        if (a.includes(b) || b.includes(a)) {
+            return Math.min(a.length, b.length) / maxLen;
+        }
+        // Levenshtein-based similarity
+        const dist = levenshtein(a, b);
+        return 1 - dist / maxLen;
     }
 
     function matchAnswerToOptions(answerText, optionElements) {
         if (!answerText || !optionElements.length) return [];
         const answers = answerText.split(';').map(a => a.trim()).filter(Boolean);
         const matched = [];
+        const usedElements = new Set();
+        const optionLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
         for (const ans of answers) {
             const normAns = normalizeText(ans);
+            if (!normAns) continue;
+
+            // Спочатку перевіряємо відповідність за літерою (A, B, C...) —
+            // для варіантів-зображень, де немає тексту
+            const letterMatch = normAns.match(/^([a-z])$/i);
+            if (letterMatch) {
+                const idx = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+                if (idx >= 0 && idx < optionElements.length && !usedElements.has(optionElements[idx])) {
+                    matched.push(optionElements[idx]);
+                    usedElements.add(optionElements[idx]);
+                    continue;
+                }
+            }
+
+            // Також перевіряємо "варіант A", "варіант a" тощо
+            const variantMatch = normAns.match(/(?:варіант|вариант|option|variant)\s*([a-z])/i);
+            if (variantMatch) {
+                const idx = variantMatch[1].toUpperCase().charCodeAt(0) - 65;
+                if (idx >= 0 && idx < optionElements.length && !usedElements.has(optionElements[idx])) {
+                    matched.push(optionElements[idx]);
+                    usedElements.add(optionElements[idx]);
+                    continue;
+                }
+            }
+
             let best = null, bestScore = 0;
 
             for (const el of optionElements) {
+                if (usedElements.has(el)) continue;
                 const normEl = normalizeText(el.innerText || el.textContent);
                 if (!normEl) continue;
-                if (normEl === normAns) { best = el; bestScore = 1; break; }
-                if (normEl.includes(normAns) || normAns.includes(normEl)) {
-                    const score = Math.min(normEl.length, normAns.length) / Math.max(normEl.length, normAns.length);
-                    if (score > bestScore) { bestScore = score; best = el; }
+
+                // Exact match
+                if (normEl === normAns) {
+                    best = el; bestScore = 1; break;
+                }
+
+                const score = textSimilarity(normEl, normAns);
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = el;
                 }
             }
-            if (best && bestScore > 0.3) matched.push(best);
+
+            if (best && bestScore > 0.4) {
+                matched.push(best);
+                usedElements.add(best);
+            }
         }
         return matched;
     }
 
     function highlightCorrectAnswer(answerText) {
+        // Only highlight when setting is enabled and not in any silent mode
         if (!window.xdAnswers.settings.highlightCorrect) return;
+        const silentMode = window.xdAnswers.settings.silentMode || '';
+        if (silentMode !== '') return; // silent mode handles its own indicators/title/clipboard
+        // Clear previous highlights first
+        document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+            el.classList.remove('xd-highlight-correct');
+            el.style.removeProperty('outline');
+            el.style.removeProperty('background-color');
+            el.style.removeProperty('border-radius');
+        });
         const elements = matchAnswerToOptions(answerText, findOptionElements());
         for (const el of elements) {
             const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
-            target.style.cssText += 'outline: 3px solid #22c55e !important; background-color: rgba(34, 197, 94, 0.15) !important; border-radius: 4px !important;';
+            target.classList.add('xd-highlight-correct');
+            target.style.setProperty('outline', '3px solid #22c55e', 'important');
+            target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');
+            target.style.setProperty('border-radius', '4px', 'important');
         }
     }
 
     function autoSelectAnswer(answerText) {
         if (!window.xdAnswers.settings.autoAnswer) return;
-        const elements = matchAnswerToOptions(answerText, findOptionElements());
+        const optionElements = findOptionElements();
+        const elements = matchAnswerToOptions(answerText, optionElements);
+
         setTimeout(() => {
             for (const el of elements) {
-                const clickTarget = el.closest('.question-option, .answer-item, label, [role="radio"], [role="checkbox"]') || el;
+                // Try multiple click target strategies
+                const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                
+                // Strategy 1: Direct click
                 clickTarget.click();
+                
+                // Strategy 2: If there's a radio/checkbox input inside, click it too
+                const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]') 
+                    || clickTarget.closest('label')?.querySelector('input[type="radio"], input[type="checkbox"]');
+                if (input && !input.checked) {
+                    input.click();
+                }
+                
+                // Strategy 3: Dispatch events for React/Angular apps
+                clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
             }
         }, window.xdAnswers.settings.autoAnswerCooldown);
     }
 
-    function showSilentAnswer(answerText) {
-        if (!window.xdAnswers.settings.silentMode) return;
+    // Global thinking toggle handler (accessible from all scopes)
+    function toggleThinkingContent(headerEl) {
+        const c = headerEl.nextElementSibling;
+        if (!c) return;
+        const toggle = headerEl.querySelector('.xd-thinking-toggle');
+        const isHidden = c.style.display === 'none' || getComputedStyle(c).display === 'none';
+        c.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+        if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+    }
 
-        if (!window.xdAnswers._originalTitle) window.xdAnswers._originalTitle = document.title;
-        document.title = '[' + answerText.substring(0, 50) + '] ' + window.xdAnswers._originalTitle;
+    // Mini exit-silent-mode button (barely visible, bottom-right corner)
+    function addSilentExitButton() {
+        if (document.getElementById('xd-silent-exit-btn')) return;
+        const btn = document.createElement('div');
+        btn.id = 'xd-silent-exit-btn';
+        btn.style.cssText = 'position:fixed;bottom:4px;right:4px;width:6px;height:6px;background:rgba(100,100,100,0.25);border-radius:50%;z-index:2147483647;cursor:pointer;transition:all 0.2s;';
+        btn.title = 'xdAnswers: exit silent mode';
+        btn.addEventListener('mouseenter', () => {
+            btn.style.width = '10px';
+            btn.style.height = '10px';
+            btn.style.background = 'rgba(100,100,100,0.6)';
+        });
+        btn.addEventListener('mouseleave', () => {
+            btn.style.width = '6px';
+            btn.style.height = '6px';
+            btn.style.background = 'rgba(100,100,100,0.25)';
+        });
+        btn.addEventListener('click', () => {
+            window.xdAnswers.settings.silentMode = '';
+            document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+            if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
+            btn.remove();
+            // Save (storage.onChanged will sync UI)
+            chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
+            // Show helper
+            if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn');
+                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select');
+                if (silentModeBtn) { silentModeBtn.classList.remove('active'); silentModeBtn.title = 'Silent mode: Off'; }
+                if (silentModeSelect) { silentModeSelect.value = ''; silentModeSelect.style.display = 'none'; }
+            }
+        });
+        document.body.appendChild(btn);
+    }
 
-        let dot = document.getElementById('xd-silent-dot');
-        let tooltip = document.getElementById('xd-silent-tooltip');
-        if (!dot) {
-            dot = document.createElement('div');
-            dot.id = 'xd-silent-dot';
-            dot.style.cssText = 'position:fixed;bottom:5px;right:5px;width:12px;height:12px;background:#22c55e;border-radius:50%;z-index:2147483647;cursor:pointer;opacity:0.6;transition:all 0.2s;';
-            tooltip = document.createElement('div');
-            tooltip.id = 'xd-silent-tooltip';
-            tooltip.style.cssText = 'position:fixed;bottom:24px;right:5px;background:#1e1e2e;color:#cdd6f4;padding:8px 12px;border-radius:6px;font-size:13px;z-index:2147483647;display:none;max-width:320px;border:1px solid #444;font-family:system-ui,-apple-system,sans-serif;word-break:break-word;';
-            dot.addEventListener('mouseenter', () => { tooltip.style.display = 'block'; dot.style.opacity = '1'; dot.style.transform = 'scale(1.5)'; });
-            dot.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; dot.style.opacity = '0.6'; dot.style.transform = 'scale(1)'; });
-            document.body.appendChild(tooltip);
-            document.body.appendChild(dot);
+    function applySilentMode(answerText, parsed) {
+        const mode = window.xdAnswers.settings.silentMode;
+        if (!mode) return;
+
+        // Clear previous silent mode artifacts
+        document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+
+        // Ghost (Page title): only change page title, no dots or visual indicators
+        if (mode === 'ghost') {
+            if (!window.xdAnswers._originalTitle) window.xdAnswers._originalTitle = document.title;
+            document.title = '[' + answerText.substring(0, 60) + '] ' + window.xdAnswers._originalTitle;
         }
-        tooltip = document.getElementById('xd-silent-tooltip');
-        if (tooltip) tooltip.textContent = answerText;
+
+        // Indicators: overlay dot next to correct answer (no text displacement)
+        if (mode === 'indicators') {
+            const optionElements = matchAnswerToOptions(answerText, findOptionElements());
+            for (const el of optionElements) {
+                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                wrapper.style.position = 'relative';
+                const indicator = document.createElement('span');
+                indicator.className = 'xd-indicator-dot';
+                indicator.style.cssText = 'position:absolute;top:50%;right:8px;transform:translateY(-50%);width:6px;height:6px;background:#22c55e;border-radius:50%;box-shadow:0 0 4px rgba(34,197,94,0.4);pointer-events:none;z-index:1;';
+                indicator.title = answerText;
+                wrapper.appendChild(indicator);
+            }
+        }
+
+        // Stealth: copy answer to clipboard, no visual indicators
+        if (mode === 'stealth') {
+            if (answerText) {
+                try {
+                    navigator.clipboard.writeText(answerText);
+                } catch {}
+            }
+        }
     }
 
     // ── Main Process ──
@@ -795,7 +998,8 @@ confidence: 0-100%
     window.xdAnswers.processQuestion = async function(questionData) {
         if (window.xdAnswers.isProcessingAI) return;
 
-        const isSilent = window.xdAnswers.settings.silentMode;
+        const silentMode = window.xdAnswers.settings.silentMode || '';
+        const isSilent = silentMode !== '';
 
         if (!isSilent) {
             window.xdAnswers.createUI();
@@ -818,9 +1022,12 @@ confidence: 0-100%
             statusDiv.textContent = '⏳ Connecting...';
             window.xdAnswers.answerContentDiv.appendChild(statusDiv);
             const statusInterval = setInterval(() => {
+                // Always update footer elapsed
+                const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+                if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
+                // Update status text if still showing
                 const s = window.xdAnswers.answerContentDiv?.querySelector('.xd-status');
-                if (s) s.textContent = '⏳ Waiting for response... (' + getElapsed() + ')';
-                else clearInterval(statusInterval);
+                if (s) s.textContent = '⏳ Waiting for response...';
             }, 1000);
             window.xdAnswers._statusInterval = statusInterval;
         }
@@ -842,26 +1049,28 @@ confidence: 0-100%
             window.xdAnswers.lastParsedResponse = parsed;
 
             if (isSilent) {
-                showSilentAnswer(parsed.answer || parsed.explanation || 'Parse error');
+                applySilentMode(parsed.answer || parsed.explanation || 'Parse error', parsed);
             } else if (window.xdAnswers.answerContentDiv) {
                 let html = '<div class="xd-elapsed">⏱ ' + elapsed + '</div>';
+                // Update footer elapsed too
+                const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+                if (footerElapsed) footerElapsed.textContent = '⏱ ' + elapsed;
                 if (result.thinking) {
                     html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking (click to expand)</div>' +
-                        '<div class="xd-thinking-content" style="display:none;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
+                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">▼</span></div>' +
+                        '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
                 }
                 html += renderParsedResponse(parsed);
                 window.xdAnswers.answerContentDiv.innerHTML = html;
 
                 const th = window.xdAnswers.answerContentDiv.querySelector('.xd-thinking-header');
-                if (th) th.addEventListener('click', function() {
-                    const c = this.nextElementSibling;
-                    c.style.display = c.style.display === 'none' ? 'block' : 'none';
-                });
+                if (th) th.addEventListener('click', function() { toggleThinkingContent(this); });
             }
 
             if (parsed.answer) {
-                highlightCorrectAnswer(parsed.answer);
+                if (!isSilent) {
+                    highlightCorrectAnswer(parsed.answer);
+                }
                 autoSelectAnswer(parsed.answer);
             }
         } catch (error) {
@@ -977,6 +1186,22 @@ confidence: 0-100%
             'border-radius:6px !important;cursor:pointer !important;margin-left:4px !important;width:28px !important;height:24px !important;' +
             'padding:0 !important;display:flex !important;align-items:center !important;justify-content:center !important;line-height:1 !important;}' +
             '.ollama-header-buttons button:hover{background-color:rgba(255,255,255,0.1) !important;}' +
+            '#silent-mode-btn.active{background:rgba(255,255,255,0.15) !important;border-color:rgba(255,255,255,0.35) !important;}' +
+            '#silent-mode-inline-select{all:revert !important;background:rgba(0,0,0,0.25) !important;border:1px solid rgba(255,255,255,0.15) !important;' +
+            'color:var(--xd-text) !important;font-family:var(--xd-font) !important;font-size:11px !important;' +
+            'border-radius:6px !important;cursor:pointer !important;margin-left:4px !important;height:24px !important;' +
+            'padding:0 4px !important;line-height:1 !important;display:none !important;}' +
+            '#silent-mode-inline-select option{background:var(--xd-bg) !important;color:var(--xd-text) !important;}' +
+            '.ollama-helper-footer{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
+            'padding:6px 12px !important;background-color:var(--xd-header) !important;border-top:1px solid var(--xd-border) !important;min-height:28px !important;}' +
+            '.xd-footer-elapsed{font-size:11px !important;opacity:0.45 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;flex-shrink:0 !important;}' +
+            '.xd-footer-model{font-size:10px !important;opacity:0.35 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;' +
+            'text-align:center !important;flex:1 1 auto !important;margin:0 8px !important;pointer-events:none !important;min-width:0 !important;}' +
+            '.xd-footer-copy{all:revert !important;background:none !important;border:1px solid rgba(255,255,255,0.15) !important;' +
+            'color:var(--xd-text) !important;font-family:var(--xd-font) !important;font-size:11px !important;' +
+            'border-radius:6px !important;cursor:pointer !important;padding:2px 8px !important;display:flex !important;' +
+            'align-items:center !important;justify-content:center !important;line-height:1 !important;gap:4px !important;}' +
+            '.xd-footer-copy:hover{background-color:rgba(255,255,255,0.1) !important;}' +
             '.ollama-helper-content{padding:14px !important;overflow-y:auto !important;flex-grow:1 !important;word-wrap:break-word !important;position:relative !important;}' +
             '.ollama-helper-content ul,.ollama-helper-content li{list-style:revert !important;margin-left:20px !important;padding-left:5px !important;}' +
             '.ollama-helper-content::-webkit-scrollbar{width:6px !important;}' +
@@ -994,10 +1219,13 @@ confidence: 0-100%
             '.xd-raw-preview{font-size:12px !important;opacity:0.4 !important;}' +
             '.xd-waiting{font-size:12px !important;opacity:0.4 !important;text-align:center !important;padding:10px !important;}' +
             '.xd-error{color:#f87171 !important;font-size:13px !important;padding:8px !important;background:rgba(248,113,113,0.08) !important;border-radius:6px !important;border-left:3px solid #f87171 !important;}' +
-            '.xd-elapsed{position:absolute !important;top:10px !important;right:14px !important;font-size:11px !important;opacity:0.45 !important;margin:0 !important;line-height:1 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;}' +
+            '.xd-elapsed{display:none !important;}' +
             '.xd-status{text-align:center !important;font-size:12px !important;opacity:0.5 !important;margin-top:8px !important;}' +
             '.xd-thinking{margin-bottom:10px !important;padding:8px !important;background:rgba(255,255,255,0.03) !important;border-radius:6px !important;border-left:3px solid rgba(255,255,255,0.1) !important;}' +
-            '.xd-thinking-header{color:#888 !important;font-style:italic !important;font-size:12px !important;}' +
+            '.xd-thinking-header{color:#888 !important;font-style:italic !important;font-size:12px !important;display:flex !important;align-items:center !important;gap:6px !important;}' +
+            '.xd-thinking-toggle{font-style:normal !important;opacity:0.5 !important;font-size:10px !important;margin-left:auto !important;}' +
+            '.xd-thinking-timer{font-style:normal !important;opacity:0.6 !important;}' +
+            '.xd-thinking-chars{font-style:normal !important;opacity:0.4 !important;font-size:10px !important;}' +
             '.xd-thinking-content{font-size:12px !important;opacity:0.7 !important;margin-top:6px !important;white-space:pre-wrap !important;}' +
             '.xd-code{background:rgba(0,0,0,0.3) !important;border-radius:6px !important;padding:10px !important;overflow-x:auto !important;font-family:"Fira Code",Consolas,monospace !important;font-size:12px !important;margin:8px 0 !important;white-space:pre !important;}' +
             '.xd-icode{background:rgba(255,255,255,0.1) !important;padding:1px 5px !important;border-radius:3px !important;font-family:"Fira Code",Consolas,monospace !important;font-size:0.9em !important;}' +
@@ -1015,16 +1243,29 @@ confidence: 0-100%
             '<div class="ollama-helper-header" id="ollama-helper-drag-header">' +
             '<span class="ollama-header-title">xdAnswers</span>' +
             '<div class="ollama-header-buttons">' +
-            '<button id="resize-helper-btn" title="Resize">⬜</button>' +
-            '<button id="copy-answer-btn" title="Copy">📋</button>' +
+            '<button id="silent-mode-btn" title="Silent mode: Off">✕</button>' +
+            '<select id="silent-mode-inline-select" title="Silent mode">' +
+            '<option value="">Off</option>' +
+            '<option value="indicators">Indicators</option>' +
+            '<option value="ghost">Page title</option>' +
+            '<option value="stealth">Stealth</option>' +
+            '</select>' +
             '<button id="show-request-btn" title="Show Request">📝</button>' +
             '<button id="refresh-answer-btn" title="Refresh">🔄</button>' +
+            '<button id="resize-helper-btn" title="Resize">⬜</button>' +
             '</div></div>' +
-            '<div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>';
+            '<div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>' +
+            '<div class="ollama-helper-footer" id="ollama-helper-footer">' +
+            '<span class="xd-footer-elapsed" id="xd-footer-elapsed"></span>' +
+            '<span class="xd-footer-model" id="xd-footer-model"></span>' +
+            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer">📋</button>' +
+            '</div>';
 
         window.xdAnswers.helperContainer = container;
         window.xdAnswers.answerContentDiv = container.querySelector('#ollama-answer-content');
         window.xdAnswers.dragHeader = container.querySelector('#ollama-helper-drag-header');
+        // Set display:flex inline (removed from CSS to allow silent mode display:none to work)
+        container.style.setProperty('display', 'flex', 'important');
 
         window.xdAnswers.attachHelperEventListeners();
         window.xdAnswers.updateHelperBaseStyles();
@@ -1033,15 +1274,103 @@ confidence: 0-100%
     window.xdAnswers.attachHelperEventListeners = function() {
         const container = window.xdAnswers.helperContainer;
         if (!container) return;
+        const silentModeBtn = container.querySelector('#silent-mode-btn');
+        const silentModeSelect = container.querySelector('#silent-mode-inline-select');
         const resizeBtn = container.querySelector('#resize-helper-btn');
         const copyBtn = container.querySelector('#copy-answer-btn');
         const showReqBtn = container.querySelector('#show-request-btn');
         const refreshBtn = container.querySelector('#refresh-answer-btn');
         if (!resizeBtn) return;
 
+        // Initialize silent mode button state
+        const currentSilentMode = window.xdAnswers.settings.silentMode || '';
+        // Pre-select mode from settings (even when silent mode is off)
+        silentModeSelect.value = currentSilentMode || window.xdAnswers.settings._silentModePreselect || 'indicators';
+        silentModeSelect.style.display = ''; // always visible
+        if (currentSilentMode !== '') {
+            silentModeBtn.classList.add('active');
+        } else {
+            silentModeBtn.classList.remove('active');
+        }
+        const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth' };
+        silentModeBtn.title = 'Silent mode: ' + (modeLabels[currentSilentMode] || 'Off');
+
         window.xdAnswers.Draggable.init(container, window.xdAnswers.dragHeader, () => {
             window.xdAnswers.isManuallyPositioned = true;
         });
+
+        silentModeBtn.onclick = () => {
+            const cur = window.xdAnswers.settings.silentMode || '';
+            if (cur !== '') {
+                // Turn off
+                window.xdAnswers.settings.silentMode = '';
+                silentModeBtn.classList.remove('active');
+                silentModeBtn.title = 'Silent mode: Off';
+                // Show helper
+                container.style.setProperty('display', 'flex', 'important');
+                // Remove silent indicators/dots/title changes
+                document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+                if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
+                // Remove mini exit button
+                const miniBtn = document.getElementById('xd-silent-exit-btn');
+                if (miniBtn) miniBtn.remove();
+                // Save (storage.onChanged will sync UI)
+                chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
+            } else {
+                // Toggle on using the mode currently selected in inline select
+                const selectedMode = silentModeSelect.value;
+                window.xdAnswers.settings.silentMode = selectedMode;
+                silentModeBtn.classList.add('active');
+                silentModeBtn.title = 'Silent mode: ' + (modeLabels[selectedMode] || selectedMode);
+                // Hide helper
+                container.style.setProperty('display', 'none', 'important');
+                // Remove existing highlights (switching to silent mode indicators/title/clipboard instead)
+                document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                    el.classList.remove('xd-highlight-correct');
+                    el.style.removeProperty('outline');
+                    el.style.removeProperty('background-color');
+                    el.style.removeProperty('border-radius');
+                });
+                // Add mini exit button
+                addSilentExitButton();
+                // Apply silent mode visuals immediately
+                if (window.xdAnswers.lastParsedResponse) {
+                    applySilentMode(window.xdAnswers.lastParsedResponse.answer || '', window.xdAnswers.lastParsedResponse);
+                }
+                // Save (storage.onChanged will sync UI)
+                chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
+            }
+        };
+
+        silentModeSelect.onchange = () => {
+            const mode = silentModeSelect.value;
+            window.xdAnswers.settings.silentMode = mode;
+            silentModeBtn.title = 'Silent mode: ' + (modeLabels[mode] || 'Off');
+            if (mode !== '') {
+                silentModeBtn.classList.add('active');
+                container.style.setProperty('display', 'none', 'important');
+                // Remove existing highlights
+                document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                    el.classList.remove('xd-highlight-correct');
+                    el.style.removeProperty('outline');
+                    el.style.removeProperty('background-color');
+                    el.style.removeProperty('border-radius');
+                });
+                addSilentExitButton();
+                if (window.xdAnswers.lastParsedResponse) {
+                    applySilentMode(window.xdAnswers.lastParsedResponse.answer || '', window.xdAnswers.lastParsedResponse);
+                }
+            } else {
+                silentModeBtn.classList.remove('active');
+                container.style.setProperty('display', 'flex', 'important');
+                document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+                if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
+                const miniBtn = document.getElementById('xd-silent-exit-btn');
+                if (miniBtn) miniBtn.remove();
+            }
+            chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
+            chrome.runtime.sendMessage({ type: 'settingsUpdated' });
+        };
 
         resizeBtn.onclick = () => {
             window.xdAnswers.isHelperWindowMaximized = !window.xdAnswers.isHelperWindowMaximized;
@@ -1085,12 +1414,13 @@ confidence: 0-100%
         window.xdAnswers.createUI();
         const container = window.xdAnswers.helperContainer;
 
-        if (window.xdAnswers.settings.silentMode) {
-            container.style.display = 'none';
+        if (window.xdAnswers.settings.silentMode && window.xdAnswers.settings.silentMode !== '') {
+            container.style.setProperty('display', 'none', 'important');
+            addSilentExitButton();
             window.xdAnswers.isExtensionModifyingDOM = false;
             return;
         }
-        container.style.display = '';
+        container.style.setProperty('display', 'flex', 'important');
         container.style.transform = '';
 
         let targetParent = targetContainerOverride || document.body;
@@ -1120,17 +1450,61 @@ confidence: 0-100%
 
     // ── Listeners ──
 
-    chrome.runtime.onMessage.addListener(async (message) => {
-        if (message.type === 'settingsUpdated') {
-            await window.xdAnswers.loadSettings();
-            if (window.xdAnswers.helperContainer) {
+    // Listen for settings changes via storage (works across all contexts)
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && changes.xdAnswers_settings) {
+            window.xdAnswers.loadSettings().then(() => {
+                if (!window.xdAnswers.helperContainer) return;
                 window.xdAnswers.updateHelperBaseStyles();
-                if (window.xdAnswers.settings.silentMode) {
-                    window.xdAnswers.helperContainer.style.display = 'none';
+                // Update footer model name
+                const footerModel = document.getElementById('xd-footer-model');
+                if (footerModel && window.xdAnswers.settings.model) footerModel.textContent = window.xdAnswers.settings.model;
+                const silentMode = window.xdAnswers.settings.silentMode || '';
+                if (silentMode !== '') {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+                    addSilentExitButton();
                 } else {
-                    window.xdAnswers.helperContainer.style.display = '';
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                    const miniBtn = document.getElementById('xd-silent-exit-btn');
+                    if (miniBtn) miniBtn.remove();
                 }
-            }
+                // Sync inline silent mode controls
+                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn');
+                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select');
+                const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth' };
+                if (silentModeBtn) {
+                    silentModeBtn.title = 'Silent mode: ' + (modeLabels[silentMode] || 'Off');
+                    if (silentMode !== '') {
+                        silentModeBtn.classList.add('active');
+                    } else {
+                        silentModeBtn.classList.remove('active');
+                    }
+                }
+                if (silentModeSelect) {
+                    silentModeSelect.value = silentMode || window.xdAnswers.settings._silentModePreselect || 'indicators';
+                    silentModeSelect.style.display = ''; // always visible
+                }
+                // Live-apply settings changes without page reload
+                const parsed = window.xdAnswers.lastParsedResponse;
+                if (parsed && parsed.answer) {
+                    if (window.xdAnswers.settings.autoAnswer) {
+                        autoSelectAnswer(parsed.answer);
+                    }
+                    // Re-apply highlight only when not in silent mode
+                    if (silentMode === '') {
+                        highlightCorrectAnswer(parsed.answer);
+                    } else {
+                        // In silent mode: remove old highlights, apply silent mode visuals
+                        document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                            el.classList.remove('xd-highlight-correct');
+                            el.style.removeProperty('outline');
+                            el.style.removeProperty('background-color');
+                            el.style.removeProperty('border-radius');
+                        });
+                        applySilentMode(parsed.answer || parsed.explanation || '', parsed);
+                    }
+                }
+            });
         }
     });
 
