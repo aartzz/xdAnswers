@@ -3,7 +3,7 @@
 Free, open-source Chrome extension that solves test questions with AI.
 
 Works out of the box — ships with free providers, no API key needed.
-
+> [!IMPORTANT]  
 > **Beta** — bugs happen. [Report them](https://github.com/aartzz/xdAnswers/issues).
 
 ![Screenshot](images/README/ui.png)
