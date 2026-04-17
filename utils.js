@@ -1087,6 +1087,8 @@ answer: правильна відповідь
         container.style.cursor = 'pointer';
 
         const handler = async (e) => {
+            // Don't re-trigger when autoSelectAnswer clicks an option inside this container
+            if (e.target.closest('[role="radio"], [role="checkbox"], [role="option"], .question-option, .answer-item, label')) return;
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
             // Scope autoSelectAnswer to this container only
