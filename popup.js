@@ -351,10 +351,18 @@ function populateUI() {
     el.silentModeSelect.value = silentModeValue || 'indicators';
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
-    el.borderColor.value = settings.customization.borderColor;
-    el.headerColor.value = settings.customization.headerColor;
-    el.contentColor.value = settings.customization.contentColor;
-    el.textColor.value = settings.customization.textColor;
+    const colorFields = [
+        ['borderColor', 'borderColorPicker'],
+        ['headerColor', 'headerColorPicker'],
+        ['contentColor', 'contentColorPicker'],
+        ['textColor', 'textColorPicker']
+    ];
+    for (const [inputKey, pickerKey] of colorFields) {
+        const value = settings.customization[inputKey];
+        el[inputKey].value = value;
+        const normalised = normaliseHex(value);
+        if (el[pickerKey] && normalised) el[pickerKey].value = normalised;
+    }
 
     populateThemesGrid();
     renderProvidersTab();
@@ -891,15 +899,48 @@ function renderModelList() {
     });
 }
 
-function setupColorInput(input, settingKey, cssVar) {
+function normaliseHex(val) {
+    if (!val) return null;
+    const m = val.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (!m) return null;
+    let hex = m[1];
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+    return '#' + hex.toLowerCase();
+}
+
+function setupColorInput(input, settingKey, cssVar, picker) {
+    // Text input: validate on every keystroke, apply when valid.
     input.addEventListener('input', async (e) => {
         const val = e.target.value;
-        if (/^#([0-9a-f]{3}){1,2}$/i.test(val)) {
-            document.documentElement.style.setProperty(cssVar, val);
-            settings.customization[settingKey] = val;
-            await saveSettingsAndNotify(settings);
-        }
+        const normalised = normaliseHex(val);
+        if (!normalised) return;
+        document.documentElement.style.setProperty(cssVar, normalised);
+        settings.customization[settingKey] = normalised;
+        if (picker) picker.value = normalised;
+        await saveSettingsAndNotify(settings);
     });
+
+    if (!picker) return;
+
+    // Initial sync: expand/normalise whatever's in the text input.
+    const initial = normaliseHex(input.value);
+    if (initial) picker.value = initial;
+
+    // Picker: fires continuously while dragging (input) and on close (change).
+    // Write through to the text input + settings so both reflect the new colour.
+    const applyFromPicker = async () => {
+        const val = picker.value;
+        if (!/^#[0-9a-f]{6}$/i.test(val)) return;
+        const normalised = val.toLowerCase();
+        input.value = normalised;
+        document.documentElement.style.setProperty(cssVar, normalised);
+        settings.customization[settingKey] = normalised;
+        await saveSettingsAndNotify(settings);
+    };
+    picker.addEventListener('input', applyFromPicker);
+    picker.addEventListener('change', applyFromPicker);
 }
 
 function attachEventListeners() {
@@ -982,10 +1023,10 @@ function attachEventListeners() {
         }
     });
 
-    setupColorInput(el.borderColor, 'borderColor', '--popup-border');
-    setupColorInput(el.headerColor, 'headerColor', '--header-bg');
-    setupColorInput(el.contentColor, 'contentColor', '--popup-bg');
-    setupColorInput(el.textColor, 'textColor', '--popup-text');
+    setupColorInput(el.borderColor, 'borderColor', '--popup-border', el.borderColorPicker);
+    setupColorInput(el.headerColor, 'headerColor', '--header-bg', el.headerColorPicker);
+    setupColorInput(el.contentColor, 'contentColor', '--popup-bg', el.contentColorPicker);
+    setupColorInput(el.textColor, 'textColor', '--popup-text', el.textColorPicker);
 }
 
 async function autoSave(overrides) {
@@ -1043,7 +1084,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         borderColor: document.getElementById('border-color-input'),
         headerColor: document.getElementById('header-color-input'),
         contentColor: document.getElementById('content-color-input'),
-        textColor: document.getElementById('text-color-input')
+        textColor: document.getElementById('text-color-input'),
+        borderColorPicker: document.getElementById('border-color-picker'),
+        headerColorPicker: document.getElementById('header-color-picker'),
+        contentColorPicker: document.getElementById('content-color-picker'),
+        textColorPicker: document.getElementById('text-color-picker')
     };
 
     settings = await loadSettings();

@@ -351,6 +351,63 @@ textarea {
     cursor: not-allowed;
 }
 
+/* ---------- Color input with swatch picker ----------
+   Wraps a hex text input and a native <input type="color"> rendered as a
+   round swatch. Clicking the swatch opens the OS / browser color picker. */
+.color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-input-wrapper input[type="text"] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.color-swatch {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background-color: transparent;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+    overflow: hidden;
+}
+
+.color-swatch:hover {
+    border-color: rgba(255, 255, 255, 0.32);
+    transform: translateY(-1px);
+}
+
+.color-swatch:focus-visible {
+    border-color: var(--popup-border);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 30%, transparent);
+}
+
+/* Remove browser chrome inside the native color input so the whole element
+   reads as one round swatch. */
+.color-swatch::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 7px;
+}
+
+.color-swatch::-webkit-color-swatch {
+    border: none;
+    border-radius: 7px;
+}
+
+.color-swatch::-moz-color-swatch {
+    border: none;
+    border-radius: 7px;
+}
+
 .field-hint {
     margin: 2px 0 0;
     font-size: 11px;
