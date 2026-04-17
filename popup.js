@@ -99,15 +99,31 @@ function escapeHTML(value) {
         .replace(/'/g, '&#39;');
 }
 
+const MODEL_NAME_ACRONYMS = new Set([
+    'gpt', 'glm', 'qwq', 'gpu', 'api', 'llm', 'llms', 'ai', 'xai',
+    'mai', 'rlhf', 'moe', 'vlm', 'hd', 'sdk', 'gguf', 'fp8', 'fp16',
+    'int4', 'int8', 'nemo', 'ocr', 'tts', 'stt'
+]);
+
 function formatModelName(id) {
-    return id
-        .replace(/^[^/]+\//, '')
-        .replace(/[_:]/g, ' ')
-        .replace(/-/g, ' ')
-        .replace(/\b(\d+)\b/g, ' $1 ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .replace(/\b\w/g, c => c.toUpperCase());
+    if (!id) return '';
+    // Strip provider prefix ("google/...", "openai/...").
+    let name = id.replace(/^[^/]+\//, '');
+    // Normalise common separators to spaces, but keep dots (decimals) intact.
+    name = name.replace(/[_:]+/g, ' ').replace(/-+/g, ' ').replace(/\s+/g, ' ').trim();
+    // Title-case each whitespace-separated token, with a few tweaks:
+    //  - Preserve pure-numeric tokens (including decimals like "3.1").
+    //  - Uppercase well-known acronyms (gpt → GPT).
+    //  - Keep letter+digits tokens like "k2.5" / "4o" readable: capitalise
+    //    the leading letter(s), keep the rest as-is.
+    return name.split(' ').map((token) => {
+        if (!token) return token;
+        const lower = token.toLowerCase();
+        if (MODEL_NAME_ACRONYMS.has(lower)) return lower.toUpperCase();
+        if (/^\d+(\.\d+)*$/.test(token)) return token;           // 3.1, 2024, 05
+        // Capitalise leading alphabetic run, preserve the rest.
+        return token.replace(/^([a-z]+)/i, (m) => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
+    }).join(' ');
 }
 
 function getProviderIcon(ownedBy) {
