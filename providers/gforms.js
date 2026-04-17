@@ -19,30 +19,8 @@
             const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
 
             questionContainers.forEach((container, index) => {
-                if (isOneClick) {
-                    // One-click mode: clicking the question area triggers AI → auto-select
-                    if (container.classList.contains('xd-oneclick-ready')) return;
-                    window.xdAnswers.setupOneClickHandler(container, async () => {
-                        const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
-                        const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
-                        const optionLabels = container.querySelectorAll('[role="radio"], [role="checkbox"], [role="option"]');
-                        const options = Array.from(optionLabels).map(el => el.innerText.trim()).filter(Boolean);
-                        optionLabels.forEach(el => el.setAttribute('data-xd-option', 'true'));
-                        const imgPromises = [];
-                        container.querySelectorAll('img').forEach(img => {
-                            if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
-                        });
-                        const images = await Promise.all(imgPromises);
-                        return {
-                            text: questionText,
-                            optionsText: options.join('\n') || undefined,
-                            base64Images: images.filter(i => i !== null),
-                            questionType: options.length > 0 ? 'quiz' : 'general'
-                        };
-                    });
-                } else {
-                    // Normal mode: add Solve button
-                    if (container.querySelector('.xd-solve-btn')) return;
+                // Always add Solve button as fallback
+                if (!container.querySelector('.xd-solve-btn')) {
                     const button = document.createElement('button');
                     button.className = 'xd-btn xd-solve-btn';
                     button.innerText = '✨ Solve';
@@ -69,6 +47,28 @@
                         });
                     };
                     container.appendChild(button);
+                }
+
+                // In oneclick mode, also register click handler on question container
+                if (isOneClick && !container.classList.contains('xd-oneclick-ready')) {
+                    window.xdAnswers.setupOneClickHandler(container, async () => {
+                        const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
+                        const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
+                        const optionLabels = container.querySelectorAll('[role="radio"], [role="checkbox"], [role="option"]');
+                        const options = Array.from(optionLabels).map(el => el.innerText.trim()).filter(Boolean);
+                        optionLabels.forEach(el => el.setAttribute('data-xd-option', 'true'));
+                        const imgPromises = [];
+                        container.querySelectorAll('img').forEach(img => {
+                            if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
+                        });
+                        const images = await Promise.all(imgPromises);
+                        return {
+                            text: questionText,
+                            optionsText: options.join('\n') || undefined,
+                            base64Images: images.filter(i => i !== null),
+                            questionType: options.length > 0 ? 'quiz' : 'general'
+                        };
+                    });
                 }
             });
         }

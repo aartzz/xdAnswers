@@ -937,7 +937,12 @@ answer: правильна відповідь
 
     function autoSelectAnswer(answerText, force) {
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
-        const optionElements = findOptionElements();
+        const allOptionElements = findOptionElements();
+        const scopedContainer = window.xdAnswers._oneClickContainer;
+        // In oneclick mode, only select options within the clicked question container
+        const optionElements = scopedContainer
+            ? allOptionElements.filter(el => scopedContainer.contains(el))
+            : allOptionElements;
         const elements = matchAnswerToOptions(answerText, optionElements);
 
         setTimeout(() => {
@@ -959,6 +964,8 @@ answer: правильна відповідь
                 clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
                 clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
             }
+            // Clear scoped container after selection
+            window.xdAnswers._oneClickContainer = null;
         }, window.xdAnswers.settings.autoAnswerCooldown);
     }
 
@@ -1055,6 +1062,7 @@ answer: правильна відповідь
 
     const _oneClickHandlers = [];
     window.xdAnswers._oneClickUserTriggered = false;
+    window.xdAnswers._oneClickContainer = null;
 
     function clearOneClickHandlers() {
         for (const { container, handler } of _oneClickHandlers) {
@@ -1081,6 +1089,8 @@ answer: правильна відповідь
         const handler = async (e) => {
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
+            // Scope autoSelectAnswer to this container only
+            window.xdAnswers._oneClickContainer = container;
 
             try {
                 const questionData = await getQuestionDataFn();
@@ -1198,6 +1208,7 @@ answer: правильна відповідь
             }
         } finally {
             window.xdAnswers.isProcessingAI = false;
+            window.xdAnswers._oneClickContainer = null;
         }
     };
 
