@@ -35,7 +35,7 @@
 
                     if (isOneClick) {
                         // One-click mode: register click handler instead of auto-processing
-                        if (container && !container.querySelector('.xd-indicator-dot')) {
+                        if (container && !container.classList.contains('xd-oneclick-ready')) {
                             window.xdAnswers.clearOneClickHandlers();
                             const savedText = currentText;
                             const savedContainer = container;

@@ -138,7 +138,7 @@
                 if (isOneClick) {
                     // One-click mode: register click handler instead of auto-processing
                     const container = document.querySelector('.test-question-content') || document.querySelector('.test-content-text-inner');
-                    if (container && !container.querySelector('.xd-indicator-dot')) {
+                    if (container && !container.classList.contains('xd-oneclick-ready')) {
                         window.xdAnswers.clearOneClickHandlers();
                         // Save detected data for click-time processing
                         const savedText = questionText;

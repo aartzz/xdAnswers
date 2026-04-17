@@ -270,7 +270,7 @@ answer: правильна відповідь
     function buildMessages(questionData) {
         const settings = window.xdAnswers.settings;
         let systemPrompt = questionData.customPromptPrefix || settings.promptPrefix;
-        if (settings.showAnswerOnly) {
+        if (settings.showAnswerOnly || settings.silentMode === 'oneclick') {
             systemPrompt = ANSWER_ONLY_SYSTEM_PROMPT;
         }
 
@@ -1061,8 +1061,6 @@ answer: правильна відповідь
             container.removeEventListener('click', handler, true);
             container.classList.remove('xd-oneclick-ready');
             container.style.removeProperty('cursor');
-            const dot = container.querySelector('.xd-indicator-dot');
-            if (dot) dot.remove();
         }
         _oneClickHandlers.length = 0;
     }
@@ -1078,26 +1076,11 @@ answer: правильна відповідь
         if (_oneClickHandlers.some(h => h.container === container)) return;
 
         container.classList.add('xd-oneclick-ready');
-        container.style.position = 'relative';
         container.style.cursor = 'pointer';
 
-        // Green dot indicator — pulsing to draw attention
-        const dot = document.createElement('span');
-        dot.className = 'xd-indicator-dot';
-        dot.style.cssText = 'position:absolute;top:8px;right:8px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,0.5);pointer-events:none;z-index:9999;';
-        dot.title = 'Click to solve';
-        container.appendChild(dot);
-
         const handler = async (e) => {
-            // Don't intercept clicks on our indicator dots
-            if (e.target.classList.contains('xd-indicator-dot')) return;
-
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
-
-            // Flash dot to show processing started
-            dot.style.background = '#eab308';
-            dot.style.boxShadow = '0 0 8px rgba(234,179,8,0.6)';
 
             try {
                 const questionData = await getQuestionDataFn();
@@ -1105,18 +1088,10 @@ answer: правильна відповідь
                     window.xdAnswers.processQuestion(questionData);
                 } else {
                     window.xdAnswers._oneClickUserTriggered = false;
-                    dot.style.background = '#22c55e';
-                    dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
                 }
             } catch (err) {
                 console.error('xdAnswers oneclick error:', err);
                 window.xdAnswers._oneClickUserTriggered = false;
-                dot.style.background = '#ef4444';
-                dot.style.boxShadow = '0 0 6px rgba(239,68,68,0.5)';
-                setTimeout(() => {
-                    dot.style.background = '#22c55e';
-                    dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
-                }, 1500);
             }
         };
 

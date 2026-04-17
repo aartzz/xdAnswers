@@ -21,7 +21,7 @@
             questionContainers.forEach((container, index) => {
                 if (isOneClick) {
                     // One-click mode: clicking the question area triggers AI → auto-select
-                    if (container.querySelector('.xd-indicator-dot')) return;
+                    if (container.classList.contains('xd-oneclick-ready')) return;
                     window.xdAnswers.setupOneClickHandler(container, async () => {
                         const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
                         const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
