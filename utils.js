@@ -1055,6 +1055,7 @@ answer: правильна відповідь
     // ── One-click silent mode helpers ──
 
     const _oneClickHandlers = [];
+    let _oneClickSelecting = false;  // Re-entrancy guard
 
     function clearOneClickHandlers() {
         for (const { container, handler } of _oneClickHandlers) {
@@ -1070,25 +1071,26 @@ answer: правильна відповідь
         if (!answerText) return;
 
         const optionElements = matchAnswerToOptions(answerText, findOptionElements());
-
-        // Find question containers that wrap the matched options.
-        // We collect unique containers so we don't add duplicate handlers.
         const seenContainers = new Set();
 
         for (const optEl of optionElements) {
             // Walk up to the question-level container.
-            // GForms: div[role="listitem"], Naurok: .test-question-content or body-level,
-            // Vseosvita: .v-test-question / #i-test-question-*, JustClass: .question-container
+            // Order matters: most specific selectors first.
+            // NEVER fall back to document.body — that would make the whole page a click target.
             const questionContainer =
-                optEl.closest('[role="listitem"]') ||           // GForms question item
-                optEl.closest('.v-test-question') ||            // Vseosvita
-                optEl.closest('.v-test-go-bg') ||              // Vseosvita alt
-                optEl.closest('.test-question-content') ||     // Naurok
-                optEl.closest('.question-container') ||        // JustClass
-                optEl.closest('.test-content-text-inner') ||   // Naurok fallback
-                optEl.closest('form') ||
-                optEl.closest('section') ||
-                document.body;
+                optEl.closest('[role="listitem"]') ||               // GForms question item
+                optEl.closest('.geS5n') ||                         // GForms alt container
+                optEl.closest('.test-question-content') ||        // Naurok (full question)
+                optEl.closest('.v-test-question') ||               // Vseosvita
+                optEl.closest('.v-test-go-bg') ||                 // Vseosvita alt
+                optEl.closest('.question-container') ||           // JustClass
+                optEl.closest('.test-content-text-inner') ||      // Naurok fallback
+                optEl.closest('.question-option') ||              // Naurok single-option (less ideal)
+                optEl.closest('form') ||                           // Generic form
+                optEl.closest('section');                          // Generic section
+
+            // If we can't find a reasonable container, skip — never use document.body
+            if (!questionContainer || questionContainer === document.body || questionContainer === document.documentElement) continue;
 
             if (seenContainers.has(questionContainer)) continue;
             seenContainers.add(questionContainer);
@@ -1103,25 +1105,32 @@ answer: правильна відповідь
             questionContainer.classList.add('xd-oneclick-ready');
 
             const handler = (e) => {
-                // Don't intercept clicks on our own indicator dots
-                if (e.target.classList && e.target.classList.contains('xd-indicator-dot')) return;
+                // Re-entrancy guard: prevent infinite loop when our programmatic click bubbles up
+                if (_oneClickSelecting) return;
 
-                e.preventDefault();
-                e.stopPropagation();
+                // Don't intercept clicks on our own indicator dots or solve buttons
+                if (e.target.classList.contains('xd-indicator-dot')) return;
+                if (e.target.closest('.xd-solve-btn')) return;
 
-                // Re-find matched options scoped to this container
+                // DON'T use preventDefault/stopPropagation — that breaks Angular/React pages.
+                // Just select the correct answer and let the original click propagate normally.
                 const scopedOptionEls = matchAnswerToOptions(answerText, findOptionElements());
                 const scopedInContainer = scopedOptionEls.filter(el => questionContainer.contains(el));
 
                 if (scopedInContainer.length > 0) {
-                    for (const el of scopedInContainer) {
-                        const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
-                        clickTarget.click();
-                        const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]')
-                            || clickTarget.closest('label') && clickTarget.closest('label').querySelector('input[type="radio"], input[type="checkbox"]');
-                        if (input && !input.checked) input.click();
-                        clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                        clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                    _oneClickSelecting = true;
+                    try {
+                        for (const el of scopedInContainer) {
+                            const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                            clickTarget.click();
+                            const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]')
+                                || (clickTarget.closest('label') && clickTarget.closest('label').querySelector('input[type="radio"], input[type="checkbox"]'));
+                            if (input && !input.checked) input.click();
+                            clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                            clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                        }
+                    } finally {
+                        _oneClickSelecting = false;
                     }
                     // Flash the dot to confirm selection
                     dot.style.background = '#3b82f6';
