@@ -234,7 +234,8 @@ const DEFAULT_SETTINGS = {
     customization: {
         glowEffect: false,
         ...PREDEFINED_THEMES['Indigo']
-    }
+    },
+    customThemes: []
 };
 
 let settings;
@@ -298,6 +299,9 @@ async function loadSettings() {
             if (typeof loaded.silentMode === 'boolean') {
                 loaded.silentMode = loaded.silentMode ? 'ghost' : '';
             }
+            if (!Array.isArray(loaded.customThemes)) {
+                loaded.customThemes = [];
+            }
         } catch (e) {
             console.error('Failed to parse settings', e);
         }
@@ -352,18 +356,6 @@ function populateUI() {
     el.silentModeSelect.value = silentModeValue || 'indicators';
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
-    const colorFields = [
-        ['borderColor', 'borderColorPicker'],
-        ['headerColor', 'headerColorPicker'],
-        ['contentColor', 'contentColorPicker'],
-        ['textColor', 'textColorPicker']
-    ];
-    for (const [inputKey, pickerKey] of colorFields) {
-        const value = settings.customization[inputKey];
-        el[inputKey].value = value;
-        const normalised = normaliseHex(value);
-        if (el[pickerKey] && normalised) el[pickerKey].value = normalised;
-    }
 
     populateThemesGrid();
     renderProvidersTab();
@@ -677,26 +669,142 @@ function showProviderForm(existing, isOther) {
     });
 }
 
+function themesAreEqual(a, b) {
+    if (!a || !b) return false;
+    return a.borderColor === b.borderColor
+        && a.contentColor === b.contentColor
+        && a.headerColor === b.headerColor
+        && a.textColor === b.textColor;
+}
+
+function buildThemeCard(name, theme, { custom = false, index = -1 } = {}) {
+    const card = document.createElement('div');
+    card.className = 'theme-card' + (custom ? ' custom' : '');
+    if (themesAreEqual(theme, settings.customization)) {
+        card.classList.add('active');
+    }
+
+    const deleteBtn = custom
+        ? `<button type="button" class="theme-delete" data-idx="${index}" title="Delete theme" aria-label="Delete theme">×</button>`
+        : '';
+
+    card.innerHTML = `${deleteBtn}<div class="theme-name">${escapeHTML(name)}</div><div class="theme-preview">
+        <div class="theme-color-chip" style="background:${theme.borderColor}"></div>
+        <div class="theme-color-chip" style="background:${theme.contentColor}"></div>
+        <div class="theme-color-chip" style="background:${theme.headerColor}"></div>
+        <div class="theme-color-chip" style="background:${theme.textColor}"></div></div>`;
+
+    card.addEventListener('click', async (e) => {
+        if (e.target.closest('.theme-delete')) return;
+        settings.customization = {
+            ...settings.customization,
+            borderColor: theme.borderColor,
+            contentColor: theme.contentColor,
+            headerColor: theme.headerColor,
+            textColor: theme.textColor
+        };
+        populateUI();
+        await saveSettingsAndNotify(settings);
+    });
+
+    if (custom) {
+        card.querySelector('.theme-delete').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const idx = parseInt(e.currentTarget.dataset.idx, 10);
+            if (!Number.isInteger(idx)) return;
+            settings.customThemes.splice(idx, 1);
+            populateThemesGrid();
+            await saveSettingsAndNotify(settings);
+        });
+    }
+
+    return card;
+}
+
+function buildAddThemeCard() {
+    const card = document.createElement('div');
+    card.className = 'theme-card add';
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Create custom theme');
+    card.innerHTML = '<div class="theme-add-plus">+</div><div class="theme-add-label">New theme</div>';
+    card.addEventListener('click', () => openThemeEditor());
+    return card;
+}
+
 function populateThemesGrid() {
     const grid = uiElements.themesGrid;
     if (!grid) return;
     grid.innerHTML = '';
     for (const name in PREDEFINED_THEMES) {
-        const theme = PREDEFINED_THEMES[name];
-        const card = document.createElement('div');
-        card.className = 'theme-card';
-        card.onclick = async () => {
-            settings.customization = { ...settings.customization, ...theme };
-            populateUI();
-            await saveSettingsAndNotify(settings);
-        };
-        card.innerHTML = `<div class="theme-name">${name}</div><div class="theme-preview">
-            <div class="theme-color-chip" style="background:${theme.borderColor}"></div>
-            <div class="theme-color-chip" style="background:${theme.contentColor}"></div>
-            <div class="theme-color-chip" style="background:${theme.headerColor}"></div>
-            <div class="theme-color-chip" style="background:${theme.textColor}"></div></div>`;
-        grid.appendChild(card);
+        grid.appendChild(buildThemeCard(name, PREDEFINED_THEMES[name]));
     }
+    (settings.customThemes || []).forEach((theme, idx) => {
+        grid.appendChild(buildThemeCard(theme.name || 'Untitled', theme, { custom: true, index: idx }));
+    });
+    grid.appendChild(buildAddThemeCard());
+}
+
+function openThemeEditor() {
+    const el = uiElements;
+    if (!el.themeEditor) return;
+    const base = settings.customization;
+    const fields = [
+        ['editorName', base.borderColor /* unused */, null],
+    ];
+    el.editorName.value = '';
+    const defaults = {
+        editorBorderInput: base.borderColor,
+        editorHeaderInput: base.headerColor,
+        editorContentInput: base.contentColor,
+        editorTextInput: base.textColor
+    };
+    const pickers = {
+        editorBorderInput: el.editorBorderPicker,
+        editorHeaderInput: el.editorHeaderPicker,
+        editorContentInput: el.editorContentPicker,
+        editorTextInput: el.editorTextPicker
+    };
+    for (const [key, val] of Object.entries(defaults)) {
+        el[key].value = val;
+        const normalised = normaliseHex(val);
+        if (pickers[key] && normalised) pickers[key].value = normalised;
+    }
+    el.themeEditor.classList.remove('hidden');
+    el.editorName.focus();
+}
+
+function closeThemeEditor() {
+    const el = uiElements;
+    if (!el.themeEditor) return;
+    el.themeEditor.classList.add('hidden');
+}
+
+async function saveCustomTheme() {
+    const el = uiElements;
+    const name = (el.editorName.value || '').trim() || `Custom ${(settings.customThemes?.length || 0) + 1}`;
+    const borderColor = normaliseHex(el.editorBorderInput.value);
+    const headerColor = normaliseHex(el.editorHeaderInput.value);
+    const contentColor = normaliseHex(el.editorContentInput.value);
+    const textColor = normaliseHex(el.editorTextInput.value);
+    if (!borderColor || !headerColor || !contentColor || !textColor) {
+        // Visual hint: flash invalid inputs red
+        [el.editorBorderInput, el.editorHeaderInput, el.editorContentInput, el.editorTextInput].forEach(inp => {
+            const val = normaliseHex(inp.value);
+            inp.classList.toggle('invalid', !val);
+        });
+        return;
+    }
+
+    const theme = { name, borderColor, headerColor, contentColor, textColor };
+    if (!Array.isArray(settings.customThemes)) settings.customThemes = [];
+    settings.customThemes.push(theme);
+
+    // Apply the newly saved theme immediately
+    settings.customization = { ...settings.customization, borderColor, headerColor, contentColor, textColor };
+
+    closeThemeEditor();
+    populateUI();
+    await saveSettingsAndNotify(settings);
 }
 
 function makeRequest(options) {
@@ -1025,10 +1133,31 @@ function attachEventListeners() {
         }
     });
 
-    setupColorInput(el.borderColor, 'borderColor', '--popup-border', el.borderColorPicker);
-    setupColorInput(el.headerColor, 'headerColor', '--header-bg', el.headerColorPicker);
-    setupColorInput(el.contentColor, 'contentColor', '--popup-bg', el.contentColorPicker);
-    setupColorInput(el.textColor, 'textColor', '--popup-text', el.textColorPicker);
+    // Theme editor color pairs (sync text <-> picker, no settings writes)
+    const editorPairs = [
+        [el.editorBorderInput, el.editorBorderPicker],
+        [el.editorHeaderInput, el.editorHeaderPicker],
+        [el.editorContentInput, el.editorContentPicker],
+        [el.editorTextInput, el.editorTextPicker]
+    ];
+    for (const [input, picker] of editorPairs) {
+        if (!input || !picker) continue;
+        input.addEventListener('input', () => {
+            const n = normaliseHex(input.value);
+            if (n) picker.value = n;
+            input.classList.remove('invalid');
+        });
+        const syncFromPicker = () => {
+            input.value = picker.value;
+            input.classList.remove('invalid');
+        };
+        picker.addEventListener('input', syncFromPicker);
+        picker.addEventListener('change', syncFromPicker);
+    }
+
+    if (el.themeEditorClose) el.themeEditorClose.addEventListener('click', closeThemeEditor);
+    if (el.themeEditorCancel) el.themeEditorCancel.addEventListener('click', closeThemeEditor);
+    if (el.themeEditorSave) el.themeEditorSave.addEventListener('click', saveCustomTheme);
 }
 
 async function autoSave(overrides) {
@@ -1083,14 +1212,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
         themesGrid: document.getElementById('themes-grid'),
         glowEffectToggle: document.getElementById('glow-effect-toggle'),
-        borderColor: document.getElementById('border-color-input'),
-        headerColor: document.getElementById('header-color-input'),
-        contentColor: document.getElementById('content-color-input'),
-        textColor: document.getElementById('text-color-input'),
-        borderColorPicker: document.getElementById('border-color-picker'),
-        headerColorPicker: document.getElementById('header-color-picker'),
-        contentColorPicker: document.getElementById('content-color-picker'),
-        textColorPicker: document.getElementById('text-color-picker')
+        themeEditor: document.getElementById('theme-editor'),
+        themeEditorClose: document.getElementById('theme-editor-close'),
+        themeEditorCancel: document.getElementById('theme-editor-cancel'),
+        themeEditorSave: document.getElementById('theme-editor-save'),
+        editorName: document.getElementById('theme-editor-name'),
+        editorBorderInput: document.getElementById('editor-border-input'),
+        editorBorderPicker: document.getElementById('editor-border-picker'),
+        editorHeaderInput: document.getElementById('editor-header-input'),
+        editorHeaderPicker: document.getElementById('editor-header-picker'),
+        editorContentInput: document.getElementById('editor-content-input'),
+        editorContentPicker: document.getElementById('editor-content-picker'),
+        editorTextInput: document.getElementById('editor-text-input'),
+        editorTextPicker: document.getElementById('editor-text-picker')
     };
 
     settings = await loadSettings();

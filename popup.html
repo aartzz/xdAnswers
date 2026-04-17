@@ -15,7 +15,6 @@
         <button class="tab-button" data-tab="providers-tab">Providers</button>
         <button class="tab-button" data-tab="features-tab">Features</button>
         <button class="tab-button" data-tab="themes-tab">Themes</button>
-        <button class="tab-button" data-tab="style-tab">Style</button>
         <button class="tab-button" data-tab="donate-tab">♥</button>
     </div>
 
@@ -93,45 +92,59 @@
     </div>
 
     <div id="themes-tab" class="tab-content">
-        <p class="tab-description">Choose a preset theme or customize in Style tab.</p>
+        <p class="tab-description">Choose a preset or click <strong>+</strong> to build your own.</p>
         <div id="themes-grid" class="themes-grid"></div>
-    </div>
 
-    <div id="style-tab" class="tab-content">
+        <div id="theme-editor" class="theme-editor hidden">
+            <div class="theme-editor-header">
+                <span class="theme-editor-title">New theme</span>
+                <button type="button" id="theme-editor-close" class="theme-editor-close" aria-label="Close">×</button>
+            </div>
+            <div class="form-group">
+                <label for="theme-editor-name">Name:</label>
+                <input type="text" id="theme-editor-name" maxlength="24" placeholder="My theme">
+            </div>
+            <div class="form-group">
+                <label for="editor-border-input">Accent:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-border-input" maxlength="7" placeholder="#6366f1">
+                    <input type="color" id="editor-border-picker" class="color-swatch" aria-label="Pick accent color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-header-input">Header:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-header-input" maxlength="7" placeholder="#2a2a3e">
+                    <input type="color" id="editor-header-picker" class="color-swatch" aria-label="Pick header color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-content-input">Background:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-content-input" maxlength="7" placeholder="#1e1e2e">
+                    <input type="color" id="editor-content-picker" class="color-swatch" aria-label="Pick background color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-text-input">Text:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-text-input" maxlength="7" placeholder="#cdd6f4">
+                    <input type="color" id="editor-text-picker" class="color-swatch" aria-label="Pick text color">
+                </div>
+            </div>
+            <div class="theme-editor-actions">
+                <button type="button" id="theme-editor-cancel" class="theme-editor-btn secondary">Cancel</button>
+                <button type="button" id="theme-editor-save" class="theme-editor-btn primary">Save theme</button>
+            </div>
+        </div>
+
+        <hr class="separator">
         <div class="form-group toggle-group">
             <label>
                 <input type="checkbox" id="glow-effect-toggle">
                 <span>Glow effect</span>
             </label>
-        </div>
-        <div class="form-group">
-            <label for="border-color-input">Accent Color:</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="border-color-input" maxlength="7" placeholder="#6366f1">
-                <input type="color" id="border-color-picker" class="color-swatch" aria-label="Pick accent color">
-            </div>
-        </div>
-        <hr class="separator">
-        <div class="form-group">
-            <label for="header-color-input">Header Color:</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="header-color-input" maxlength="7" placeholder="#1e1b4b">
-                <input type="color" id="header-color-picker" class="color-swatch" aria-label="Pick header color">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="content-color-input">Background Color:</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="content-color-input" maxlength="7" placeholder="#0f0e1a">
-                <input type="color" id="content-color-picker" class="color-swatch" aria-label="Pick background color">
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="text-color-input">Text Color:</label>
-            <div class="color-input-wrapper">
-                <input type="text" id="text-color-input" maxlength="7" placeholder="#e2e0ff">
-                <input type="color" id="text-color-picker" class="color-swatch" aria-label="Pick text color">
-            </div>
+            <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
         </div>
     </div>
 

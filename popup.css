@@ -695,6 +695,154 @@ textarea {
     flex: 1;
 }
 
+/* Active / custom / add theme cards */
+
+.theme-card.active {
+    border-color: var(--popup-border);
+    box-shadow: 0 0 0 1px var(--popup-border);
+}
+
+.theme-card.custom {
+    position: relative;
+}
+
+.theme-delete {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--popup-text);
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s;
+    padding: 0;
+    z-index: 1;
+}
+
+.theme-card.custom:hover .theme-delete {
+    opacity: 1;
+}
+
+.theme-delete:hover {
+    background: rgba(239, 68, 68, 0.7);
+}
+
+.theme-card.add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.15);
+    min-height: 70px;
+}
+
+.theme-card.add:hover {
+    border-color: var(--popup-border);
+    transform: translateY(-2px) scale(1.03);
+}
+
+.theme-add-plus {
+    font-size: 24px;
+    font-weight: 300;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.theme-add-label {
+    font-size: 9px;
+    opacity: 0.45;
+    margin-top: 4px;
+}
+
+/* Theme editor */
+
+.theme-editor {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.theme-editor.hidden {
+    display: none;
+}
+
+.theme-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.theme-editor-title {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.theme-editor-close {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--popup-text);
+    font-size: 14px;
+    line-height: 22px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s;
+}
+
+.theme-editor-close:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.theme-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.theme-editor-btn {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.theme-editor-btn:hover {
+    opacity: 0.85;
+}
+
+.theme-editor-btn.secondary {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--popup-text);
+}
+
+.theme-editor-btn.primary {
+    background: var(--popup-border);
+    color: #fff;
+}
+
+input.invalid {
+    border-color: #ef4444 !important;
+    outline: none;
+}
+
 /* ── Providers Tab ── */
 
 .providers-section {
