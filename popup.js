@@ -102,7 +102,8 @@ function escapeHTML(value) {
 const MODEL_NAME_ACRONYMS = new Set([
     'gpt', 'glm', 'qwq', 'gpu', 'api', 'llm', 'llms', 'ai', 'xai',
     'mai', 'rlhf', 'moe', 'vlm', 'hd', 'sdk', 'gguf', 'fp8', 'fp16',
-    'int4', 'int8', 'nemo', 'ocr', 'tts', 'stt'
+    'int4', 'int8', 'ocr', 'tts', 'stt', 'oss', 'mlx', 'awq',
+    'gptq', 'bnb', 'cpu', 'tpu', 'npu', 'mtp'
 ]);
 
 function formatModelName(id) {
