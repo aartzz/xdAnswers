@@ -96,6 +96,24 @@
             return options;
         }
 
+        // Mark option elements with data-xd-option so findOptionElements()/matchAnswerToOptions()
+        // in utils.js can find them for auto-answer and indicator modes
+        function markOptionElements(questionRoot) {
+            // For radio/checkbox questions: mark the label[for] elements
+            questionRoot.querySelectorAll('.v-test-questions-radio-block label[for], .v-test-questions-checkbox-block label[for]').forEach(label => {
+                label.setAttribute('data-xd-option', 'true');
+            });
+            // For matching questions: mark cross-block items
+            questionRoot.querySelectorAll('.v-block-answers-cross-block').forEach(block => {
+                const textEl = block.querySelector('.n-kahoot-p, p') || block;
+                textEl.setAttribute('data-xd-option', 'true');
+            });
+            // Fallback: mark generic option elements
+            questionRoot.querySelectorAll('.v-test-questions-select-block .t-text, .v-test-questions-select-block .t-text-guest, .answer-text, .test-answer').forEach(el => {
+                el.setAttribute('data-xd-option', 'true');
+            });
+        }
+
         function detectQuestionData() {
             const questionRoot = document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .test-question-text, .vseosvita-test-content');
             if (!questionRoot) return null;
@@ -104,28 +122,52 @@
             const text = getText(titleNode || questionRoot);
             if (!text) return null;
 
+            // Mark option elements for auto-answer/indicators
+            markOptionElements(questionRoot);
+
             const options = collectOptions(questionRoot);
-            const imgs = Array.from(questionRoot.querySelectorAll('img')).map(img => img.src).filter(Boolean);
+
+            // Collect images from question title first, then from the rest of the question
+            const titleImgs = Array.from(
+                (titleNode || questionRoot).querySelectorAll('img')
+            ).map(img => img.src || img.getAttribute('data-src')).filter(Boolean);
+            const otherImgs = Array.from(
+                questionRoot.querySelectorAll('img')
+            ).map(img => img.src || img.getAttribute('data-src')).filter(Boolean);
+            const imgs = [...new Set([...titleImgs, ...otherImgs])];
+
+            // Detect question type
+            const hasTextInput = questionRoot.querySelector('.a-test-lab-inp input[type="text"]') !== null;
+            const hasCheckbox = questionRoot.querySelector('input[type="checkbox"]') !== null;
+            const hasRadio = questionRoot.querySelector('input[type="radio"]') !== null;
+            const hasMatching = questionRoot.querySelector('.matching-question, .matching-block, .v-block-answers-cross-wrapper') !== null;
+            const hasOrdering = questionRoot.querySelector('.row_draggable-question, .draggable-question-box') !== null;
 
             let questionType = 'unknown';
-            if (questionRoot.querySelector('.row_draggable-question, .draggable-question-box')) {
+            let isMultiQuiz = false;
+
+            if (hasOrdering) {
                 questionType = 'ordering';
-            } else if (questionRoot.querySelector('input[type="checkbox"]')) {
-                questionType = 'quiz';
-            } else if (questionRoot.querySelector('input[type="radio"]')) {
-                questionType = 'quiz';
-            } else if (questionRoot.querySelector('.matching-question, .matching-block, .v-block-answers-cross-wrapper')) {
+            } else if (hasMatching) {
                 questionType = 'matching';
+            } else if (hasTextInput) {
+                questionType = 'short_text';
+            } else if (hasCheckbox) {
+                questionType = 'quiz';
+                isMultiQuiz = true;
+            } else if (hasRadio) {
+                questionType = 'quiz';
             }
 
             return {
                 root: questionRoot,
                 text,
                 options,
-                optionsText: options.join('\n'),
+                optionsText: options.join('\n') || undefined,
                 base64ImageSources: imgs,
                 questionType,
-                isMultiQuiz: questionRoot.querySelector('input[type="checkbox"]') !== null
+                isMultiQuiz,
+                isMulti: isMultiQuiz
             };
         }
 
@@ -155,20 +197,24 @@
                 const container = questionData.root;
                 if (container && !container.classList.contains('xd-oneclick-ready')) {
                     window.xdAnswers.clearOneClickHandlers();
-                    // Save detected data for click-time processing
+                    // Capture current question data for click-time processing
                     const savedText = questionData.text;
                     const savedOptionsText = questionData.optionsText;
                     const savedImageUrls = questionData.base64ImageSources;
                     const savedQuestionType = questionData.questionType;
                     const savedIsMultiQuiz = questionData.isMultiQuiz;
+                    const savedIsMulti = questionData.isMulti;
                     window.xdAnswers.setupOneClickHandler(container, async () => {
+                        // Re-mark options in case DOM changed since last detection
+                        markOptionElements(container);
                         const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
                         return {
                             text: savedText,
                             optionsText: savedOptionsText,
                             base64Images: images.filter(Boolean),
                             questionType: savedQuestionType,
-                            isMultiQuiz: savedIsMultiQuiz
+                            isMultiQuiz: savedIsMultiQuiz,
+                            isMulti: savedIsMulti
                         };
                     });
                 }
@@ -182,7 +228,8 @@
                         optionsText: questionData.optionsText,
                         base64Images: images.filter(Boolean),
                         questionType: questionData.questionType,
-                        isMultiQuiz: questionData.isMultiQuiz
+                        isMultiQuiz: questionData.isMultiQuiz,
+                        isMulti: questionData.isMulti
                     });
                     window.xdAnswers.attachAndPositionHelper();
                 });

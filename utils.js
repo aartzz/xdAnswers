@@ -927,7 +927,7 @@ answer: правильна відповідь
         });
         const elements = matchAnswerToOptions(answerText, findOptionElements());
         for (const el of elements) {
-            const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+            const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
             target.classList.add('xd-highlight-correct');
             target.style.setProperty('outline', '3px solid #22c55e', 'important');
             target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');
@@ -952,7 +952,7 @@ answer: правильна відповідь
             if (elements.length > 0) {
                 for (const el of elements) {
                     // Try multiple click target strategies
-                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
                     
                     // Strategy 1: Direct click
                     clickTarget.click();
@@ -969,8 +969,10 @@ answer: правильна відповідь
                     clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
                 }
             } else if (scopedContainer && answerText) {
-                // No option elements matched — try text/paragraph inputs (e.g. GForms short text / paragraph)
-                const textInput = scopedContainer.querySelector('input.whsOnd, input[type="text"]');
+                // No option elements matched — try text/paragraph inputs
+                // GForms: input.whsOnd (short text), textarea.KHxj8b (paragraph)
+                // Vseosvita: .a-test-lab-inp input[type="text"] (open answer)
+                const textInput = scopedContainer.querySelector('input.whsOnd, .a-test-lab-inp input[type="text"], input[type="text"]');
                 const textArea = scopedContainer.querySelector('textarea.KHxj8b, textarea');
                 const target = textArea || textInput;
                 if (target) {
@@ -1057,7 +1059,7 @@ answer: правильна відповідь
         if (mode === 'indicators') {
             const optionElements = matchAnswerToOptions(answerText, findOptionElements());
             for (const el of optionElements) {
-                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
                 wrapper.style.position = 'relative';
                 const indicator = document.createElement('span');
                 indicator.className = 'xd-indicator-dot';
