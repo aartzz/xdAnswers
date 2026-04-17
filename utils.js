@@ -86,10 +86,10 @@ answer: правильна відповідь
         _silentModePreselect: 'indicators',
         customization: {
             glowEffect: false,
-            borderColor: '#6366f1',
-            contentColor: '#1e1e2e',
-            headerColor: '#2a2a3e',
-            textColor: '#cdd6f4'
+            borderColor: '#cccccc',
+            contentColor: '#1c1c1c',
+            headerColor: '#333333',
+            textColor: '#e0e0e0'
         }
     };
 
