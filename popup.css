@@ -959,25 +959,33 @@ textarea {
     padding: 16px;
 }
 
-.kofi-button {
+.donate-button {
     display: inline-flex;
     align-items: center;
-    padding: 8px 16px;
-    background-color: #29abe0;
+    gap: 8px;
+    padding: 10px 18px;
     color: #fff;
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 8px;
     font-weight: 600;
     font-size: 13px;
-    margin-top: 8px;
-    transition: opacity 0.15s;
+    margin-top: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
-.kofi-button:hover {
-    opacity: 0.9;
+.donate-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    opacity: 0.95;
 }
 
-.kofi-img {
+.donate-button.telegram {
+    background: linear-gradient(135deg, #2aabee 0%, #229ed9 100%);
+}
+
+.donate-icon {
     width: 20px;
-    margin-right: 8px;
+    height: 20px;
+    flex-shrink: 0;
 }
