@@ -78,6 +78,7 @@ answer: правильна відповідь
         activeProviderId: 'unturf-vl-default',
         model: '',
         promptPrefix: DEFAULT_SYSTEM_PROMPT,
+        language: 'uk',
         autoAnswer: false,
         autoAnswerCooldown: 2000,
         highlightCorrect: true,

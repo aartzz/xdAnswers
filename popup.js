@@ -8,6 +8,300 @@ const PREDEFINED_THEMES = {
     'Amber': { borderColor: '#f59e0b', contentColor: '#140f00', headerColor: '#2a1f00', textColor: '#fef3c7' }
 };
 
+const TRANSLATIONS = {
+    uk: {
+        // Tab names
+        tabAI: 'ШІ',
+        tabProviders: 'Провайдери',
+        tabFeatures: 'Функції',
+        tabThemes: 'Теми',
+        // AI tab
+        providerLabel: 'Провайдер:',
+        modelsLabel: 'Моделі:',
+        searchModel: 'Пошук або введіть модель...',
+        // Features tab
+        languageLabel: 'Мова:',
+        autoAnswer: 'Автовідповідь',
+        autoAnswerHint: 'Автоматично обирати правильну відповідь на сторінці.',
+        cooldownLabel: 'Затримка (мс):',
+        highlightCorrect: 'Підсвітити правильну відповідь',
+        highlightCorrectHint: 'Підсвітити правильний варіант зеленою рамкою, коли UI видимий.',
+        showAnswerOnly: 'Лише відповідь',
+        showAnswerOnlyHint: 'Просити ШІ повертати лише відповідь — без пояснень. Економить токени.',
+        silentMode: 'Тихий режим',
+        silentModeLabel: 'Режим:',
+        silentIndicators: 'Індикатори',
+        silentGhost: 'Заголовок сторінки',
+        silentStealth: 'Стелс',
+        silentIndicatorsHint: 'Маркер поруч з правильною відповіддю.',
+        silentGhostHint: 'Сховати вікно. Відповідь лише в заголовку вкладки.',
+        silentStealthHint: 'Повністю невидимо. Відповідь автоматично копіюється.',
+        // Themes tab
+        themesDesc: 'Оберіть готову тему або натисніть <strong>+</strong> щоб створити свою.',
+        newTheme: 'Нова тема',
+        themeNameLabel: 'Назва:',
+        themeNamePlaceholder: 'Моя тема',
+        accentLabel: 'Акцент:',
+        headerLabel: 'Шапка:',
+        backgroundLabel: 'Фон:',
+        textLabel: 'Текст:',
+        cancelBtn: 'Скасувати',
+        saveThemeBtn: 'Зберегти тему',
+        glowEffect: 'Ефект світіння',
+        glowEffectHint: 'Мяке світіння акцентного кольору навколо картки відповіді.',
+        // Theme dynamic
+        addThemeLabel: 'Нова тема',
+        deleteTheme: 'Видалити тему',
+        createTheme: 'Створити свою тему',
+        untitled: 'Без назви',
+        customPrefix: 'Користувацька',
+        // Donate tab
+        donateText: 'Якщо вам подобається розширення, підтримайте розробника.',
+        donateBtn: 'Підписатись в Telegram',
+        // Providers tab
+        providersHeader: 'Провайдери',
+        otherHeader: 'Інші',
+        otherHint: 'Користувацькі OpenAI-сумісні ендпоінти',
+        addProvider: '+ Додати провайдер',
+        addCustomProvider: '+ Додати свій провайдер',
+        noProviders: 'Провайдерів ще немає',
+        // Provider form
+        providerTypeLabel: 'Тип:',
+        providerNameLabel: 'Назва:',
+        providerNamePlaceholder: 'Мій провайдер',
+        providerBaseUrlLabel: 'Base URL:',
+        providerApiKeyLabel: 'API Key:',
+        providerApiKeyPlaceholder: 'sk-...',
+        providerCustomName: 'Користувацький провайдер',
+        removeProvider: 'Видалити',
+        saveProvider: 'Зберегти',
+        addProviderType: 'Додати тип',
+        // Model badges
+        badgeVision: 'Підтримує зображення',
+        badgeReasoning: 'Модель з мисленням',
+        badgeCostInput: 'Ввід',
+        badgeCostOutput: 'Вивід',
+        customModel: 'користувацька модель',
+        // Context length
+        ctxThousand: 'тис.',
+        ctxMillion: 'млн'
+    },
+    ru: {
+        tabAI: 'ИИ',
+        tabProviders: 'Провайдеры',
+        tabFeatures: 'Функции',
+        tabThemes: 'Темы',
+        providerLabel: 'Провайдер:',
+        modelsLabel: 'Модели:',
+        searchModel: 'Поиск или введите модель...',
+        languageLabel: 'Язык:',
+        autoAnswer: 'Автоответ',
+        autoAnswerHint: 'Автоматически выбирать правильный ответ на странице.',
+        cooldownLabel: 'Задержка (мс):',
+        highlightCorrect: 'Подсветить правильный ответ',
+        highlightCorrectHint: 'Подсветить правильный вариант зелёной рамкой, когда UI видим.',
+        showAnswerOnly: 'Только ответ',
+        showAnswerOnlyHint: 'Просить ИИ возвращать только ответ — без объяснений. Экономит токены.',
+        silentMode: 'Тихий режим',
+        silentModeLabel: 'Режим:',
+        silentIndicators: 'Индикаторы',
+        silentGhost: 'Заголовок страницы',
+        silentStealth: 'Стелс',
+        silentIndicatorsHint: 'Маркер рядом с правильным ответом.',
+        silentGhostHint: 'Скрыть окно. Ответ только в заголовке вкладки.',
+        silentStealthHint: 'Полностью невидимо. Ответ автоматически копируется.',
+        themesDesc: 'Выберите готовую тему или нажмите <strong>+</strong> чтобы создать свою.',
+        newTheme: 'Новая тема',
+        themeNameLabel: 'Название:',
+        themeNamePlaceholder: 'Моя тема',
+        accentLabel: 'Акцент:',
+        headerLabel: 'Шапка:',
+        backgroundLabel: 'Фон:',
+        textLabel: 'Текст:',
+        cancelBtn: 'Отмена',
+        saveThemeBtn: 'Сохранить тему',
+        glowEffect: 'Эффект свечения',
+        glowEffectHint: 'Мягкое свечение акцентного цвета вокруг карточки ответа.',
+        addThemeLabel: 'Новая тема',
+        deleteTheme: 'Удалить тему',
+        createTheme: 'Создать свою тему',
+        untitled: 'Без названия',
+        customPrefix: 'Пользовательская',
+        donateText: 'Если вам нравится расширение, поддержите разработчика.',
+        donateBtn: 'Подписаться в Telegram',
+        providersHeader: 'Провайдеры',
+        otherHeader: 'Другие',
+        otherHint: 'Пользовательские OpenAI-совместимые эндпоинты',
+        addProvider: '+ Добавить провайдер',
+        addCustomProvider: '+ Добавить свой провайдер',
+        noProviders: 'Провайдеров пока нет',
+        providerTypeLabel: 'Тип:',
+        providerNameLabel: 'Название:',
+        providerNamePlaceholder: 'Мой провайдер',
+        providerBaseUrlLabel: 'Base URL:',
+        providerApiKeyLabel: 'API Key:',
+        providerApiKeyPlaceholder: 'sk-...',
+        providerCustomName: 'Пользовательский провайдер',
+        removeProvider: 'Удалить',
+        saveProvider: 'Сохранить',
+        addProviderType: 'Добавить тип',
+        badgeVision: 'Поддерживает изображения',
+        badgeReasoning: 'Модель с мышлением',
+        badgeCostInput: 'Ввод',
+        badgeCostOutput: 'Вывод',
+        customModel: 'пользовательская модель',
+        ctxThousand: 'тыс.',
+        ctxMillion: 'млн'
+    },
+    en: {
+        tabAI: 'AI',
+        tabProviders: 'Providers',
+        tabFeatures: 'Features',
+        tabThemes: 'Themes',
+        providerLabel: 'Provider:',
+        modelsLabel: 'Models:',
+        searchModel: 'Search or type custom model...',
+        languageLabel: 'Language:',
+        autoAnswer: 'Auto-answer',
+        autoAnswerHint: 'Automatically select the correct answer on the page.',
+        cooldownLabel: 'Cooldown (ms):',
+        highlightCorrect: 'Highlight correct answer',
+        highlightCorrectHint: 'Highlight the correct option with a green border when UI is visible.',
+        showAnswerOnly: 'Show answer only',
+        showAnswerOnlyHint: 'Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.',
+        silentMode: 'Silent mode',
+        silentModeLabel: 'Mode:',
+        silentIndicators: 'Indicators',
+        silentGhost: 'Page title',
+        silentStealth: 'Stealth',
+        silentIndicatorsHint: 'Overlay dot next to the correct answer.',
+        silentGhostHint: 'Hide window. Answer shown only in browser tab title.',
+        silentStealthHint: 'Completely invisible. Answer auto-copied to clipboard.',
+        themesDesc: 'Choose a preset or click <strong>+</strong> to build your own.',
+        newTheme: 'New theme',
+        themeNameLabel: 'Name:',
+        themeNamePlaceholder: 'My theme',
+        accentLabel: 'Accent:',
+        headerLabel: 'Header:',
+        backgroundLabel: 'Background:',
+        textLabel: 'Text:',
+        cancelBtn: 'Cancel',
+        saveThemeBtn: 'Save theme',
+        glowEffect: 'Glow effect',
+        glowEffectHint: 'Soft accent-colored glow around the on-page answer card.',
+        addThemeLabel: 'New theme',
+        deleteTheme: 'Delete theme',
+        createTheme: 'Create custom theme',
+        untitled: 'Untitled',
+        customPrefix: 'Custom',
+        donateText: 'If you like this extension, consider supporting the developer.',
+        donateBtn: 'Subscribe on Telegram',
+        providersHeader: 'Providers',
+        otherHeader: 'Other',
+        otherHint: 'Custom OpenAI-compatible endpoints',
+        addProvider: '+ Add Provider',
+        addCustomProvider: '+ Add Custom Provider',
+        noProviders: 'No providers added yet',
+        providerTypeLabel: 'Type:',
+        providerNameLabel: 'Name:',
+        providerNamePlaceholder: 'My Custom Provider',
+        providerBaseUrlLabel: 'Base URL:',
+        providerApiKeyLabel: 'API Key:',
+        providerApiKeyPlaceholder: 'sk-...',
+        providerCustomName: 'Custom Provider',
+        removeProvider: 'Remove',
+        saveProvider: 'Save',
+        addProviderType: 'Add type',
+        badgeVision: 'Supports image input',
+        badgeReasoning: 'Reasoning/thinking model',
+        badgeCostInput: 'Input',
+        badgeCostOutput: 'Output',
+        customModel: 'custom model',
+        ctxThousand: 'K',
+        ctxMillion: 'M'
+    }
+};
+
+function t(key) {
+    return (TRANSLATIONS[settings.language || 'uk'] || TRANSLATIONS.uk)[key] || key;
+}
+
+function applyLanguage() {
+    const lang = settings.language || 'uk';
+    document.documentElement.lang = lang === 'uk' ? 'uk' : (lang === 'ru' ? 'ru' : 'en');
+
+    // Tab buttons
+    const tabs = document.querySelectorAll('.tab-button');
+    const tabKeys = ['tabAI', 'tabProviders', 'tabFeatures', 'tabThemes', null]; // last = ♥ (no translation)
+    tabs.forEach((btn, i) => { if (tabKeys[i]) btn.textContent = t(tabKeys[i]); });
+
+    // AI tab
+    const providerLabel = document.querySelector('label[for="active-provider-trigger"]');
+    if (providerLabel) providerLabel.textContent = t('providerLabel');
+    const modelsLabel = document.querySelector('.model-select-group > label');
+    if (modelsLabel) modelsLabel.innerHTML = `${t('modelsLabel')} <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span>`;
+    const modelInput = document.getElementById('model-name');
+    if (modelInput) modelInput.placeholder = t('searchModel');
+
+    // Features tab
+    const langLabel = document.querySelector('label[for="language-select"]');
+    if (langLabel) langLabel.textContent = t('languageLabel');
+    const langSelect = document.getElementById('language-select');
+    if (langSelect) langSelect.value = lang;
+    document.querySelector('#auto-answer-toggle + span').textContent = t('autoAnswer');
+    document.querySelector('#auto-answer-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('autoAnswerHint');
+    const cooldownLabel = document.querySelector('label[for="auto-answer-cooldown"]');
+    if (cooldownLabel) cooldownLabel.textContent = t('cooldownLabel');
+    document.querySelector('#highlight-correct-toggle + span').textContent = t('highlightCorrect');
+    document.querySelector('#highlight-correct-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('highlightCorrectHint');
+    document.querySelector('#show-answer-only-toggle + span').textContent = t('showAnswerOnly');
+    document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('showAnswerOnlyHint');
+    document.querySelector('#silent-mode-toggle + span').textContent = t('silentMode');
+    const silentModeLabel = document.querySelector('label[for="silent-mode-select"]');
+    if (silentModeLabel) silentModeLabel.textContent = t('silentModeLabel');
+
+    // Silent mode options
+    const silentOpts = document.querySelectorAll('#silent-mode-select option');
+    const optKeys = ['silentIndicators', 'silentGhost', 'silentStealth'];
+    silentOpts.forEach((opt, i) => { if (optKeys[i]) opt.textContent = t(optKeys[i]); });
+
+    // Silent mode hints
+    const silentHint = document.querySelector('#silent-mode-select-group .field-hint');
+    if (silentHint) {
+        silentHint.innerHTML = `<strong>${t('silentIndicators')}:</strong> ${t('silentIndicatorsHint')}<br><strong>${t('silentGhost')}:</strong> ${t('silentGhostHint')}<br><strong>${t('silentStealth')}:</strong> ${t('silentStealthHint')}`;
+    }
+
+    // Themes tab
+    const themesDesc = document.querySelector('.tab-description');
+    if (themesDesc) themesDesc.innerHTML = t('themesDesc');
+    const editorTitle = document.querySelector('.theme-editor-title');
+    if (editorTitle) editorTitle.textContent = t('newTheme');
+    const editorNameLabel = document.querySelector('label[for="theme-editor-name"]');
+    if (editorNameLabel) editorNameLabel.textContent = t('themeNameLabel');
+    const editorNameInput = document.getElementById('theme-editor-name');
+    if (editorNameInput) editorNameInput.placeholder = t('themeNamePlaceholder');
+    const editorBorderLabel = document.querySelector('label[for="editor-border-input"]');
+    if (editorBorderLabel) editorBorderLabel.textContent = t('accentLabel');
+    const editorHeaderLabel = document.querySelector('label[for="editor-header-input"]');
+    if (editorHeaderLabel) editorHeaderLabel.textContent = t('headerLabel');
+    const editorContentLabel = document.querySelector('label[for="editor-content-input"]');
+    if (editorContentLabel) editorContentLabel.textContent = t('backgroundLabel');
+    const editorTextLabel = document.querySelector('label[for="editor-text-input"]');
+    if (editorTextLabel) editorTextLabel.textContent = t('textLabel');
+    const cancelBtn = document.getElementById('theme-editor-cancel');
+    if (cancelBtn) cancelBtn.textContent = t('cancelBtn');
+    const saveBtn = document.getElementById('theme-editor-save');
+    if (saveBtn) saveBtn.textContent = t('saveThemeBtn');
+    document.querySelector('#glow-effect-toggle + span').textContent = t('glowEffect');
+    document.querySelector('#glow-effect-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('glowEffectHint');
+
+    // Donate tab
+    const donateText = document.querySelector('.donate-content > p');
+    if (donateText) donateText.textContent = t('donateText');
+    const donateBtnSpan = document.querySelector('.donate-button span');
+    if (donateBtnSpan) donateBtnSpan.textContent = t('donateBtn');
+}
+
 const DEFAULT_BASE_URLS = {
     openai: 'https://api.openai.com/v1',
     anthropic: 'https://api.anthropic.com/v1',
@@ -155,8 +449,8 @@ function getModelFamilyIcon(modelId) {
 
 function formatContextLength(ctx) {
     if (!ctx) return '';
-    if (ctx >= 1000000) return (ctx / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
-    if (ctx >= 1000) return (ctx / 1000).toFixed(0) + 'K';
+    if (ctx >= 1000000) return (ctx / 1000000).toFixed(1).replace(/\.0$/, '') + t('ctxMillion');
+    if (ctx >= 1000) return (ctx / 1000).toFixed(0) + t('ctxThousand');
     return String(ctx);
 }
 
@@ -225,6 +519,7 @@ const DEFAULT_SETTINGS = {
     activeProviderId: 'unturf-vl-default',
     model: '',
     promptPrefix: DEFAULT_PROMPT,
+    language: 'uk',
     autoAnswer: false,
     autoAnswerCooldown: 2000,
     highlightCorrect: true,
@@ -357,6 +652,7 @@ function populateUI() {
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
 
+    applyLanguage();
     populateThemesGrid();
     renderProvidersTab();
     applyThemeToPopup();
@@ -382,8 +678,8 @@ function renderActiveProviderSelector() {
     } else {
         trigger.innerHTML = `<span class="provider-trigger-value">
             <span class="provider-option-text">
-                <span class="provider-option-title">No provider configured</span>
-                <span class="provider-option-hint">Go to Providers tab to add one</span>
+                <span class="provider-option-title">—</span>
+                <span class="provider-option-hint">—</span>
             </span>
         </span><span class="provider-caret">▾</span>`;
     }
@@ -428,21 +724,21 @@ function renderProvidersTab() {
     const custom = settings.providers.filter(p => p.type === 'other');
 
     let html = '<div class="providers-section">';
-    html += '<div class="providers-section-header">Providers</div>';
+    html += `<div class="providers-section-header">${t('providersHeader')}</div>`;
     if (standard.length) {
         html += standard.map(p => renderProviderCard(p)).join('');
     } else {
-        html += '<div class="provider-empty-hint">No providers added yet</div>';
+        html += `<div class="provider-empty-hint">${t('noProviders')}</div>`;
     }
-    html += '<button type="button" class="add-provider-btn" data-section="standard">+ Add Provider</button>';
+    html += `<button type="button" class="add-provider-btn" data-section="standard">${t('addProvider')}</button>`;
     html += '</div>';
 
     html += '<div class="providers-section">';
-    html += '<div class="providers-section-header">Other <span class="providers-section-hint">Custom OpenAI-compatible endpoints</span></div>';
+    html += `<div class="providers-section-header">${t('otherHeader')} <span class="providers-section-hint">${t('otherHint')}</span></div>`;
     if (custom.length) {
         html += custom.map(p => renderProviderCard(p)).join('');
     }
-    html += '<button type="button" class="add-provider-btn" data-section="other">+ Add Custom Provider</button>';
+    html += `<button type="button" class="add-provider-btn" data-section="other">${t('addCustomProvider')}</button>`;
     html += '</div>';
 
     container.innerHTML = html;
@@ -459,7 +755,7 @@ function renderProviderCard(p) {
     const logo = getProviderLogo(p);
     const isActive = p.id === settings.activeProviderId;
     const activeBadge = isActive ? '<span class="provider-active-badge">active</span>' : '';
-    const keyPreview = p.apiKey ? '••••' + p.apiKey.slice(-4) : 'no key';
+    const keyPreview = p.apiKey ? '••••' + p.apiKey.slice(-4) : '—';
     const isOther = p.type === 'other';
     const urlLine = isOther ? `<span class="provider-card-url">${escapeHTML(p.baseUrl)}</span>` : '';
 
@@ -558,25 +854,25 @@ function showProviderForm(existing, isOther) {
 
     const formHtml = `<div class="provider-form">
         <div class="form-group">
-            <label>Provider:</label>
+            <label>${t('providerTypeLabel')}</label>
             <div class="pf-type-wrapper">${providerListHtml}</div>
             <input type="hidden" id="pf-type" value="${initialType}">
         </div>
         <div class="form-group">
-            <label>Name:</label>
-            <input type="text" id="pf-name" value="${escapeHTML(existing?.name || '')}" placeholder="${isOtherType ? 'My Custom Provider' : getApiProviderMeta(initialType)?.name || 'Provider'}">
+            <label>${t('providerNameLabel')}</label>
+            <input type="text" id="pf-name" value="${escapeHTML(existing?.name || '')}" placeholder="${isOtherType ? t('providerNamePlaceholder') : getApiProviderMeta(initialType)?.name || 'Provider'}">
         </div>
         <div class="form-group pf-url-group"${urlDisplay}>
-            <label>Base URL:</label>
+            <label>${t('providerBaseUrlLabel')}</label>
             <input type="text" id="pf-url" value="${escapeHTML(defaultUrl)}" placeholder="https://api.example.com/v1">
         </div>
         <div class="form-group">
-            <label>API Key:</label>
-            <input type="password" id="pf-key" value="${escapeHTML(existing?.apiKey || '')}" placeholder="sk-...">
+            <label>${t('providerApiKeyLabel')}</label>
+            <input type="password" id="pf-key" value="${escapeHTML(existing?.apiKey || '')}" placeholder="${t('providerApiKeyPlaceholder')}">
         </div>
         <div class="provider-form-actions">
-            <button type="button" id="pf-save" class="pf-btn pf-save-btn">${isEdit ? 'Save' : 'Add'}</button>
-            <button type="button" id="pf-cancel" class="pf-btn pf-cancel-btn">Cancel</button>
+            <button type="button" id="pf-save" class="pf-btn pf-save-btn">${isEdit ? t('saveProvider') : t('addProviderType')}</button>
+            <button type="button" id="pf-cancel" class="pf-btn pf-cancel-btn">${t('cancelBtn')}</button>
         </div>
     </div>`;
 
@@ -638,7 +934,7 @@ function showProviderForm(existing, isOther) {
 
         const isOtherSave = selectedType === 'other';
         const meta = getApiProviderMeta(selectedType);
-        const finalName = name || (isOtherSave ? 'Custom Provider' : (meta?.name || selectedType));
+        const finalName = name || (isOtherSave ? t('providerCustomName') : (meta?.name || selectedType));
         const finalUrl = isOtherSave
             ? (pfUrl.value.trim() || 'https://api.openai.com/v1')
             : (DEFAULT_BASE_URLS[selectedType] || '');
@@ -685,7 +981,7 @@ function buildThemeCard(name, theme, { custom = false, index = -1 } = {}) {
     }
 
     const deleteBtn = custom
-        ? `<button type="button" class="theme-delete" data-idx="${index}" title="Delete theme" aria-label="Delete theme">×</button>`
+        ? `<button type="button" class="theme-delete" data-idx="${index}" title="${t('deleteTheme')}" aria-label="${t('deleteTheme')}">×</button>`
         : '';
 
     card.innerHTML = `${deleteBtn}<div class="theme-name">${escapeHTML(name)}</div><div class="theme-preview">
@@ -725,8 +1021,8 @@ function buildAddThemeCard() {
     const card = document.createElement('div');
     card.className = 'theme-card add';
     card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', 'Create custom theme');
-    card.innerHTML = '<div class="theme-add-plus">+</div><div class="theme-add-label">New theme</div>';
+    card.setAttribute('aria-label', t('createTheme'));
+    card.innerHTML = `<div class="theme-add-plus">+</div><div class="theme-add-label">${t('addThemeLabel')}</div>`;
     card.addEventListener('click', () => openThemeEditor());
     return card;
 }
@@ -739,7 +1035,7 @@ function populateThemesGrid() {
         grid.appendChild(buildThemeCard(name, PREDEFINED_THEMES[name]));
     }
     (settings.customThemes || []).forEach((theme, idx) => {
-        grid.appendChild(buildThemeCard(theme.name || 'Untitled', theme, { custom: true, index: idx }));
+        grid.appendChild(buildThemeCard(theme.name || t('untitled'), theme, { custom: true, index: idx }));
     });
     grid.appendChild(buildAddThemeCard());
 }
@@ -781,7 +1077,7 @@ function closeThemeEditor() {
 
 async function saveCustomTheme() {
     const el = uiElements;
-    const name = (el.editorName.value || '').trim() || `Custom ${(settings.customThemes?.length || 0) + 1}`;
+    const name = (el.editorName.value || '').trim() || `${t('customPrefix')} ${(settings.customThemes?.length || 0) + 1}`;
     const borderColor = normaliseHex(el.editorBorderInput.value);
     const headerColor = normaliseHex(el.editorHeaderInput.value);
     const contentColor = normaliseHex(el.editorContentInput.value);
@@ -929,7 +1225,7 @@ function renderModelList() {
     const exactMatch = mergedModels.some(m => m.id.toLowerCase() === input.value.trim().toLowerCase());
     if (input.value.trim() && !exactMatch) {
         html += `<div class="model-item custom" data-model-id="${escapeHTML(input.value.trim())}">
-            <span class="model-item-main"><span class="provider-icon-fallback">✎</span><span class="model-item-subtext"><span class="model-item-name">${escapeHTML(input.value.trim())}</span><span class="model-item-provider">custom model</span></span></span>
+            <span class="model-item-main"><span class="provider-icon-fallback">✎</span><span class="model-item-subtext"><span class="model-item-name">${escapeHTML(input.value.trim())}</span><span class="model-item-provider">${t('customModel')}</span></span></span>
         </div>`;
         count++;
     }
@@ -958,21 +1254,21 @@ function renderModelList() {
             const devInfo = getModelDevInfo(m.id);
             const badges = [];
             if (devInfo) {
-                if (devInfo.a) badges.push('<span class="model-badge vision" title="Supports image input">🖼️</span>');
-                if (devInfo.r) badges.push('<span class="model-badge reasoning" title="Reasoning/thinking model">🧠</span>');
+                if (devInfo.a) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+                if (devInfo.r) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
                 if (devInfo.c) {
                     const inp = devInfo.c.i, out = devInfo.c.o;
                     if (inp !== undefined && out !== undefined) {
                         const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
                         const costStr = fmtCost(inp);
-                        badges.push(`<span class="model-badge cost" title="Input: ${fmtCost(inp)}/M  Output: ${fmtCost(out)}/M">${costStr}/M</span>`);
+                        badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
                     }
                 }
                 if (devInfo.l && devInfo.l.c && !m.contextLength) {
                     badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
                 }
             } else if (m.capabilities?.vision) {
-                badges.push('<span class="model-badge vision" title="Supports image input">🖼️</span>');
+                badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
             }
             const badgesHtml = badges.join('');
             const selectedClass = isSelected ? ' selected' : '';
@@ -1098,6 +1394,16 @@ function attachEventListeners() {
         };
     }
 
+    // Language switch
+    el.languageSelect.onchange = () => {
+        settings.language = el.languageSelect.value;
+        applyLanguage();
+        populateThemesGrid();
+        renderProvidersTab();
+        renderModelList();
+        autoSave();
+    };
+
     // Silent mode: checkbox toggles on/off, select chooses mode (always visible)
     el.silentModeToggle.onchange = () => {
         const isOn = el.silentModeToggle.checked;
@@ -1163,6 +1469,7 @@ function attachEventListeners() {
 async function autoSave(overrides) {
     const el = uiElements;
     settings.model = el.modelName.value;
+    settings.language = el.languageSelect?.value || settings.language || 'uk';
     settings.autoAnswer = el.autoAnswerToggle.checked;
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
@@ -1205,6 +1512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoAnswerToggle: document.getElementById('auto-answer-toggle'),
         autoAnswerCooldown: document.getElementById('auto-answer-cooldown'),
         cooldownGroup: document.getElementById('cooldown-group'),
+        languageSelect: document.getElementById('language-select'),
         highlightCorrectToggle: document.getElementById('highlight-correct-toggle'),
         showAnswerOnlyToggle: document.getElementById('show-answer-only-toggle'),
         silentModeToggle: document.getElementById('silent-mode-toggle'),
