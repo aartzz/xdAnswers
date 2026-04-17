@@ -33,9 +33,11 @@ const TRANSLATIONS = {
         silentIndicators: 'Індикатори',
         silentGhost: 'Заголовок сторінки',
         silentStealth: 'Стелс',
+        silentOneclick: 'Один клік',
         silentIndicatorsHint: 'Маркер поруч з правильною відповіддю.',
         silentGhostHint: 'Сховати вікно. Відповідь лише в заголовку вкладки.',
         silentStealthHint: 'Повністю невидимо. Відповідь автоматично копіюється.',
+        silentOneclickHint: 'Натисніть на питання — правильна відповідь обереться автоматично.',
         // Themes tab
         themesDesc: 'Оберіть готову тему або натисніть <strong>+</strong> щоб створити свою.',
         newTheme: 'Нова тема',
@@ -107,9 +109,11 @@ const TRANSLATIONS = {
         silentIndicators: 'Индикаторы',
         silentGhost: 'Заголовок страницы',
         silentStealth: 'Стелс',
+        silentOneclick: 'Один клик',
         silentIndicatorsHint: 'Маркер рядом с правильным ответом.',
         silentGhostHint: 'Скрыть окно. Ответ только в заголовке вкладки.',
         silentStealthHint: 'Полностью невидимо. Ответ автоматически копируется.',
+        silentOneclickHint: 'Нажмите на вопрос — правильный ответ выберется автоматически.',
         themesDesc: 'Выберите готовую тему или нажмите <strong>+</strong> чтобы создать свою.',
         newTheme: 'Новая тема',
         themeNameLabel: 'Название:',
@@ -174,9 +178,11 @@ const TRANSLATIONS = {
         silentIndicators: 'Indicators',
         silentGhost: 'Page title',
         silentStealth: 'Stealth',
+        silentOneclick: 'One-click',
         silentIndicatorsHint: 'Overlay dot next to the correct answer.',
         silentGhostHint: 'Hide window. Answer shown only in browser tab title.',
         silentStealthHint: 'Completely invisible. Answer auto-copied to clipboard.',
+        silentOneclickHint: 'Click on a question to instantly select the correct answer.',
         themesDesc: 'Choose a preset or click <strong>+</strong> to build your own.',
         newTheme: 'New theme',
         themeNameLabel: 'Name:',
@@ -262,13 +268,13 @@ function applyLanguage() {
 
     // Silent mode options
     const silentOpts = document.querySelectorAll('#silent-mode-select option');
-    const optKeys = ['silentIndicators', 'silentGhost', 'silentStealth'];
+    const optKeys = ['silentIndicators', 'silentGhost', 'silentStealth', 'silentOneclick'];
     silentOpts.forEach((opt, i) => { if (optKeys[i]) opt.textContent = t(optKeys[i]); });
 
     // Silent mode hints
     const silentHint = document.querySelector('#silent-mode-select-group .field-hint');
     if (silentHint) {
-        silentHint.innerHTML = `<strong>${t('silentIndicators')}:</strong> ${t('silentIndicatorsHint')}<br><strong>${t('silentGhost')}:</strong> ${t('silentGhostHint')}<br><strong>${t('silentStealth')}:</strong> ${t('silentStealthHint')}`;
+        silentHint.innerHTML = `<strong>${t('silentIndicators')}:</strong> ${t('silentIndicatorsHint')}<br><strong>${t('silentGhost')}:</strong> ${t('silentGhostHint')}<br><strong>${t('silentStealth')}:</strong> ${t('silentStealthHint')}<br><strong>${t('silentOneclick')}:</strong> ${t('silentOneclickHint')}`;
     }
 
     // Themes tab

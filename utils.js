@@ -992,6 +992,7 @@ answer: правильна відповідь
         btn.addEventListener('click', () => {
             window.xdAnswers.settings.silentMode = '';
             document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+            clearOneClickHandlers();
             if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
             btn.remove();
             // Save (storage.onChanged will sync UI)
@@ -1014,6 +1015,7 @@ answer: правильна відповідь
 
         // Clear previous silent mode artifacts
         document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+        clearOneClickHandlers();
 
         // Ghost (Page title): only change page title, no dots or visual indicators
         if (mode === 'ghost') {
@@ -1042,6 +1044,97 @@ answer: правильна відповідь
                     navigator.clipboard.writeText(answerText);
                 } catch {}
             }
+        }
+
+        // One-click: make question containers clickable — click selects the correct answer
+        if (mode === 'oneclick') {
+            applyOneClickMode(answerText);
+        }
+    }
+
+    // ── One-click silent mode helpers ──
+
+    const _oneClickHandlers = [];
+
+    function clearOneClickHandlers() {
+        for (const { container, handler } of _oneClickHandlers) {
+            container.removeEventListener('click', handler, true);
+            container.classList.remove('xd-oneclick-ready');
+            const dot = container.querySelector('.xd-indicator-dot');
+            if (dot) dot.remove();
+        }
+        _oneClickHandlers.length = 0;
+    }
+
+    function applyOneClickMode(answerText) {
+        if (!answerText) return;
+
+        const optionElements = matchAnswerToOptions(answerText, findOptionElements());
+
+        // Find question containers that wrap the matched options.
+        // We collect unique containers so we don't add duplicate handlers.
+        const seenContainers = new Set();
+
+        for (const optEl of optionElements) {
+            // Walk up to the question-level container.
+            // GForms: div[role="listitem"], Naurok: .test-question-content or body-level,
+            // Vseosvita: .v-test-question / #i-test-question-*, JustClass: .question-container
+            const questionContainer =
+                optEl.closest('[role="listitem"]') ||           // GForms question item
+                optEl.closest('.v-test-question') ||            // Vseosvita
+                optEl.closest('.v-test-go-bg') ||              // Vseosvita alt
+                optEl.closest('.test-question-content') ||     // Naurok
+                optEl.closest('.question-container') ||        // JustClass
+                optEl.closest('.test-content-text-inner') ||   // Naurok fallback
+                optEl.closest('form') ||
+                optEl.closest('section') ||
+                document.body;
+
+            if (seenContainers.has(questionContainer)) continue;
+            seenContainers.add(questionContainer);
+
+            // Add subtle visual hint: a small green dot in top-right corner
+            questionContainer.style.position = 'relative';
+            const dot = document.createElement('span');
+            dot.className = 'xd-indicator-dot';
+            dot.style.cssText = 'position:absolute;top:8px;right:8px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,0.5);pointer-events:none;z-index:9999;';
+            dot.title = 'Click to select answer';
+            questionContainer.appendChild(dot);
+            questionContainer.classList.add('xd-oneclick-ready');
+
+            const handler = (e) => {
+                // Don't intercept clicks on our own indicator dots
+                if (e.target.classList && e.target.classList.contains('xd-indicator-dot')) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Re-find matched options scoped to this container
+                const scopedOptionEls = matchAnswerToOptions(answerText, findOptionElements());
+                const scopedInContainer = scopedOptionEls.filter(el => questionContainer.contains(el));
+
+                if (scopedInContainer.length > 0) {
+                    for (const el of scopedInContainer) {
+                        const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                        clickTarget.click();
+                        const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]')
+                            || clickTarget.closest('label') && clickTarget.closest('label').querySelector('input[type="radio"], input[type="checkbox"]');
+                        if (input && !input.checked) input.click();
+                        clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                        clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                    }
+                    // Flash the dot to confirm selection
+                    dot.style.background = '#3b82f6';
+                    dot.style.boxShadow = '0 0 8px rgba(59,130,246,0.6)';
+                    setTimeout(() => {
+                        dot.style.background = '#22c55e';
+                        dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
+                    }, 400);
+                }
+            };
+
+            questionContainer.addEventListener('click', handler, true);
+            _oneClickHandlers.push({ container: questionContainer, handler });
         }
     }
 
@@ -1301,6 +1394,7 @@ answer: правильна відповідь
             '<option value="indicators">Indicators</option>' +
             '<option value="ghost">Page title</option>' +
             '<option value="stealth">Stealth</option>' +
+            '<option value="oneclick">One-click</option>' +
             '</select>' +
             '<button id="refresh-answer-btn" title="Refresh">⟳</button>' +
             '</div></div>' +
@@ -1343,7 +1437,7 @@ answer: правильна відповідь
         } else {
             silentModeBtn.classList.remove('active');
         }
-        const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth' };
+        const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
         silentModeBtn.title = 'Silent mode: ' + (modeLabels[currentSilentMode] || 'Off');
 
         window.xdAnswers.Draggable.init(container, window.xdAnswers.dragHeader, () => {
@@ -1361,6 +1455,7 @@ answer: правильна відповідь
                 container.style.setProperty('display', 'flex', 'important');
                 // Remove silent indicators/dots/title changes
                 document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+                clearOneClickHandlers();
                 if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
                 // Remove mini exit button
                 const miniBtn = document.getElementById('xd-silent-exit-btn');
@@ -1415,6 +1510,7 @@ answer: правильна відповідь
                 silentModeBtn.classList.remove('active');
                 container.style.setProperty('display', 'flex', 'important');
                 document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
+                clearOneClickHandlers();
                 if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
                 const miniBtn = document.getElementById('xd-silent-exit-btn');
                 if (miniBtn) miniBtn.remove();
@@ -1516,7 +1612,7 @@ answer: правильна відповідь
                 // Sync inline silent mode controls
                 const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn');
                 const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select');
-                const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth' };
+                const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
                 if (silentModeBtn) {
                     silentModeBtn.title = 'Silent mode: ' + (modeLabels[silentMode] || 'Off');
                     if (silentMode !== '') {
@@ -1533,7 +1629,10 @@ answer: правильна відповідь
                 const parsed = window.xdAnswers.lastParsedResponse;
                 if (parsed && parsed.answer) {
                     if (window.xdAnswers.settings.autoAnswer) {
-                        autoSelectAnswer(parsed.answer);
+                // In oneclick mode, user clicks to select — don't auto-select
+                if (silentMode !== 'oneclick') {
+                    autoSelectAnswer(parsed.answer);
+                }
                     }
                     // Re-apply highlight only when not in silent mode
                     if (silentMode === '') {
