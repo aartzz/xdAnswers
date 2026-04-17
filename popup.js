@@ -211,6 +211,7 @@ const DEFAULT_SETTINGS = {
     autoAnswer: false,
     autoAnswerCooldown: 2000,
     highlightCorrect: true,
+    showAnswerOnly: false,
     silentMode: '',
     _silentModePreselect: 'indicators',
     customization: {
@@ -326,6 +327,7 @@ function populateUI() {
     el.autoAnswerCooldown.value = settings.autoAnswerCooldown;
     el.cooldownGroup.style.display = settings.autoAnswer ? 'block' : 'none';
     el.highlightCorrectToggle.checked = settings.highlightCorrect;
+    el.showAnswerOnlyToggle.checked = !!settings.showAnswerOnly;
     const silentModeValue = settings.silentMode || '';
     el.silentModeToggle.checked = silentModeValue !== '';
     // Select always visible so user can pre-choose mode
@@ -919,6 +921,7 @@ function attachEventListeners() {
     const autoToggles = [
         { el: el.autoAnswerToggle, key: 'autoAnswer' },
         { el: el.highlightCorrectToggle, key: 'highlightCorrect' },
+        { el: el.showAnswerOnlyToggle, key: 'showAnswerOnly' },
         { el: el.glowEffectToggle, key: 'customization.glowEffect' }
     ];
     for (const { el: toggle, key } of autoToggles) {
@@ -975,6 +978,7 @@ async function autoSave(overrides) {
     settings.autoAnswer = el.autoAnswerToggle.checked;
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
+    settings.showAnswerOnly = el.showAnswerOnlyToggle.checked;
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.customization.glowEffect = el.glowEffectToggle.checked;
@@ -1014,6 +1018,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoAnswerCooldown: document.getElementById('auto-answer-cooldown'),
         cooldownGroup: document.getElementById('cooldown-group'),
         highlightCorrectToggle: document.getElementById('highlight-correct-toggle'),
+        showAnswerOnlyToggle: document.getElementById('show-answer-only-toggle'),
         silentModeToggle: document.getElementById('silent-mode-toggle'),
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),

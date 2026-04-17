@@ -18,6 +18,16 @@ confidence: 0-100%
 - confidence необов'язкове
 - Виводь ТІЛЬКИ ці поля, без JSON, markdown, списків і зайвого тексту`;
 
+    const ANSWER_ONLY_SYSTEM_PROMPT = `Відповідай на тестові питання. Формат відповіді — ТІЛЬКИ одне поле:
+answer: правильна відповідь
+
+Правила:
+- answer: точний текст правильного варіанту, якщо є варіанти відповідей
+- Якщо варіанти позначені як [зображення] — в answer вкажи ЛІТЕРУ варіанту (A, B, C...)
+- Для кількох правильних відповідей розділяй "; "
+- Відповідай мовою питання
+- Виводь ТІЛЬКИ "answer: ...", без пояснень, розв'язку, міркувань, JSON, markdown і зайвого тексту`;
+
     const DEFAULT_BASE_URLS = {
         openai: 'https://api.openai.com/v1',
         anthropic: 'https://api.anthropic.com/v1',
@@ -71,6 +81,7 @@ confidence: 0-100%
         autoAnswer: false,
         autoAnswerCooldown: 2000,
         highlightCorrect: true,
+        showAnswerOnly: false,
         silentMode: '',
         _silentModePreselect: 'indicators',
         customization: {
@@ -258,6 +269,9 @@ confidence: 0-100%
     function buildMessages(questionData) {
         const settings = window.xdAnswers.settings;
         let systemPrompt = questionData.customPromptPrefix || settings.promptPrefix;
+        if (settings.showAnswerOnly) {
+            systemPrompt = ANSWER_ONLY_SYSTEM_PROMPT;
+        }
 
         let userMsg = '';
         if (questionData.questionType === 'matching') {
