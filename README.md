@@ -1,67 +1,74 @@
 # xdAnswers
 
-Free, open-source Chrome extension that solves test questions with AI.
+**🇺🇦 Українська** | [🇬🇧 English](README-en.md)
 
-Works out of the box — ships with free providers, no API key needed.
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/aartzz/xdAnswers/build.yml)
+![GitHub Repo stars](https://img.shields.io/github/stars/aartzz/xdAnswers?style=flat)
+
+Безкоштовне розширення для Chrome, яке розв'язує тестові питання за допомогою ШІ.
+
+Працює з коробки — вбудовані безкоштовні провайдери, API-ключ не потрібен.
 > [!IMPORTANT]  
-> **Beta** — bugs happen. [Report them](https://github.com/aartzz/xdAnswers/issues).
+> **Бета** — баги бувають. [Звітуйте про них](https://github.com/aartzz/xdAnswers/issues).
 
 ![Screenshot](images/README/ui.png)
 
-## Features
+## Можливості
 
-- **Free by default** — 3 built-in Unturf providers (Hermes, Qwen, Qwen Vision) with no API key
-- **Any OpenAI-compatible API** — OpenAI, Anthropic, Gemini, DeepSeek, Groq, local Ollama, anything
-- **Image recognition** — handles images in questions and answer options
-- **Silent modes** — indicators (dot next to correct answer), page title, or clipboard-only stealth
-- **Auto-answer** — automatically selects the correct option
-- **Floating helper** — draggable, shows answer + reasoning + elapsed time
+- **Безкоштовно за замовчуванням** — 3 вбудовані провайдери Unturf (Hermes, Qwen, Qwen Vision) без API-ключа
+- **Будь-який OpenAI-сумісний API** — OpenAI, Anthropic, Gemini, DeepSeek, Groq, локальний Ollama, що завгодно
+- **Розпізнавання зображень** — обробляє зображення в питаннях та варіантах відповідей
+- **Тихі режими** — індикатори (точка біля правильної відповіді), заголовок сторінки або стелс (тільки буфер обміну)
+- **Автовідповідь** — автоматично обирає правильний варіант
+- **Плаваючий помічник** — перетягуваний, показує відповідь + пояснення + витрачений час
+- **Мультиязичність** — інтерфейс українською, російською та англійською
+- **Кастомні теми** — обери готову або створи свою з + кнопкою
 
-## Install
+## Встановлення
 
-### Desktop (Chrome, Brave, Edge, Vivaldi)
+### Десктоп (Chrome, Brave, Edge, Vivaldi)
 
-1. Go to [Releases](https://github.com/aartzz/xdAnswers/releases), download the latest `xdAnswers-chrome-*.zip`
-2. Unzip it
-3. Open `chrome://extensions`, enable **Developer mode** (top right)
-4. Click **Load unpacked**, select the unzipped folder
+1. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
+2. Розпакуйте
+3. Відкрийте `chrome://extensions`, увімкніть **Режим розробника** (справа вгорі)
+4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
 
-### Mobile (Kiwi Browser)
+### Мобільний (Kiwi Browser)
 
-1. Install [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) from Play Store
-2. Go to [Releases](https://github.com/aartzz/xdAnswers/releases), download the latest `xdAnswers-chrome-*.zip`
-3. Open `kiwi://extensions`, enable **Developer mode**
-4. Click **Load unpacked**, select the unzipped folder
+1. Встановіть [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) з Play Store
+2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
+3. Відкрийте `kiwi://extensions`, увімкніть **Режим розробника**
+4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
 
 ### Firefox
 
 > [!NOTE]  
-> Requires [Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix) (mobile) or [ESR/Dev/Nightly](https://www.mozilla.org/firefox/organizations) (desktop).
+> Потрібен [Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix) (мобільний) або [ESR/Dev/Nightly](https://www.mozilla.org/firefox/organizations) (десктоп).
 
-1. In address bar: `about:config` → accept risk → set `xpinstall.signatures.required` to `false`
-2. Download `xdAnswers-firefox-*.xpi` from [Releases](https://github.com/aartzz/xdAnswers/releases)
-3. Drag the `.xpi` file into a Firefox window
+1. В адресному рядку: `about:config` → прийміть ризик → встановіть `xpinstall.signatures.required` у `false`
+2. Завантажте `xdAnswers-firefox-*.xpi` з [Releases](https://github.com/aartzz/xdAnswers/releases)
+3. Перетягніть файл `.xpi` у вікно Firefox
 
-### From source
+### З вихідного коду
 
 ```bash
 git clone https://github.com/aartzz/xdAnswers.git
 node scripts/build-manifest.js
 ```
-Then load unpacked as above.
+Потім завантажте як розпаковане розширення (див. вище).
 
-## Usage
+## Використання
 
-1. Click the extension icon → settings open
-2. Pick a provider (Unturf Vision is default, works for free)
-3. If using a paid API, paste your key
-4. Open a test on a supported site — the helper appears automatically
+1. Натисніть іконку розширення → відкриються налаштування
+2. Оберіть провайдер (Unturf Vision за замовчуванням, працює безкоштовно)
+3. Якщо використовуєте платний API, вставте свій ключ
+4. Відкрийте тест на підтримуваному сайті — помічник з'явиться автоматично
 
-## Supported Sites
+## Підтримувані сайти
 
-| Site | URL | Status |
+| Сайт | URL | Статус |
 |------|-----|--------|
-| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable |
-| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta |
-| JustClass | [justclass.com.ua](https://justclass.com.ua) | beta |
-| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta |
+| NaUrok | [naurok.com.ua](https://naurok.com.ua) | стабільний |
+| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | бета |
+| JustClass | [justclass.com.ua](https://justclass.com.ua) | бета |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета |
