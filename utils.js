@@ -935,8 +935,8 @@ answer: правильна відповідь
         }
     }
 
-    function autoSelectAnswer(answerText) {
-        if (!window.xdAnswers.settings.autoAnswer) return;
+    function autoSelectAnswer(answerText, force) {
+        if (!force && !window.xdAnswers.settings.autoAnswer) return;
         const optionElements = findOptionElements();
         const elements = matchAnswerToOptions(answerText, optionElements);
 
@@ -1046,113 +1046,100 @@ answer: правильна відповідь
             }
         }
 
-        // One-click: make question containers clickable — click selects the correct answer
-        if (mode === 'oneclick') {
-            applyOneClickMode(answerText);
-        }
+        // One-click mode is handled differently — click triggers AI processing,
+        // then autoSelectAnswer fires. No deferred selection needed here.
     }
 
     // ── One-click silent mode helpers ──
+    // Flow: click on question → AI processes → autoSelectAnswer fires
 
     const _oneClickHandlers = [];
-    let _oneClickSelecting = false;  // Re-entrancy guard
+    window.xdAnswers._oneClickUserTriggered = false;
 
     function clearOneClickHandlers() {
         for (const { container, handler } of _oneClickHandlers) {
             container.removeEventListener('click', handler, true);
             container.classList.remove('xd-oneclick-ready');
+            container.style.removeProperty('cursor');
             const dot = container.querySelector('.xd-indicator-dot');
             if (dot) dot.remove();
         }
         _oneClickHandlers.length = 0;
     }
 
-    function applyOneClickMode(answerText) {
-        if (!answerText) return;
+    // Expose for providers to call when question changes
+    window.xdAnswers.clearOneClickHandlers = clearOneClickHandlers;
 
-        const optionElements = matchAnswerToOptions(answerText, findOptionElements());
-        const seenContainers = new Set();
+    // Register a question container for one-click mode.
+    // getQuestionDataFn: async () => questionData (called on click)
+    window.xdAnswers.setupOneClickHandler = function(container, getQuestionDataFn) {
+        if (!container) return;
+        // Don't re-register the same container
+        if (_oneClickHandlers.some(h => h.container === container)) return;
 
-        for (const optEl of optionElements) {
-            // Walk up to the question-level container.
-            // Order matters: most specific selectors first.
-            // NEVER fall back to document.body — that would make the whole page a click target.
-            const questionContainer =
-                optEl.closest('[role="listitem"]') ||               // GForms question item
-                optEl.closest('.geS5n') ||                         // GForms alt container
-                optEl.closest('.test-question-content') ||        // Naurok (full question)
-                optEl.closest('.v-test-question') ||               // Vseosvita
-                optEl.closest('.v-test-go-bg') ||                 // Vseosvita alt
-                optEl.closest('.question-container') ||           // JustClass
-                optEl.closest('.test-content-text-inner') ||      // Naurok fallback
-                optEl.closest('.question-option') ||              // Naurok single-option (less ideal)
-                optEl.closest('form') ||                           // Generic form
-                optEl.closest('section');                          // Generic section
+        container.classList.add('xd-oneclick-ready');
+        container.style.position = 'relative';
+        container.style.cursor = 'pointer';
 
-            // If we can't find a reasonable container, skip — never use document.body
-            if (!questionContainer || questionContainer === document.body || questionContainer === document.documentElement) continue;
+        // Green dot indicator — pulsing to draw attention
+        const dot = document.createElement('span');
+        dot.className = 'xd-indicator-dot';
+        dot.style.cssText = 'position:absolute;top:8px;right:8px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,0.5);pointer-events:none;z-index:9999;';
+        dot.title = 'Click to solve';
+        container.appendChild(dot);
 
-            if (seenContainers.has(questionContainer)) continue;
-            seenContainers.add(questionContainer);
+        const handler = async (e) => {
+            // Don't intercept clicks on our indicator dots
+            if (e.target.classList.contains('xd-indicator-dot')) return;
 
-            // Add subtle visual hint: a small green dot in top-right corner
-            questionContainer.style.position = 'relative';
-            const dot = document.createElement('span');
-            dot.className = 'xd-indicator-dot';
-            dot.style.cssText = 'position:absolute;top:8px;right:8px;width:8px;height:8px;background:#22c55e;border-radius:50%;box-shadow:0 0 6px rgba(34,197,94,0.5);pointer-events:none;z-index:9999;';
-            dot.title = 'Click to select answer';
-            questionContainer.appendChild(dot);
-            questionContainer.classList.add('xd-oneclick-ready');
+            // Set flag so processQuestion guard passes
+            window.xdAnswers._oneClickUserTriggered = true;
 
-            const handler = (e) => {
-                // Re-entrancy guard: prevent infinite loop when our programmatic click bubbles up
-                if (_oneClickSelecting) return;
+            // Flash dot to show processing started
+            dot.style.background = '#eab308';
+            dot.style.boxShadow = '0 0 8px rgba(234,179,8,0.6)';
 
-                // Don't intercept clicks on our own indicator dots or solve buttons
-                if (e.target.classList.contains('xd-indicator-dot')) return;
-                if (e.target.closest('.xd-solve-btn')) return;
-
-                // DON'T use preventDefault/stopPropagation — that breaks Angular/React pages.
-                // Just select the correct answer and let the original click propagate normally.
-                const scopedOptionEls = matchAnswerToOptions(answerText, findOptionElements());
-                const scopedInContainer = scopedOptionEls.filter(el => questionContainer.contains(el));
-
-                if (scopedInContainer.length > 0) {
-                    _oneClickSelecting = true;
-                    try {
-                        for (const el of scopedInContainer) {
-                            const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
-                            clickTarget.click();
-                            const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]')
-                                || (clickTarget.closest('label') && clickTarget.closest('label').querySelector('input[type="radio"], input[type="checkbox"]'));
-                            if (input && !input.checked) input.click();
-                            clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                            clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-                        }
-                    } finally {
-                        _oneClickSelecting = false;
-                    }
-                    // Flash the dot to confirm selection
-                    dot.style.background = '#3b82f6';
-                    dot.style.boxShadow = '0 0 8px rgba(59,130,246,0.6)';
-                    setTimeout(() => {
-                        dot.style.background = '#22c55e';
-                        dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
-                    }, 400);
+            try {
+                const questionData = await getQuestionDataFn();
+                if (questionData) {
+                    window.xdAnswers.processQuestion(questionData);
+                } else {
+                    window.xdAnswers._oneClickUserTriggered = false;
+                    dot.style.background = '#22c55e';
+                    dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
                 }
-            };
+            } catch (err) {
+                console.error('xdAnswers oneclick error:', err);
+                window.xdAnswers._oneClickUserTriggered = false;
+                dot.style.background = '#ef4444';
+                dot.style.boxShadow = '0 0 6px rgba(239,68,68,0.5)';
+                setTimeout(() => {
+                    dot.style.background = '#22c55e';
+                    dot.style.boxShadow = '0 0 6px rgba(34,197,94,0.5)';
+                }, 1500);
+            }
+        };
 
-            questionContainer.addEventListener('click', handler, true);
-            _oneClickHandlers.push({ container: questionContainer, handler });
-        }
-    }
+        container.addEventListener('click', handler, true);
+        _oneClickHandlers.push({ container, handler });
+    };
 
     // ── Main Process ──
 
     window.xdAnswers.processQuestion = async function(questionData) {
-        if (window.xdAnswers.isProcessingAI) return;
+        if (window.xdAnswers.isProcessingAI) {
+            window.xdAnswers._oneClickUserTriggered = false;
+            return;
+        }
 
         const silentMode = window.xdAnswers.settings.silentMode || '';
+
+        // In oneclick mode, only process when user explicitly clicked (flag set by setupOneClickHandler)
+        if (silentMode === 'oneclick' && !window.xdAnswers._oneClickUserTriggered) {
+            return;
+        }
+        window.xdAnswers._oneClickUserTriggered = false;
+
         const isSilent = silentMode !== '';
 
         if (!isSilent) {
@@ -1225,7 +1212,8 @@ answer: правильна відповідь
                 if (!isSilent) {
                     highlightCorrectAnswer(parsed.answer);
                 }
-                autoSelectAnswer(parsed.answer);
+                // In oneclick mode, always auto-select (bypass autoAnswer setting)
+                autoSelectAnswer(parsed.answer, silentMode === 'oneclick');
             }
         } catch (error) {
             if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }

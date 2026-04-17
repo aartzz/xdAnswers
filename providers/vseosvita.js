@@ -148,17 +148,45 @@
             if (!force && currentKey === lastProcessedKey) return;
             lastProcessedKey = currentKey;
 
-            const imgPromises = questionData.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src));
-            Promise.all(imgPromises).then(images => {
-                window.xdAnswers.processQuestion({
-                    text: questionData.text,
-                    optionsText: questionData.optionsText,
-                    base64Images: images.filter(Boolean),
-                    questionType: questionData.questionType,
-                    isMultiQuiz: questionData.isMultiQuiz
-                });
+            const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
+
+            if (isOneClick) {
+                // One-click mode: register click handler instead of auto-processing
+                const container = questionData.root;
+                if (container && !container.querySelector('.xd-indicator-dot')) {
+                    window.xdAnswers.clearOneClickHandlers();
+                    // Save detected data for click-time processing
+                    const savedText = questionData.text;
+                    const savedOptionsText = questionData.optionsText;
+                    const savedImageUrls = questionData.base64ImageSources;
+                    const savedQuestionType = questionData.questionType;
+                    const savedIsMultiQuiz = questionData.isMultiQuiz;
+                    window.xdAnswers.setupOneClickHandler(container, async () => {
+                        const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
+                        return {
+                            text: savedText,
+                            optionsText: savedOptionsText,
+                            base64Images: images.filter(Boolean),
+                            questionType: savedQuestionType,
+                            isMultiQuiz: savedIsMultiQuiz
+                        };
+                    });
+                }
                 window.xdAnswers.attachAndPositionHelper();
-            });
+            } else {
+                // Normal: auto-process
+                const imgPromises = questionData.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src));
+                Promise.all(imgPromises).then(images => {
+                    window.xdAnswers.processQuestion({
+                        text: questionData.text,
+                        optionsText: questionData.optionsText,
+                        base64Images: images.filter(Boolean),
+                        questionType: questionData.questionType,
+                        isMultiQuiz: questionData.isMultiQuiz
+                    });
+                    window.xdAnswers.attachAndPositionHelper();
+                });
+            }
         }
 
         const observer = new MutationObserver(() => {

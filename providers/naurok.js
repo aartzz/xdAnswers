@@ -133,23 +133,48 @@
                 console.log("xdAnswers: New question state detected:", currentStateHash);
                 lastStateHash = currentStateHash;
 
-                // Затримка, щоб переконатися, що картинки провантажились
-                setTimeout(() => {
-                    const questionData = {
-                        text: questionText,
-                        optionsText: optionsText,
-                        base64Images: [],
-                        questionType: isMultiQuiz ? 'multiquiz' : 'quiz',
-                        isMultiQuiz: isMultiQuiz
-                    };
+                const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
 
-                    const imgPromises = validImages.map(src => window.xdAnswers.imageToBase64(src));
+                if (isOneClick) {
+                    // One-click mode: register click handler instead of auto-processing
+                    const container = document.querySelector('.test-question-content') || document.querySelector('.test-content-text-inner');
+                    if (container && !container.querySelector('.xd-indicator-dot')) {
+                        window.xdAnswers.clearOneClickHandlers();
+                        // Save detected data for click-time processing
+                        const savedText = questionText;
+                        const savedOptionsText = optionsText;
+                        const savedImageUrls = validImages;
+                        const savedIsMultiQuiz = isMultiQuiz;
+                        window.xdAnswers.setupOneClickHandler(container, async () => {
+                            const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
+                            return {
+                                text: savedText,
+                                optionsText: savedOptionsText,
+                                base64Images: images.filter(img => img !== null),
+                                questionType: savedIsMultiQuiz ? 'multiquiz' : 'quiz',
+                                isMultiQuiz: savedIsMultiQuiz
+                            };
+                        });
+                    }
+                } else {
+                    // Normal: auto-process after delay
+                    setTimeout(() => {
+                        const questionData = {
+                            text: questionText,
+                            optionsText: optionsText,
+                            base64Images: [],
+                            questionType: isMultiQuiz ? 'multiquiz' : 'quiz',
+                            isMultiQuiz: isMultiQuiz
+                        };
 
-                    Promise.all(imgPromises).then(images => {
-                        questionData.base64Images = images.filter(img => img !== null);
-                        window.xdAnswers.processQuestion(questionData);
-                    });
-                }, 500); 
+                        const imgPromises = validImages.map(src => window.xdAnswers.imageToBase64(src));
+
+                        Promise.all(imgPromises).then(images => {
+                            questionData.base64Images = images.filter(img => img !== null);
+                            window.xdAnswers.processQuestion(questionData);
+                        });
+                    }, 500);
+                }
             }
         }
 
