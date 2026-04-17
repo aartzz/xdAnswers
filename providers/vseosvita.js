@@ -194,8 +194,10 @@
 
             if (isOneClick) {
                 // One-click mode: register click handler instead of auto-processing
+                // Vseosvita reuses the same container DOM element for each question,
+                // so we must always re-register when the question key changes
                 const container = questionData.root;
-                if (container && !container.classList.contains('xd-oneclick-ready')) {
+                if (container) {
                     window.xdAnswers.clearOneClickHandlers();
                     // Capture current question data for click-time processing
                     const savedText = questionData.text;
