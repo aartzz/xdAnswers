@@ -68,7 +68,7 @@ node scripts/build-manifest.js
 
 | Сайт | URL | Статус |
 |------|-----|--------|
-| NaUrok | [naurok.com.ua](https://naurok.com.ua) | стабільний |
-| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | бета |
+| НаУрок | [naurok.com.ua](https://naurok.com.ua) | стабільний |
+| Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | бета |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | бета |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета |
