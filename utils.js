@@ -1020,9 +1020,9 @@ answer: правильна відповідь
         const mode = window.xdAnswers.settings.silentMode;
         if (!mode) return;
 
-        // Clear previous silent mode artifacts
+        // Clear previous silent mode artifacts (but keep oneclick handlers — they persist across questions)
         document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
-        clearOneClickHandlers();
+        if (mode !== 'oneclick') clearOneClickHandlers();
 
         // Ghost (Page title): only change page title, no dots or visual indicators
         if (mode === 'ghost') {
