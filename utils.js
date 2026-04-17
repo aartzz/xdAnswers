@@ -946,26 +946,50 @@ answer: правильна відповідь
         const elements = matchAnswerToOptions(answerText, optionElements);
 
         setTimeout(() => {
-            for (const el of elements) {
-                // Try multiple click target strategies
-                const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
-                
-                // Strategy 1: Direct click
-                clickTarget.click();
-                
-                // Strategy 2: If there's a radio/checkbox input inside, click it too
-                const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]') 
-                    || clickTarget.closest('label')?.querySelector('input[type="radio"], input[type="checkbox"]');
-                if (input && !input.checked) {
-                    input.click();
+            // Flag to prevent oneclick handler from re-triggering on programmatic clicks
+            window.xdAnswers._autoSelecting = true;
+
+            if (elements.length > 0) {
+                for (const el of elements) {
+                    // Try multiple click target strategies
+                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, label, [role="radio"], [role="checkbox"]') || el;
+                    
+                    // Strategy 1: Direct click
+                    clickTarget.click();
+                    
+                    // Strategy 2: If there's a radio/checkbox input inside, click it too
+                    const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]') 
+                        || clickTarget.closest('label')?.querySelector('input[type="radio"], input[type="checkbox"]');
+                    if (input && !input.checked) {
+                        input.click();
+                    }
+                    
+                    // Strategy 3: Dispatch events for React/Angular apps
+                    clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                    clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
                 }
-                
-                // Strategy 3: Dispatch events for React/Angular apps
-                clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+            } else if (scopedContainer && answerText) {
+                // No option elements matched — try text/paragraph inputs (e.g. GForms short text / paragraph)
+                const textInput = scopedContainer.querySelector('input.whsOnd, input[type="text"]');
+                const textArea = scopedContainer.querySelector('textarea.KHxj8b, textarea');
+                const target = textArea || textInput;
+                if (target) {
+                    // Use native input value setter to bypass React/jQlite wrappers
+                    const nativeSetter = Object.getOwnPropertyDescriptor(
+                        window.HTMLInputElement.prototype, 'value'
+                    )?.set || Object.getOwnPropertyDescriptor(
+                        window.HTMLTextAreaElement.prototype, 'value'
+                    )?.set;
+                    if (nativeSetter) nativeSetter.call(target, answerText);
+                    else target.value = answerText;
+                    // Dispatch input event so Google Forms picks up the change
+                    target.dispatchEvent(new Event('input', { bubbles: true }));
+                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
             // Clear scoped container after selection
             window.xdAnswers._oneClickContainer = null;
+            window.xdAnswers._autoSelecting = false;
         }, window.xdAnswers.settings.autoAnswerCooldown);
     }
 
@@ -1088,7 +1112,7 @@ answer: правильна відповідь
 
         const handler = async (e) => {
             // Don't re-trigger when autoSelectAnswer clicks an option inside this container
-            if (e.target.closest('[role="radio"], [role="checkbox"], [role="option"], .question-option, .answer-item, label')) return;
+            if (window.xdAnswers._autoSelecting) return;
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
             // Scope autoSelectAnswer to this container only
