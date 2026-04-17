@@ -855,8 +855,9 @@ function renderModelList() {
                 if (devInfo.c) {
                     const inp = devInfo.c.i, out = devInfo.c.o;
                     if (inp !== undefined && out !== undefined) {
-                        const costStr = inp < 0.01 ? `$${inp.toFixed(3)}` : `$${inp}`;
-                        badges.push(`<span class="model-badge cost" title="Input: $${inp}/M  Output: $${out}/M">${costStr}/M</span>`);
+                        const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
+                        const costStr = fmtCost(inp);
+                        badges.push(`<span class="model-badge cost" title="Input: ${fmtCost(inp)}/M  Output: ${fmtCost(out)}/M">${costStr}/M</span>`);
                     }
                 }
                 if (devInfo.l && devInfo.l.c && !m.contextLength) {
