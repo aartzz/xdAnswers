@@ -277,7 +277,7 @@ answer: правильна відповідь
         let userMsg = '';
         if (questionData.questionType === 'matching') {
             userMsg += 'Це завдання на відповідність. Зістав елементи.\n\n';
-        } else if (questionData.isMultiQuiz) {
+        } else if (questionData.isMultiQuiz || questionData.isMulti) {
             userMsg += 'Це питання може мати КІЛЬКА правильних відповідей.\n\n';
         } else if (['short_text', 'paragraph', 'open_ended'].includes(questionData.questionType)) {
             userMsg += 'Це відкрите питання. Дай розгорнуту відповідь.\n\n';
@@ -974,12 +974,11 @@ answer: правильна відповідь
                 const textArea = scopedContainer.querySelector('textarea.KHxj8b, textarea');
                 const target = textArea || textInput;
                 if (target) {
-                    // Use native input value setter to bypass React/jQlite wrappers
-                    const nativeSetter = Object.getOwnPropertyDescriptor(
-                        window.HTMLInputElement.prototype, 'value'
-                    )?.set || Object.getOwnPropertyDescriptor(
-                        window.HTMLTextAreaElement.prototype, 'value'
-                    )?.set;
+                    // Use native value setter matching the element type to bypass React/jQlite wrappers
+                    const proto = target instanceof HTMLTextAreaElement
+                        ? window.HTMLTextAreaElement.prototype
+                        : window.HTMLInputElement.prototype;
+                    const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
                     if (nativeSetter) nativeSetter.call(target, answerText);
                     else target.value = answerText;
                     // Dispatch input event so Google Forms picks up the change

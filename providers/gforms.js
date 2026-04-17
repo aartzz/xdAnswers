@@ -40,6 +40,7 @@
                         const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
                         const optionEls = container.querySelectorAll('[data-xd-option="true"]');
                         const options = Array.from(optionEls).map(el => el.innerText.trim()).filter(Boolean);
+                        const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
                         const imgPromises = [];
                         container.querySelectorAll('img').forEach(img => {
                             if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
@@ -49,7 +50,8 @@
                             text: questionText,
                             optionsText: options.join('\n') || undefined,
                             base64Images: images.filter(i => i !== null),
-                            questionType: options.length > 0 ? 'quiz' : 'general'
+                            questionType: options.length > 0 ? 'quiz' : 'general',
+                            isMulti: hasCheckboxes
                         };
                     });
                 } else {
@@ -66,6 +68,7 @@
                         const optionEls = container.querySelectorAll('[data-xd-option="true"]');
                         const options = Array.from(optionEls).map(el => el.innerText.trim()).filter(Boolean);
                         const optionsText = options.join('\n');
+                        const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
                         const imgPromises = [];
                         container.querySelectorAll('img').forEach(img => {
                              if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
@@ -75,7 +78,8 @@
                                  text: questionText,
                                  optionsText: optionsText || undefined,
                                  base64Images: images.filter(i => i !== null),
-                                 questionType: options.length > 0 ? 'quiz' : 'general'
+                                 questionType: options.length > 0 ? 'quiz' : 'general',
+                                 isMulti: hasCheckboxes
                              });
                         });
                     };
