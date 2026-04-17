@@ -1462,6 +1462,12 @@ answer: правильна відповідь
             targetParent = document.body;
         }
 
+        // When an element is in fullscreen mode, append helper to it
+        // so it renders on top of the fullscreen layer instead of behind it
+        if (!targetContainerOverride && document.fullscreenElement) {
+            targetParent = document.fullscreenElement;
+        }
+
         if (!container.parentNode || container.parentNode !== targetParent) {
             if (container.parentNode) container.parentNode.removeChild(container);
             targetParent.appendChild(container);
@@ -1481,6 +1487,13 @@ answer: правильна відповідь
     };
 
     // ── Listeners ──
+
+    // Re-attach helper when entering/exiting fullscreen mode
+    document.addEventListener('fullscreenchange', () => {
+        if (window.xdAnswers.helperContainer) {
+            window.xdAnswers.attachAndPositionHelper();
+        }
+    });
 
     // Listen for settings changes via storage (works across all contexts)
     chrome.storage.onChanged.addListener((changes, area) => {
