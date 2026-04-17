@@ -7,8 +7,8 @@
     "prebuild:firefox": "node scripts/build-manifest.js firefox",
     "build:firefox": "npm run prebuild:firefox && web-ext build --source-dir . --artifacts-dir ./build --overwrite-dest && npm run clean",
 
-    "prebuild:chrome": "rm -rf dist_chrome && mkdir -p dist_chrome/images",
-    "build:chrome": "npm run prebuild:chrome && node scripts/build-manifest.js chrome && cp background.js popup.html popup.js popup.css manifest.json ./dist_chrome/ && cp -r images/* ./dist_chrome/images/ && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip . && cd .. && npm run clean && npm run postbuild:chrome",
+    "prebuild:chrome": "rm -rf dist_chrome && mkdir -p dist_chrome/images dist_chrome/providers",
+    "build:chrome": "npm run prebuild:chrome && node scripts/build-manifest.js chrome && cp background.js utils.js popup.html popup.js popup.css manifest.json ./dist_chrome/ && cp -r providers/* ./dist_chrome/providers/ && cp -r images/* ./dist_chrome/images/ && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip . && cd .. && npm run clean && npm run postbuild:chrome",
     "postbuild:chrome": "rm -rf ./dist_chrome",
 
     "clean": "rm -f manifest.json",

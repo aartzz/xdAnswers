@@ -7,101 +7,169 @@
 </head>
 <body>
     <div class="header">
-        <h3 id="popup-title">xdAnswers Settings</h3>
+        <h3 id="popup-title">xdAnswers</h3>
     </div>
 
     <div class="tab-buttons">
-        <button class="tab-button active" data-tab="ai-tab">🧠 AI</button>
-        <button class="tab-button" data-tab="themes-tab">🎨 Themes</button>
-        <button class="tab-button" data-tab="style-tab">⚙️ Style</button>
-        <button class="tab-button" data-tab="donate-tab">❤️ Donate</button>
+        <button class="tab-button active" data-tab="ai-tab">AI</button>
+        <button class="tab-button" data-tab="providers-tab">Providers</button>
+        <button class="tab-button" data-tab="features-tab">Features</button>
+        <button class="tab-button" data-tab="themes-tab">Themes</button>
+        <button class="tab-button" data-tab="donate-tab">♥</button>
     </div>
 
     <div id="ai-tab" class="tab-content active">
-        <div class="form-group">
-            <label for="service-type">Service:</label>
-            <span class="info-icon" id="service-type-info-icon-btn" title="💬-Text 🖼️-Image 💰-Paid/Limits 🏠-Own Server 🆓-Free">ℹ️</span>
-            <select id="service-type">
-                <option value="MistralAI">Mistral 💬🖼️ 💰🆓</option>
-                <option value="OpenAI">OpenAI 💬🖼️ 💰</option>
-                <option value="Gemini">Google 💬🖼️ 💰</option>
-                <option value="Ollama">Ollama 🏠</option>
-            </select>
-        </div>
-        <div id="ollama-settings" class="service-specific-settings">
-            <div class="form-group">
-                <label for="ollama-host">Ollama Host:</label>
-                <input type="text" id="ollama-host" placeholder="E.g. http://localhost:11434">
-            </div>
-            <div class="form-group">
-                <label for="ollama-model">
-                    <span>Local Model:</span>
-                    <span id="refresh-models-icon" title="Refresh model list">🔄</span>
-                </label>
-                <select id="ollama-model"></select>
+        <div class="form-group provider-select-group">
+            <label for="active-provider-trigger">Provider:</label>
+            <div class="provider-select-wrapper">
+                <button type="button" id="active-provider-trigger" class="provider-select-trigger"></button>
+                <div id="active-provider-dropdown" class="provider-dropdown hidden"></div>
             </div>
         </div>
-        <div id="api-settings" class="service-specific-settings">
-             <div class="form-group">
-                <label for="api-key">API Key:</label>
-                <input type="password" id="api-key">
-            </div>
-            <div class="form-group">
-                <label for="api-model">Model Name:</label>
-                <input type="text" id="api-model">
+        <div class="form-group model-select-group">
+            <label>Models: <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
+            <div class="model-panel">
+                <div class="model-panel-search">
+                    <input type="text" id="model-name" placeholder="Search or type custom model..." autocomplete="off">
+                </div>
+                <div id="model-list" class="model-list"></div>
             </div>
         </div>
-        <div class="form-group prompt-group">
-            <label for="prompt-prefix">
-                <span>System Prompt:</span>
-                <span class="info-icon" id="prompt-prefix-info-icon-btn" title="This is an instruction for the AI that is added at the beginning of each request. It helps the AI better understand what kind of response you expect.">ℹ️</span>
-            </label>
-            <textarea id="prompt-prefix"></textarea>
-        </div>
-    </div>
-    
-    <div id="themes-tab" class="tab-content">
-        <p class="tab-description">Choose a preset theme or customize your own in the 'Style' tab.</p>
-        <div id="themes-grid" class="themes-grid"></div>
     </div>
 
-    <div id="style-tab" class="tab-content">
+    <div id="providers-tab" class="tab-content">
+        <div id="providers-container"></div>
+    </div>
+
+    <div id="features-tab" class="tab-content">
         <div class="form-group">
-            <label>
-                <input type="checkbox" id="glow-effect-toggle">
-                <span>Enable glow effect</span>
-            </label>
-        </div>
-        <div class="form-group">
-            <label for="border-color-input">Border & Glow Color (HEX):</label>
-            <input type="text" id="border-color-input" maxlength="7" placeholder="#00ffff">
+            <label for="language-select">Language / Мова / Язык:</label>
+            <select id="language-select">
+                <option value="uk">Українська</option>
+                <option value="ru">Русский</option>
+                <option value="en">English</option>
+            </select>
         </div>
         <hr class="separator">
-        <div class="form-group">
-            <label for="header-color-input">Header Color (HEX):</label>
-            <input type="text" id="header-color-input" maxlength="7" placeholder="#001f3f">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="auto-answer-toggle">
+                <span>Auto-answer</span>
+            </label>
+            <p class="field-hint">Automatically select the correct answer on the page.</p>
         </div>
-        <div class="form-group">
-            <label for="content-color-input">Window Color (HEX):</label>
-            <input type="text" id="content-color-input" maxlength="7" placeholder="#0a0a14">
+        <div class="form-group" id="cooldown-group">
+            <label for="auto-answer-cooldown">Cooldown (ms):</label>
+            <input type="number" id="auto-answer-cooldown" min="0" step="100" placeholder="1500">
         </div>
-        <div class="form-group">
-            <label for="text-color-input">Text Color (HEX):</label>
-            <input type="text" id="text-color-input" maxlength="7" placeholder="#00ff9d">
+        <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="highlight-correct-toggle">
+                <span>Highlight correct answer</span>
+            </label>
+            <p class="field-hint">Highlight the correct option with a green border when UI is visible.</p>
+        </div>
+        <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="show-answer-only-toggle">
+                <span>Show answer only</span>
+            </label>
+            <p class="field-hint">Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.</p>
+        </div>
+        <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="silent-mode-toggle">
+                <span>Silent mode</span>
+            </label>
+        </div>
+        <div class="form-group" id="silent-mode-select-group">
+            <label for="silent-mode-select">Mode:</label>
+            <select id="silent-mode-select">
+                <option value="indicators">Indicators</option>
+                <option value="ghost">Page title</option>
+                <option value="stealth">Stealth</option>
+                <option value="oneclick">One-click</option>
+            </select>
+            <p class="field-hint">
+                <strong>Indicators:</strong> Overlay dot next to the correct answer.<br>
+                <strong>Page title:</strong> Hide window. Answer shown only in browser tab title.<br>
+                <strong>Stealth:</strong> Completely invisible. Answer auto-copied to clipboard.<br>
+                <strong>One-click:</strong> Click on a question to instantly select the correct answer.
+            </p>
+        </div>
+    </div>
+
+    <div id="themes-tab" class="tab-content">
+        <p class="tab-description">Choose a preset or click <strong>+</strong> to build your own.</p>
+        <div id="themes-grid" class="themes-grid"></div>
+
+        <div id="theme-editor" class="theme-editor hidden">
+            <div class="theme-editor-header">
+                <span class="theme-editor-title">New theme</span>
+                <button type="button" id="theme-editor-close" class="theme-editor-close" aria-label="Close">×</button>
+            </div>
+            <div class="form-group">
+                <label for="theme-editor-name">Name:</label>
+                <input type="text" id="theme-editor-name" maxlength="24" placeholder="My theme">
+            </div>
+            <div class="form-group">
+                <label for="editor-border-input">Accent:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-border-input" maxlength="7" placeholder="#6366f1">
+                    <input type="color" id="editor-border-picker" class="color-swatch" aria-label="Pick accent color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-header-input">Header:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-header-input" maxlength="7" placeholder="#2a2a3e">
+                    <input type="color" id="editor-header-picker" class="color-swatch" aria-label="Pick header color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-content-input">Background:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-content-input" maxlength="7" placeholder="#1e1e2e">
+                    <input type="color" id="editor-content-picker" class="color-swatch" aria-label="Pick background color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-text-input">Text:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-text-input" maxlength="7" placeholder="#cdd6f4">
+                    <input type="color" id="editor-text-picker" class="color-swatch" aria-label="Pick text color">
+                </div>
+            </div>
+            <div class="theme-editor-actions">
+                <button type="button" id="theme-editor-cancel" class="theme-editor-btn secondary">Cancel</button>
+                <button type="button" id="theme-editor-save" class="theme-editor-btn primary">Save theme</button>
+            </div>
+        </div>
+
+        <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="glow-effect-toggle">
+                <span>Glow effect</span>
+            </label>
+            <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
         </div>
     </div>
 
     <div id="donate-tab" class="tab-content">
         <div class="donate-content">
-            <p>If you like this extension, you can support the developer.</p>
-            <a href="https://ko-fi.com/artzab" target="_blank" class="kofi-button">
-                <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="Coffee" class="kofi-img">
-                <span>Support on Ko-fi</span>
+            <p>If you like this extension, consider supporting the developer.</p>
+            <a href="https://t.me/migor1103_donate" target="_blank" rel="noopener" class="donate-button telegram">
+                <svg class="donate-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M9.04 15.47 8.86 19c.4 0 .57-.17.77-.37l1.85-1.77 3.84 2.81c.7.39 1.21.19 1.39-.65l2.53-11.86c.24-1.08-.39-1.5-1.08-1.25L3.37 10.23c-1.05.41-1.04.99-.18 1.26l3.98 1.24 9.25-5.82c.44-.28.83-.12.5.19l-7.88 8.37Z"/>
+                </svg>
+                <span>Subscribe on Telegram</span>
             </a>
         </div>
     </div>
-
-    <button id="save-settings-btn">Save and Close</button>
 
     <script src="popup.js"></script>
 </body>

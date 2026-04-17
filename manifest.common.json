@@ -1,23 +1,11 @@
 {
   "manifest_version": 3,
   "name": "xdAnswers",
-  "version": "4.11.0",
-  "description": "A script that helps in tests by providing AI-powered answers.",
-  "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation"],
+  "version": "5.0.0",
+  "description": "AI-powered answers for educational tests.",
+  "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation", "alarms"],
   "host_permissions": [
-    "*://*.naurok.com.ua/*",
-    "*://*.naurok.ua/*",
-    "http://localhost/*",
-    "https://api.openai.com/*",
-    "https://generativelanguage.googleapis.com/*",
-    "https://api.mistral.ai/*",
-    "*://*.googleusercontent.com/*",
-    "*://docs.google.com/forms/*",
-    "*://vseosvita.ua/*",
-    "*://*.digitaloceanspaces.com/*",
-    "*://*.justclass.com.ua/*",
-    "*://justclass.com.ua/*",
-    "https://api.justschool.me/*"
+    "<all_urls>"
   ],
   "action": {
     "default_title": "xdAnswers Settings",
