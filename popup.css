@@ -225,27 +225,34 @@ input[type="checkbox"] {
 
 select {
     width: 100%;
-    padding: 7px 10px;
+    padding: 7px 32px 7px 12px;
     background-color: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--popup-text);
-    border-radius: 6px;
+    border-radius: 8px;
     box-sizing: border-box;
     font-family: inherit;
     font-size: 13px;
     height: 34px;
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
     cursor: pointer;
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23cdd6f4' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 10px center;
-    padding-right: 28px;
+}
+
+select:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.22);
 }
 
 select:focus {
     border-color: var(--popup-border);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 25%, transparent);
 }
 
 select option {
@@ -260,12 +267,88 @@ textarea {
     line-height: 1.4;
 }
 
+/* ---------- Custom switch-style checkbox ----------
+   Any <label> inside .toggle-group that wraps a checkbox gets a pill-switch
+   instead of the native box. The native input is visually hidden but remains
+   focusable for keyboard navigation. */
 .toggle-group label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     opacity: 1;
     cursor: pointer;
+    user-select: none;
+}
+
+.toggle-group label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
+.toggle-group label input[type="checkbox"] + span {
+    position: relative;
+    padding-left: 42px;
+    line-height: 20px;
+    min-height: 20px;
+    display: inline-flex;
+    align-items: center;
+    color: var(--popup-text);
+}
+
+/* Track */
+.toggle-group label input[type="checkbox"] + span::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 18px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+    box-sizing: border-box;
+}
+
+/* Knob */
+.toggle-group label input[type="checkbox"] + span::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 50%;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    transition: left 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-group label input[type="checkbox"]:checked + span::before {
+    background: var(--popup-border);
+    border-color: var(--popup-border);
+}
+
+.toggle-group label input[type="checkbox"]:checked + span::after {
+    left: 17px;
+}
+
+.toggle-group label input[type="checkbox"]:focus-visible + span::before {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 30%, transparent);
+}
+
+.toggle-group label:hover input[type="checkbox"]:not(:checked) + span::before {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.toggle-group label input[type="checkbox"]:disabled + span {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .field-hint {
