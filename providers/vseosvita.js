@@ -247,5 +247,10 @@
 
         observer.observe(document.body, { childList: true, subtree: true, characterData: true });
         checkQuestion();
+
+        // Polling fallback: vseosvita reuses the same container DOM element (Vue),
+        // so MutationObserver may miss subtle question transitions.
+        // This ensures new questions are detected within 1 second max.
+        setInterval(() => checkQuestion(false), 1000);
     }
 })();
