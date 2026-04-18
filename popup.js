@@ -38,6 +38,11 @@ const TRANSLATIONS = {
         silentGhostHint: 'Сховати вікно. Відповідь лише в заголовку вкладки.',
         silentStealthHint: 'Повністю невидимо. Відповідь автоматично копіюється.',
         silentOneclickHint: 'Натисніть на питання — правильна відповідь обереться автоматично.',
+        // Position
+        defaultPositionLabel: 'Позиція за замовчуванням',
+        defaultPositionHint: 'Де зявляється картка відповіді при відкритті.',
+        rememberDrag: 'Запамятати перетягнуту позицію',
+        rememberDragHint: 'Якщо ви перетягнете картку, зберегти те місце. Інакше скидатиметься до позиції вище.',
         // Themes tab
         themesDesc: 'Оберіть готову тему або натисніть <strong>+</strong> щоб створити свою.',
         newTheme: 'Нова тема',
@@ -114,6 +119,11 @@ const TRANSLATIONS = {
         silentGhostHint: 'Скрыть окно. Ответ только в заголовке вкладки.',
         silentStealthHint: 'Полностью невидимо. Ответ автоматически копируется.',
         silentOneclickHint: 'Нажмите на вопрос — правильный ответ выберется автоматически.',
+        // Position
+        defaultPositionLabel: 'Позиция по умолчанию',
+        defaultPositionHint: 'Где появляется карточка ответа при открытии.',
+        rememberDrag: 'Запомнить перетянутую позицию',
+        rememberDragHint: 'Если вы перетащите карточку, сохранить то место. Иначе сбрасывается к позиции выше.',
         themesDesc: 'Выберите готовую тему или нажмите <strong>+</strong> чтобы создать свою.',
         newTheme: 'Новая тема',
         themeNameLabel: 'Название:',
@@ -183,6 +193,11 @@ const TRANSLATIONS = {
         silentGhostHint: 'Hide window. Answer shown only in browser tab title.',
         silentStealthHint: 'Completely invisible. Answer auto-copied to clipboard.',
         silentOneclickHint: 'Click on a question to instantly select the correct answer.',
+        // Position
+        defaultPositionLabel: 'Default position',
+        defaultPositionHint: 'Where the answer card appears when it opens.',
+        rememberDrag: 'Remember dragged position',
+        rememberDragHint: 'If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.',
         themesDesc: 'Choose a preset or click <strong>+</strong> to build your own.',
         newTheme: 'New theme',
         themeNameLabel: 'Name:',
@@ -276,6 +291,16 @@ function applyLanguage() {
     if (silentHint) {
         silentHint.innerHTML = `<strong>${t('silentIndicators')}:</strong> ${t('silentIndicatorsHint')}<br><strong>${t('silentGhost')}:</strong> ${t('silentGhostHint')}<br><strong>${t('silentStealth')}:</strong> ${t('silentStealthHint')}<br><strong>${t('silentOneclick')}:</strong> ${t('silentOneclickHint')}`;
     }
+
+    // Position settings
+    const posLabel = document.querySelector('#position-grid')?.closest('.form-group')?.querySelector('label');
+    if (posLabel) posLabel.textContent = t('defaultPositionLabel');
+    const posHint = document.querySelector('#position-grid')?.closest('.form-group')?.querySelector('.field-hint');
+    if (posHint) posHint.textContent = t('defaultPositionHint');
+    const rememberDragSpan = document.querySelector('#remember-drag-toggle + span');
+    if (rememberDragSpan) rememberDragSpan.textContent = t('rememberDrag');
+    const rememberDragHint = document.querySelector('#remember-drag-toggle')?.closest('.toggle-group')?.querySelector('.field-hint');
+    if (rememberDragHint) rememberDragHint.textContent = t('rememberDragHint');
 
     // Themes tab
     const themesDesc = document.querySelector('.tab-description');
