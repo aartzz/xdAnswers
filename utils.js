@@ -1436,7 +1436,8 @@ answer: правильна відповідь
             'background-color:var(--xd-bg) !important;border-color:var(--xd-border) !important;' +
             'border-radius:12px !important;box-shadow:var(--xd-glow),0 4px 24px rgba(0,0,0,0.4) !important;color:var(--xd-text) !important;' +
             'font-family:var(--xd-font) !important;font-size:14px !important;line-height:1.5 !important;overflow:hidden !important;' +
-            'contain:paint !important;isolation:isolate !important;' +
+            'contain:paint !important;isolation:isolate !important;background-clip:padding-box !important;' +
+            'clip-path:inset(0 round 12px) !important;' +
             'width:' + (isMax ? maximizedHelperState.width : defaultHelperState.width) + ' !important;' +
             'height:' + (isMax ? maximizedHelperState.height : defaultHelperState.height) + ' !important;' +
             'max-height:' + (isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight) + ' !important;' +
