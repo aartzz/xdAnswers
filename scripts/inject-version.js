@@ -6,6 +6,9 @@
 //
 // Usage: node scripts/inject-version.js [debug|release]
 // Env:   XD_BUILD_MODE=debug  (fallback when no CLI arg)
+//
+// In debug mode, also patches manifest.json version to the commit hash
+// so that web-ext build produces filenames with the hash instead of semver.
 
 const fs = require('fs');
 const path = require('path');
@@ -13,6 +16,7 @@ const { execSync } = require('child_process');
 
 const mode = process.argv[2] || process.env.XD_BUILD_MODE || 'release';
 const versionPath = path.join(__dirname, '..', 'version.js');
+const manifestPath = path.join(__dirname, '..', 'manifest.json');
 
 let versionString = '';
 
@@ -35,4 +39,13 @@ window.xdAnswers._buildVersion = '${versionString}';
 `;
 
 fs.writeFileSync(versionPath, content, 'utf-8');
+
+// In debug mode, patch manifest.json version so web-ext produces hash-based filenames
+if (mode === 'debug' && versionString && fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    manifest.version = versionString;
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+    console.log(`Patched manifest.json version to ${versionString}`);
+}
+
 console.log(`Injected ${mode} version: ${versionString || '(unknown)'}`);

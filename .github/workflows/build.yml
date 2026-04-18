@@ -8,8 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      XD_BUILD_MODE: debug
 
     steps:
       - name: Checkout repository
@@ -25,8 +23,8 @@ jobs:
 
       - name: Build extensions for Firefox and Chrome
         run: |
-          npm run build:firefox
-          npm run build:chrome
+          npm run build:firefox:debug
+          npm run build:chrome:debug
 
       - name: Locate build artifacts
         id: artifacts
