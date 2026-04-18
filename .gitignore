@@ -29,3 +29,4 @@ Desktop.ini
 *.swp
 manifest.json
 /dist_chrome
+.web-extension-id

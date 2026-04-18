@@ -40,12 +40,10 @@ Works out of the box — ships with free providers, no API key needed.
 
 ### Firefox
 
-> [!NOTE]  
-> Requires [Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix) (mobile) or [ESR/Dev/Nightly](https://www.mozilla.org/firefox/organizations) (desktop).
+The extension is signed by Mozilla — works on any Firefox version without extra configuration.
 
-1. In address bar: `about:config` → accept risk → set `xpinstall.signatures.required` to `false`
-2. Download `xdAnswers-firefox-*.xpi` from [Releases](https://github.com/aartzz/xdAnswers/releases)
-3. Drag the `.xpi` file into a Firefox window
+1. Download `xdAnswers-firefox-*.xpi` from [Releases](https://github.com/aartzz/xdAnswers/releases)
+2. Drag the `.xpi` file into a Firefox window → confirm installation
 
 ### Build from source
 
@@ -60,12 +58,15 @@ npm install
 Then pick a target:
 
 ```bash
-# Firefox — produces ./build/xdanswers-firefox-<version>.xpi
-npm run build:firefox
+# Firefox — signed .xpi in ./build/xdAnswers-firefox-<version>.xpi
+npm run sign:firefox
 
-# Chrome/Brave/Edge/Vivaldi — produces ./build/xdanswers-chrome-<version>.zip
+# Chrome/Brave/Edge/Vivaldi — produces ./build/xdAnswers-chrome-<version>.zip
 npm run build:chrome
 ```
+
+> [!NOTE]
+> Signing the Firefox extension requires Mozilla Add-ons API credentials. Create a `.env` file in the project root (see `.env.example`) or pass them via `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET` environment variables.
 
 Built artifacts land in `./build`. Install them the same way you would install a release build (see sections above).
 

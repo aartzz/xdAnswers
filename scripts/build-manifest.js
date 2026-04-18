@@ -28,9 +28,13 @@ if (targetBrowser === 'chrome') {
     },
     browser_specific_settings: {
       gecko: {
-        id: 'xdanswers@aartzz.github.io', //
-        strict_min_version: '109.0' //
-      }
+        id: 'xdanswers@aartzz.github.io',
+        strict_min_version: '109.0'
+      },
+      gecko_android: {}
+    },
+    data_collection_permissions: {
+      permissions: ['NONE']
     }
   };
 }

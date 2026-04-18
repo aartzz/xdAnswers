@@ -47,6 +47,8 @@ const commonIgnore = [
   'images/README/**',
   '*.zip',
   '*.xpi',
+  '.env.example',
+  '.env',
 ];
 
 const byTarget = {

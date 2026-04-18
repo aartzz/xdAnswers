@@ -1,11 +1,12 @@
 {
   "name": "xdanswers-extension",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "private": true,
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
     "prebuild:firefox": "node scripts/build-manifest.js firefox",
     "build:firefox": "npm run prebuild:firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && npm run clean",
+    "sign:firefox": "node scripts/sign-firefox.js",
 
     "prebuild:chrome": "node scripts/build-manifest.js chrome",
     "build:chrome": "npm run prebuild:chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && npm run clean",

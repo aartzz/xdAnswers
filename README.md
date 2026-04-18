@@ -42,12 +42,10 @@
 
 ### Firefox
 
-> [!NOTE]  
-> Потрібен [Nightly](https://play.google.com/store/apps/details?id=org.mozilla.fenix) (мобільний) або [ESR/Dev/Nightly](https://www.mozilla.org/firefox/organizations) (десктоп).
+Розширення підписано Mozilla — працює на будь-якій версії Firefox без додаткових налаштувань.
 
-1. В адресному рядку: `about:config` → прийміть ризик → встановіть `xpinstall.signatures.required` у `false`
-2. Завантажте `xdAnswers-firefox-*.xpi` з [Releases](https://github.com/aartzz/xdAnswers/releases)
-3. Перетягніть файл `.xpi` у вікно Firefox
+1. Завантажте `xdAnswers-firefox-*.xpi` з [Releases](https://github.com/aartzz/xdAnswers/releases)
+2. Перетягніть файл `.xpi` у вікно Firefox → підтвердіть встановлення
 
 ### Збірка з вихідного коду
 
@@ -62,12 +60,15 @@ npm install
 Далі оберіть ціль:
 
 ```bash
-# Firefox — готовий .xpi у ./build/xdanswers-firefox-<version>.xpi
-npm run build:firefox
+# Firefox — підписаний .xpi у ./build/xdAnswers-firefox-<version>.xpi
+npm run sign:firefox
 
-# Chrome/Brave/Edge/Vivaldi — готовий .zip у ./build/xdanswers-chrome-<version>.zip
+# Chrome/Brave/Edge/Vivaldi — готовий .zip у ./build/xdAnswers-chrome-<version>.zip
 npm run build:chrome
 ```
+
+> [!NOTE]
+> Для підписання Firefox-розширення потрібні облікові дані Mozilla Add-ons API. Створи файл `.env` у корені проєкту (дивись `.env.example`) або передай їх через змінні середовища `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET`.
 
 Готові артефакти лежать у папці `./build`. Далі встановлюйте їх так само, як і реліз-файли (див. розділи вище).
 

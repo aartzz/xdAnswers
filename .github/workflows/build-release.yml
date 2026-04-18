@@ -25,10 +25,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build extensions for Firefox and Chrome
-        run: |
-          npm run build:firefox
-          npm run build:chrome
+      - name: Build Chrome extension
+        run: npm run build:chrome
+
+      - name: Sign Firefox extension
+        run: npm run sign:firefox
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
 
       - name: Generate Release Body
         id: generate_release_body
