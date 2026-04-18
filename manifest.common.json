@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "xdAnswers",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "AI-powered answers for educational tests.",
   "permissions": ["storage", "clipboardWrite", "tabs", "webNavigation", "alarms"],
   "host_permissions": [
