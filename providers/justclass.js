@@ -65,7 +65,13 @@
             }
         }
         const observer = new MutationObserver(() => {
-            checkQuestion(); window.xdAnswers.attachAndPositionHelper();
+            checkQuestion();
+            // Only re-attach if container was removed from DOM;
+            // do NOT call attachAndPositionHelper unconditionally — it clears transform
+            // and resets position, which breaks dragging during AI processing.
+            if (window.xdAnswers.helperContainer && !window.xdAnswers.helperContainer.parentNode) {
+                window.xdAnswers.attachAndPositionHelper();
+            }
         });
         observer.observe(document.body, { childList: true, subtree: true });
         checkQuestion();

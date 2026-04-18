@@ -187,7 +187,12 @@
         const observer = new MutationObserver(() => {
             if (window.xdAnswers.isExtensionModifyingDOM) return;
             processDOM();
-            window.xdAnswers.attachAndPositionHelper();
+            // Only re-attach if container was removed from DOM (e.g. Angular re-render);
+            // do NOT call attachAndPositionHelper unconditionally — it clears transform
+            // and resets position, which breaks dragging during AI processing.
+            if (window.xdAnswers.helperContainer && !window.xdAnswers.helperContainer.parentNode) {
+                window.xdAnswers.attachAndPositionHelper();
+            }
         });
 
         // Стежимо за body, бо Angular може перемальовувати великі шматки DOM

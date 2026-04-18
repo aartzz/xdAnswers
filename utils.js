@@ -1722,7 +1722,6 @@ answer: правильна відповідь
             return;
         }
         container.style.setProperty('display', 'flex', 'important');
-        container.style.transform = '';
 
         let targetParent = targetContainerOverride || document.body;
 
