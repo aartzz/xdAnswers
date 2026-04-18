@@ -49,13 +49,47 @@
 2. Завантажте `xdAnswers-firefox-*.xpi` з [Releases](https://github.com/aartzz/xdAnswers/releases)
 3. Перетягніть файл `.xpi` у вікно Firefox
 
-### З вихідного коду
+### Збірка з вихідного коду
+
+Потрібен [Node.js](https://nodejs.org/) 18+ (щоб був доступний `npm`).
 
 ```bash
 git clone https://github.com/aartzz/xdAnswers.git
-node scripts/build-manifest.js
+cd xdAnswers
+npm install
 ```
-Потім завантажте як розпаковане розширення (див. вище).
+
+Далі оберіть ціль:
+
+```bash
+# Firefox — готовий .xpi у ./build/xdanswers-firefox-<version>.xpi
+npm run build:firefox
+
+# Chrome/Brave/Edge/Vivaldi — готовий .zip у ./build/xdanswers-chrome-<version>.zip
+npm run build:chrome
+```
+
+Готові артефакти лежать у папці `./build`. Далі встановлюйте їх так само, як і реліз-файли (див. розділи вище).
+
+> [!TIP]
+> Скрипти `build:firefox` / `build:chrome` крос-платформні (працюють на Windows, macOS, Linux) — вони автоматично генерують правильний `manifest.json` для вибраного браузера, пакують розширення через `web-ext` і прибирають тимчасові файли.
+
+### Режим розробки (hot reload)
+
+Для ітеративної розробки зручно використовувати режим `web-ext run`, який запускає тимчасовий профіль браузера з уже завантаженим розширенням і автоматично перезавантажує його при змінах у файлах:
+
+```bash
+# Спочатку згенеруйте manifest.json для потрібного браузера
+node scripts/build-manifest.js firefox    # або chrome
+
+# Firefox — відкриється тимчасовий Firefox з розширенням
+npx web-ext run
+
+# Chrome/Chromium (потребує встановленого Chrome)
+npx web-ext run -t chromium
+```
+
+Після завершення сесії приберіть згенерований `manifest.json` командою `npm run clean`.
 
 ## Використання
 

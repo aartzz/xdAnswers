@@ -47,13 +47,47 @@ Works out of the box — ships with free providers, no API key needed.
 2. Download `xdAnswers-firefox-*.xpi` from [Releases](https://github.com/aartzz/xdAnswers/releases)
 3. Drag the `.xpi` file into a Firefox window
 
-### From source
+### Build from source
+
+Requires [Node.js](https://nodejs.org/) 18+ (so `npm` is available).
 
 ```bash
 git clone https://github.com/aartzz/xdAnswers.git
-node scripts/build-manifest.js
+cd xdAnswers
+npm install
 ```
-Then load unpacked as above.
+
+Then pick a target:
+
+```bash
+# Firefox — produces ./build/xdanswers-firefox-<version>.xpi
+npm run build:firefox
+
+# Chrome/Brave/Edge/Vivaldi — produces ./build/xdanswers-chrome-<version>.zip
+npm run build:chrome
+```
+
+Built artifacts land in `./build`. Install them the same way you would install a release build (see sections above).
+
+> [!TIP]
+> The `build:firefox` / `build:chrome` scripts are cross-platform (Windows, macOS, Linux) — they generate the correct `manifest.json` for the selected browser, package the extension with `web-ext`, and clean up temporary files for you.
+
+### Development mode (hot reload)
+
+For iterative development, use `web-ext run` — it launches a temporary browser profile with the extension already loaded and auto-reloads it whenever files change:
+
+```bash
+# First, generate manifest.json for the target browser
+node scripts/build-manifest.js firefox    # or chrome
+
+# Firefox — opens a temporary Firefox with the extension loaded
+npx web-ext run
+
+# Chrome/Chromium (requires Chrome installed)
+npx web-ext run -t chromium
+```
+
+When you're done, remove the generated `manifest.json` with `npm run clean`.
 
 ## Usage
 
