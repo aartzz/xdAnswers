@@ -1048,19 +1048,21 @@ answer: правильна відповідь
             }
             // For multiquiz questions: click the "save answers" / "confirm" button after selecting options
             // Only when checkboxes are present (multiquiz) — single-answer questions don't need a save step
-            // Naurok: [ng-click*="saveAnswer"], .test-action-button with "зберегти"
-            // Generic: any visible button containing save/confirm text after checkbox selection
+            // Naurok: .test-multiquiz-save-button, [ng-click*="save"], .test-action-button with "зберегти"
+            // Generic: any visible button/link containing save/confirm text after checkbox selection
             const hasCheckboxes = !!document.querySelector('input[type="checkbox"]:not(.ng-hide)') ||
                 !!document.querySelector('[ng-click*="multiquiz"], .question-option-inner-multiple, .fa-check-square-o');
             if (elements.length > 1 && hasCheckboxes) {
                 let saveBtn = document.querySelector(
+                    '.test-multiquiz-save-button:not(.ng-hide), ' +
+                    'a[ng-click*="save"]:not(.ng-hide), ' +
                     '[ng-click*="saveAnswer"], ' +
                     '[ng-click*="check"], ' +
                     '.test-action-button:not(.ng-hide):not([disabled])'
                 );
-                // Fallback: find button by text content ("зберегти", "save", "confirm")
+                // Fallback: find button/link by text content ("зберегти", "save", "confirm")
                 if (!saveBtn) {
-                    const allBtns = document.querySelectorAll('button, [role="button"], .btn, .test-action-button');
+                    const allBtns = document.querySelectorAll('button, a[ng-click], [role="button"], .btn, .test-action-button, .test-multiquiz-save-button');
                     for (const btn of allBtns) {
                         const t = (btn.innerText || '').trim().toLowerCase();
                         if (t.includes('зберегти') || t.includes('save') || t.includes('confirm') || t.includes('підтвердити')) {
@@ -1439,7 +1441,8 @@ answer: правильна відповідь
             'max-height:' + (isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight) + ' !important;' +
             '}' +
             '.ollama-helper-container *:not(.xd-loader):not(.ollama-helper-header):not(.ollama-helper-footer),.ollama-helper-container *:before,.ollama-helper-container *:after:not(.xd-loader){' +
-            'all:revert !important;font-family:var(--xd-font) !important;font-size:inherit !important;line-height:inherit !important;' +
+            'all:revert !important;appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;' +
+            'font-family:var(--xd-font) !important;font-size:inherit !important;line-height:inherit !important;' +
             'color:var(--xd-text) !important;box-sizing:border-box !important;margin:0 !important;padding:0 !important;' +
             'background:none !important;border:none !important;}' +
             '.ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
