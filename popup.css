@@ -1145,3 +1145,48 @@ input.invalid {
     height: 20px;
     flex-shrink: 0;
 }
+
+/* ── Position grid ── */
+
+.position-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 6px;
+    width: 108px;
+    height: 108px;
+    padding: 8px;
+    margin-top: 6px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+.position-cell {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+
+.position-cell:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.position-cell:focus-visible {
+    outline: none;
+    border-color: var(--popup-border);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--popup-border) 35%, transparent);
+}
+
+.position-cell.active {
+    background-color: var(--popup-border);
+    border-color: var(--popup-border);
+    transform: scale(1.05);
+}
+

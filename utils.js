@@ -85,6 +85,9 @@ answer: правильна відповідь
         showAnswerOnly: false,
         silentMode: '',
         _silentModePreselect: 'indicators',
+        defaultPosition: 'bottom-right',
+        rememberDragPosition: false,
+        savedPosition: null,
         customization: {
             glowEffect: false,
             borderColor: '#cccccc',
@@ -151,6 +154,25 @@ answer: правильна відповідь
         width: '70vw', height: '70vh', maxHeight: 'none',
         top: '15vh', left: '15vw', bottom: 'auto', right: 'auto'
     };
+
+    // Map a 3x3 grid preset to top/left/bottom/right CSS values.
+    // Container is ~380px wide; keep 20px margin from viewport edges.
+    function resolvePositionPreset(preset) {
+        const M = '20px';
+        const presets = {
+            'top-left':      { top: M,     left: M,    right: 'auto', bottom: 'auto' },
+            'top-center':    { top: M,     left: '50%', right: 'auto', bottom: 'auto', translate: 'x' },
+            'top-right':     { top: M,     right: M,   left: 'auto',  bottom: 'auto' },
+            'middle-left':   { top: '50%', left: M,    right: 'auto', bottom: 'auto', translate: 'y' },
+            'center':        { top: '50%', left: '50%', right: 'auto', bottom: 'auto', translate: 'xy' },
+            'middle-right':  { top: '50%', right: M,   left: 'auto',  bottom: 'auto', translate: 'y' },
+            'bottom-left':   { bottom: M,  left: M,    top: 'auto',   right: 'auto' },
+            'bottom-center': { bottom: M,  left: '50%', top: 'auto',  right: 'auto', translate: 'x' },
+            'bottom-right':  { bottom: M,  right: M,   top: 'auto',   left: 'auto' }
+        };
+        return presets[preset] || presets['bottom-right'];
+    }
+    window.xdAnswers.resolvePositionPreset = resolvePositionPreset;
 
     // ── Settings ──
 
@@ -1376,6 +1398,8 @@ answer: правильна відповідь
                 startX = coords.x; startY = coords.y;
                 container.style.top = initialTop + 'px'; container.style.left = initialLeft + 'px';
                 container.style.right = 'auto'; container.style.bottom = 'auto';
+                // Clear any centering transform so the drag origin matches rect coords
+                container.style.transform = '';
                 document.addEventListener('mousemove', onDragMove);
                 document.addEventListener('touchmove', onDragMove, { passive: false });
                 document.addEventListener('mouseup', onDragEnd, { once: true });
@@ -1396,8 +1420,18 @@ answer: правильна відповідь
                 document.removeEventListener('touchmove', onDragMove);
                 const t = new DOMMatrix(getComputedStyle(container).transform);
                 container.style.transform = '';
-                container.style.top = (initialTop + t.m42) + 'px';
-                container.style.left = (initialLeft + t.m41) + 'px';
+                const finalTop = (initialTop + t.m42) + 'px';
+                const finalLeft = (initialLeft + t.m41) + 'px';
+                container.style.top = finalTop;
+                container.style.left = finalLeft;
+                // Persist coords when user opted in
+                try {
+                    const s = window.xdAnswers.settings;
+                    if (s && s.rememberDragPosition) {
+                        s.savedPosition = { top: finalTop, left: finalLeft };
+                        chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(s) });
+                    }
+                } catch (e) {}
             };
 
             const destroy = () => {
@@ -1431,10 +1465,10 @@ answer: правильна відповідь
             '--xd-glow:' + (custom.glowEffect ? '0 0 8px ' + custom.borderColor : 'none') + ';' +
             '--xd-font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
             '}' +
-            '.ollama-helper-container{margin:0;padding:0;border-width:1px;border-style:solid;font-weight:normal;text-align:left;transform:none;' +
+            '.ollama-helper-container{margin:0;padding:0;border:none;font-weight:normal;text-align:left;transform:none;' +
             'position:fixed !important;z-index:2147483647 !important;display:flex !important;flex-direction:column !important;' +
-            'background-color:var(--xd-bg) !important;border-color:var(--xd-border) !important;' +
-            'border-radius:12px !important;box-shadow:var(--xd-glow),0 4px 24px rgba(0,0,0,0.4) !important;color:var(--xd-text) !important;' +
+            'background-color:var(--xd-bg) !important;border:none !important;' +
+            'border-radius:12px !important;box-shadow:inset 0 0 0 1px var(--xd-border),var(--xd-glow),0 4px 24px rgba(0,0,0,0.4) !important;color:var(--xd-text) !important;' +
             'font-family:var(--xd-font) !important;font-size:14px !important;line-height:1.5 !important;overflow:hidden !important;' +
             'contain:paint !important;isolation:isolate !important;background-clip:padding-box !important;' +
             'clip-path:inset(0 round 12px) !important;' +
@@ -1713,9 +1747,27 @@ answer: правильна відповідь
 
         if (!window.xdAnswers.isManuallyPositioned) {
             const isMax = window.xdAnswers.isHelperWindowMaximized;
-            Object.assign(container.style, isMax ?
-                { top: maximizedHelperState.top, left: maximizedHelperState.left, bottom: 'auto', right: 'auto' } :
-                { top: 'auto', left: 'auto', bottom: defaultHelperState.bottom, right: defaultHelperState.right });
+            if (isMax) {
+                Object.assign(container.style, { top: maximizedHelperState.top, left: maximizedHelperState.left, bottom: 'auto', right: 'auto', transform: '' });
+            } else {
+                const s = window.xdAnswers.settings || {};
+                // Prefer saved drag coords only when user enabled remember-drag
+                if (s.rememberDragPosition && s.savedPosition && typeof s.savedPosition.top === 'string' && typeof s.savedPosition.left === 'string') {
+                    Object.assign(container.style, { top: s.savedPosition.top, left: s.savedPosition.left, bottom: 'auto', right: 'auto', transform: '' });
+                } else {
+                    const pos = resolvePositionPreset(s.defaultPosition || 'bottom-right');
+                    const tx = pos.translate === 'x' ? 'translateX(-50%)' :
+                               pos.translate === 'y' ? 'translateY(-50%)' :
+                               pos.translate === 'xy' ? 'translate(-50%, -50%)' : '';
+                    Object.assign(container.style, {
+                        top: pos.top || 'auto',
+                        left: pos.left || 'auto',
+                        right: pos.right || 'auto',
+                        bottom: pos.bottom || 'auto',
+                        transform: tx
+                    });
+                }
+            }
         }
 
         window.xdAnswers.isExtensionModifyingDOM = false;

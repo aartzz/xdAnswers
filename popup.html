@@ -100,6 +100,29 @@
                 <strong>One-click:</strong> Click on a question to instantly select the correct answer.
             </p>
         </div>
+        <hr class="separator">
+        <div class="form-group">
+            <label>Default position</label>
+            <div id="position-grid" class="position-grid" role="radiogroup" aria-label="Default helper position">
+                <button type="button" class="position-cell" data-position="top-left" role="radio" aria-label="Top left" title="Top left"></button>
+                <button type="button" class="position-cell" data-position="top-center" role="radio" aria-label="Top center" title="Top center"></button>
+                <button type="button" class="position-cell" data-position="top-right" role="radio" aria-label="Top right" title="Top right"></button>
+                <button type="button" class="position-cell" data-position="middle-left" role="radio" aria-label="Middle left" title="Middle left"></button>
+                <button type="button" class="position-cell" data-position="center" role="radio" aria-label="Center" title="Center"></button>
+                <button type="button" class="position-cell" data-position="middle-right" role="radio" aria-label="Middle right" title="Middle right"></button>
+                <button type="button" class="position-cell" data-position="bottom-left" role="radio" aria-label="Bottom left" title="Bottom left"></button>
+                <button type="button" class="position-cell" data-position="bottom-center" role="radio" aria-label="Bottom center" title="Bottom center"></button>
+                <button type="button" class="position-cell" data-position="bottom-right" role="radio" aria-label="Bottom right" title="Bottom right"></button>
+            </div>
+            <p class="field-hint">Where the answer card appears when it opens.</p>
+        </div>
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="remember-drag-toggle">
+                <span>Remember dragged position</span>
+            </label>
+            <p class="field-hint">If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.</p>
+        </div>
     </div>
 
     <div id="themes-tab" class="tab-content">

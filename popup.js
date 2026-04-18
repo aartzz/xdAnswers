@@ -532,6 +532,9 @@ const DEFAULT_SETTINGS = {
     showAnswerOnly: false,
     silentMode: '',
     _silentModePreselect: 'indicators',
+    defaultPosition: 'bottom-right',
+    rememberDragPosition: false,
+    savedPosition: null,
     customization: {
         glowEffect: false,
         ...PREDEFINED_THEMES['Dark']
@@ -657,6 +660,17 @@ function populateUI() {
     el.silentModeSelect.value = silentModeValue || 'indicators';
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
+
+    // Position grid: mark active cell, sync remember-drag toggle
+    if (el.positionGrid) {
+        const activePosition = settings.defaultPosition || 'bottom-right';
+        el.positionGrid.querySelectorAll('.position-cell').forEach(cell => {
+            const isActive = cell.dataset.position === activePosition;
+            cell.classList.toggle('active', isActive);
+            cell.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+    }
+    if (el.rememberDragToggle) el.rememberDragToggle.checked = !!settings.rememberDragPosition;
 
     applyLanguage();
     populateThemesGrid();
@@ -1391,13 +1405,32 @@ function attachEventListeners() {
         { el: el.autoAnswerToggle, key: 'autoAnswer' },
         { el: el.highlightCorrectToggle, key: 'highlightCorrect' },
         { el: el.showAnswerOnlyToggle, key: 'showAnswerOnly' },
-        { el: el.glowEffectToggle, key: 'customization.glowEffect' }
+        { el: el.glowEffectToggle, key: 'customization.glowEffect' },
+        { el: el.rememberDragToggle, key: 'rememberDragPosition' }
     ];
     for (const { el: toggle, key } of autoToggles) {
+        if (!toggle) continue;
         toggle.onchange = () => {
             el.cooldownGroup.style.display = el.autoAnswerToggle.checked ? 'block' : 'none';
             autoSave({ [key]: toggle.checked });
         };
+    }
+
+    // Position grid: click cell → set defaultPosition, highlight active
+    if (el.positionGrid) {
+        el.positionGrid.addEventListener('click', (ev) => {
+            const cell = ev.target.closest('.position-cell');
+            if (!cell || !el.positionGrid.contains(cell)) return;
+            const pos = cell.dataset.position;
+            if (!pos) return;
+            el.positionGrid.querySelectorAll('.position-cell').forEach(c => {
+                const isActive = c === cell;
+                c.classList.toggle('active', isActive);
+                c.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            });
+            // Clear saved drag coords so preset applies on next show
+            autoSave({ defaultPosition: pos, savedPosition: null });
+        });
     }
 
     // Language switch
@@ -1538,6 +1571,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeToggle: document.getElementById('silent-mode-toggle'),
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
+        positionGrid: document.getElementById('position-grid'),
+        rememberDragToggle: document.getElementById('remember-drag-toggle'),
         themesGrid: document.getElementById('themes-grid'),
         glowEffectToggle: document.getElementById('glow-effect-toggle'),
         themeEditor: document.getElementById('theme-editor'),
