@@ -1464,8 +1464,10 @@ answer: правильна відповідь
             'padding:0 4px !important;line-height:1 !important;display:none !important;}' +
             '#silent-mode-inline-select option{background:var(--xd-bg) !important;color:var(--xd-text) !important;}' +
             '.ollama-helper-footer{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
-            'padding:6px 12px !important;background-color:var(--xd-header) !important;border-top:1px solid var(--xd-border) !important;' +
-            'border-radius:0 0 12px 12px !important;min-height:28px !important;position:relative !important;}' +
+            'padding:6px 12px !important;background-color:var(--xd-header) !important;' +
+            'box-shadow:inset 0 1px 0 var(--xd-border) !important;border:none !important;' +
+            'border-radius:0 0 12px 12px !important;background-clip:padding-box !important;' +
+            'min-height:28px !important;position:relative !important;overflow:hidden !important;}' +
             '.xd-footer-elapsed{font-size:11px !important;opacity:0.45 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;flex-shrink:0 !important;min-width:48px !important;z-index:1 !important;}' +
             '.xd-footer-model{font-size:10px !important;opacity:0.35 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;' +
             'position:absolute !important;left:50% !important;transform:translateX(-50%) !important;max-width:60% !important;pointer-events:none !important;z-index:0 !important;}' +
