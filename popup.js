@@ -1502,8 +1502,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const versionEl = document.querySelector('.xd-popup-version');
     if (versionEl) {
         try {
-            const v = chrome.runtime.getManifest().version;
-            versionEl.textContent = v ? 'v' + v : '';
+            // _buildVersion is set by version.js (debug: git hash, release: manifest version)
+            let v = window.xdAnswers && window.xdAnswers._buildVersion;
+            if (!v) {
+                v = chrome.runtime.getManifest().version;
+                v = v ? 'v' + v : '';
+            }
+            versionEl.textContent = v;
         } catch (e) {}
     }
 
