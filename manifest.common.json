@@ -58,6 +58,16 @@
       "js": ["utils.js", "providers/justclass.js"],
       "run_at": "document_end",
       "all_frames": true
+    },
+    {
+      "matches": [
+        "*://forms.office.com/Pages/ResponsePage.aspx*",
+        "*://forms.office.com/pages/responsepage.aspx*",
+        "*://forms.office.com/r/*"
+      ],
+      "js": ["utils.js", "providers/msforms.js"],
+      "run_at": "document_end",
+      "all_frames": true
     }
   ]
 }
