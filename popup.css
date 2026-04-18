@@ -8,7 +8,7 @@
 
 body {
     width: 420px;
-    height: 600px;
+    height: 520px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--popup-bg);
     color: var(--popup-text);
