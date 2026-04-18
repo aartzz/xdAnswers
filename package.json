@@ -5,17 +5,16 @@
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
     "prebuild:firefox": "node scripts/build-manifest.js firefox",
-    "build:firefox": "npm run prebuild:firefox && web-ext build --source-dir . --artifacts-dir ./build --overwrite-dest && npm run clean",
+    "build:firefox": "npm run prebuild:firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && npm run clean",
 
-    "prebuild:chrome": "rm -rf dist_chrome && mkdir -p dist_chrome/images dist_chrome/providers",
-    "build:chrome": "npm run prebuild:chrome && node scripts/build-manifest.js chrome && cp background.js utils.js popup.html popup.js popup.css manifest.json ./dist_chrome/ && cp -r providers/* ./dist_chrome/providers/ && cp -r images/* ./dist_chrome/images/ && cd ./dist_chrome && zip -r ../build/xdAnswers-chrome.zip . && cd .. && npm run clean && npm run postbuild:chrome",
-    "postbuild:chrome": "rm -rf ./dist_chrome",
+    "prebuild:chrome": "node scripts/build-manifest.js chrome",
+    "build:chrome": "npm run prebuild:chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && npm run clean",
 
-    "clean": "rm -f manifest.json",
+    "clean": "node -e \"require('fs').rmSync('manifest.json',{force:true})\"",
     "version": "node scripts/sync-version.js && git add manifest.common.json"
   },
   "devDependencies": {
-    "web-ext": "^7.11.0",
-    "cpr": "^3.0.1"
+    "cross-env": "^7.0.3",
+    "web-ext": "^7.11.0"
   }
 }
