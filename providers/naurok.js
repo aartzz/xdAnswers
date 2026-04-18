@@ -15,16 +15,18 @@
 
         window.xdAnswers.onRefresh = () => {
             lastStateHash = "";
-            processDOM();
+            // Skip debounce for user-initiated refresh — question is already rendered
+            if (debounceTimer) clearTimeout(debounceTimer);
+            checkQuestion(true);
         };
 
         function processDOM() {
             // Використовуємо debounce, щоб не реагувати на кожну дрібну зміну під час рендеру Angular
             if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(checkQuestion, 300);
+            debounceTimer = setTimeout(() => checkQuestion(false), 300);
         }
 
-        function checkQuestion() {
+        function checkQuestion(skipDelay) {
             if (window.xdAnswers.isProcessingAI) return;
 
             // 0. Перевіряємо, чи зараз йде анімація "Відповідь зараховано" або тест завершено
@@ -157,8 +159,8 @@
                         });
                     }
                 } else {
-                    // Normal: auto-process after delay
-                    setTimeout(() => {
+                    // Normal: auto-process after delay (skip for user-initiated refresh)
+                    const processFn = () => {
                         const questionData = {
                             text: questionText,
                             optionsText: optionsText,
@@ -173,7 +175,10 @@
                             questionData.base64Images = images.filter(img => img !== null);
                             window.xdAnswers.processQuestion(questionData);
                         });
-                    }, 500);
+                    };
+
+                    if (skipDelay) processFn();
+                    else setTimeout(processFn, 500);
                 }
             }
         }

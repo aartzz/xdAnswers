@@ -25,7 +25,9 @@
     {
       "matches": [
         "*://naurok.com.ua/test/testing/*",
-        "*://naurok.ua/test/testing/*"
+        "*://naurok.ua/test/testing/*",
+        "*://naurok.com.ua/test/realtime-client/*",
+        "*://naurok.ua/test/realtime-client/*"
       ],
       "js": ["utils.js", "providers/naurok.js"],
       "run_at": "document_end",
