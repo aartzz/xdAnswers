@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      XD_BUILD_MODE: debug
 
     steps:
       - name: Checkout repository

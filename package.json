@@ -4,14 +4,15 @@
   "private": true,
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
-    "prebuild:firefox": "node scripts/build-manifest.js firefox",
+    "prebuild:firefox": "node scripts/build-manifest.js firefox && node scripts/inject-version.js",
     "build:firefox": "npm run prebuild:firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && npm run clean",
     "sign:firefox": "node scripts/sign-firefox.js",
 
-    "prebuild:chrome": "node scripts/build-manifest.js chrome",
+    "prebuild:chrome": "node scripts/build-manifest.js chrome && node scripts/inject-version.js",
     "build:chrome": "npm run prebuild:chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && npm run clean",
 
-    "clean": "node -e \"require('fs').rmSync('manifest.json',{force:true})\"",
+    "clean": "node -e \"require('fs').rmSync('manifest.json',{force:true});require('fs').rmSync('version.js',{force:true})\"",
+    "dev": "node scripts/build-manifest.js chrome && node scripts/inject-version.js debug",
     "version": "node scripts/sync-version.js && git add manifest.common.json"
   },
   "devDependencies": {

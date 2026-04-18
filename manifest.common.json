@@ -29,7 +29,7 @@
         "*://naurok.com.ua/test/realtime-client/*",
         "*://naurok.ua/test/realtime-client/*"
       ],
-      "js": ["utils.js", "providers/naurok.js"],
+      "js": ["version.js", "utils.js", "providers/naurok.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -38,7 +38,7 @@
         "*://vseosvita.ua/test/go-olp*",
         "*://vseosvita.ua/test/start/*"
       ],
-      "js": ["utils.js", "providers/vseosvita.js"],
+      "js": ["version.js", "utils.js", "providers/vseosvita.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -49,7 +49,7 @@
         "*://docs.google.com/forms/d/e/*/viewform*",
         "*://docs.google.com/forms/d/e/*/formResponse*"
       ],
-      "js": ["utils.js", "providers/gforms.js"],
+      "js": ["version.js", "utils.js", "providers/gforms.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -57,7 +57,7 @@
       "matches": [
         "*://justclass.com.ua/hw/*"
       ],
-      "js": ["utils.js", "providers/justclass.js"],
+      "js": ["version.js", "utils.js", "providers/justclass.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -67,7 +67,7 @@
         "*://forms.office.com/pages/responsepage.aspx*",
         "*://forms.office.com/r/*"
       ],
-      "js": ["utils.js", "providers/msforms.js"],
+      "js": ["version.js", "utils.js", "providers/msforms.js"],
       "run_at": "document_end",
       "all_frames": true
     }

@@ -130,6 +130,19 @@ answer: правильна відповідь
     window.xdAnswers._originalTitle = null;
     window.xdAnswers._customAutoAnswer = null;
 
+    // Version string for UI display
+    // _buildVersion is injected by build-manifest.js (release) or inject-version.js (debug)
+    // Release: "v5.0.3", Debug: "6774ea7", Fallback: reads manifest version
+    function getVersionString() {
+        if (window.xdAnswers._buildVersion) return window.xdAnswers._buildVersion;
+        try {
+            const v = chrome.runtime.getManifest().version;
+            return v ? 'v' + v : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
     const defaultHelperState = {
         width: '380px', height: 'auto', maxHeight: '450px',
         bottom: '20px', right: '20px', top: 'auto', left: 'auto'
@@ -1033,6 +1046,40 @@ answer: правильна відповідь
                     target.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
+            // For multiquiz questions: click the "save answers" / "confirm" button after selecting options
+            // Only when checkboxes are present (multiquiz) — single-answer questions don't need a save step
+            // Naurok: [ng-click*="saveAnswer"], .test-action-button with "зберегти"
+            // Generic: any visible button containing save/confirm text after checkbox selection
+            const hasCheckboxes = !!document.querySelector('input[type="checkbox"]:not(.ng-hide)') ||
+                !!document.querySelector('[ng-click*="multiquiz"], .question-option-inner-multiple, .fa-check-square-o');
+            if (elements.length > 1 && hasCheckboxes) {
+                let saveBtn = document.querySelector(
+                    '[ng-click*="saveAnswer"], ' +
+                    '[ng-click*="check"], ' +
+                    '.test-action-button:not(.ng-hide):not([disabled])'
+                );
+                // Fallback: find button by text content ("зберегти", "save", "confirm")
+                if (!saveBtn) {
+                    const allBtns = document.querySelectorAll('button, [role="button"], .btn, .test-action-button');
+                    for (const btn of allBtns) {
+                        const t = (btn.innerText || '').trim().toLowerCase();
+                        if (t.includes('зберегти') || t.includes('save') || t.includes('confirm') || t.includes('підтвердити')) {
+                            if (!btn.classList.contains('ng-hide') && !btn.disabled && btn.offsetParent !== null) {
+                                saveBtn = btn;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (saveBtn) {
+                    setTimeout(() => {
+                        saveBtn.click();
+                        saveBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                        saveBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                    }, 200);
+                }
+            }
+
             // Clear scoped container after selection
             window.xdAnswers._oneClickContainer = null;
             window.xdAnswers._answerContainer = null;
@@ -1399,6 +1446,7 @@ answer: правильна відповідь
             'padding:10px 12px !important;background-color:var(--xd-header) !important;' +
             'border-bottom:1px solid var(--xd-border) !important;border-radius:12px 12px 0 0 !important;cursor:move !important;user-select:none !important;}' +
             '.ollama-header-title{font-weight:600 !important;margin-right:auto !important;font-size:13px !important;}' +
+            '.xd-version{font-weight:400 !important;font-size:10px !important;opacity:0.5 !important;margin-left:4px !important;vertical-align:middle !important;}' +
             '.ollama-header-buttons{display:flex !important;align-items:center !important;}' +
             '.ollama-header-buttons button{all:revert !important;background:none !important;border:1px solid rgba(255,255,255,0.15) !important;' +
             'color:var(--xd-text) !important;font-family:var(--xd-font) !important;font-size:12px !important;' +
@@ -1461,7 +1509,7 @@ answer: правильна відповідь
         container.className = 'ollama-helper-container';
         container.innerHTML =
             '<div class="ollama-helper-header" id="ollama-helper-drag-header">' +
-            '<span class="ollama-header-title">xdAnswers</span>' +
+            '<span class="ollama-header-title">xdAnswers <small class="xd-version"></small></span>' +
             '<div class="ollama-header-buttons">' +
             '<button id="silent-mode-btn" title="Silent mode: Off">✕</button>' +
             '<select id="silent-mode-inline-select" title="Silent mode">' +
@@ -1491,6 +1539,9 @@ answer: правильна відповідь
         // Set current model name in footer
         const footerModelEl = container.querySelector('#xd-footer-model');
         if (footerModelEl) footerModelEl.textContent = window.xdAnswers.settings.model || 'select model ↗';
+        // Set version string in header
+        const versionEl = container.querySelector('.xd-version');
+        if (versionEl) versionEl.textContent = getVersionString();
     };
 
     window.xdAnswers.attachHelperEventListeners = function() {

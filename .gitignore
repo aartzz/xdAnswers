@@ -28,5 +28,6 @@ Desktop.ini
 *.sln
 *.swp
 manifest.json
+version.js
 /dist_chrome
 .web-extension-id

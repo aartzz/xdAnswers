@@ -1498,6 +1498,15 @@ async function autoSave(overrides) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Populate version string in popup header
+    const versionEl = document.querySelector('.xd-popup-version');
+    if (versionEl) {
+        try {
+            const v = chrome.runtime.getManifest().version;
+            versionEl.textContent = v ? 'v' + v : '';
+        } catch (e) {}
+    }
+
     // Global fallback for broken model/provider icons
     document.addEventListener('error', (e) => {
         const img = e.target;
