@@ -186,3 +186,12 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
         });
     }
 });
+
+// Microsoft Forms URL change listener
+chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
+    if (details.url && details.url.includes('forms.office.com/')) {
+        chrome.tabs.sendMessage(details.tabId, { type: 'msform_url_changed' }, () => {
+            if (chrome.runtime.lastError) {}
+        });
+    }
+});

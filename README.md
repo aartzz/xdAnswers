@@ -107,3 +107,4 @@ npx web-ext run -t chromium
 | Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | бета |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | бета |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | бета |

@@ -128,6 +128,7 @@ answer: правильна відповідь
     window.xdAnswers.lastParsedResponse = null;
     window.xdAnswers._cancelStream = null;
     window.xdAnswers._originalTitle = null;
+    window.xdAnswers._customAutoAnswer = null;
 
     const defaultHelperState = {
         width: '380px', height: 'auto', maxHeight: '450px',
@@ -925,9 +926,14 @@ answer: правильна відповідь
             el.style.removeProperty('background-color');
             el.style.removeProperty('border-radius');
         });
-        const elements = matchAnswerToOptions(answerText, findOptionElements());
+        const allOptionElements = findOptionElements();
+        const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
+        const optionElements = scopedContainer
+            ? allOptionElements.filter(el => scopedContainer.contains(el))
+            : allOptionElements;
+        const elements = matchAnswerToOptions(answerText, optionElements);
         for (const el of elements) {
-            const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
+            const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
             target.classList.add('xd-highlight-correct');
             target.style.setProperty('outline', '3px solid #22c55e', 'important');
             target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');
@@ -935,11 +941,45 @@ answer: правильна відповідь
         }
     }
 
+    function formatDateForMSForms(text) {
+        if (!text) return text;
+        text = text.trim();
+        // Already in dd.MM.yyyy format
+        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(text)) return text;
+        // ISO: yyyy-MM-dd → dd.MM.yyyy
+        const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+        // dd/mm/yyyy or dd-mm-yyyy where day > 12 (unambiguous day-first)
+        const dmy = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+        if (dmy) {
+            const a = parseInt(dmy[1]), b = parseInt(dmy[2]);
+            if (a > 12 && b <= 12) {
+                // a must be day, b is month
+                return `${String(a).padStart(2,'0')}.${String(b).padStart(2,'0')}.${dmy[3]}`;
+            }
+            if (b > 12 && a <= 12) {
+                // b must be day, a is month (US mm/dd/yyyy)
+                return `${String(b).padStart(2,'0')}.${String(a).padStart(2,'0')}.${dmy[3]}`;
+            }
+        }
+        // Try native Date parse for text formats ("January 15, 2024", etc.)
+        try {
+            const date = new Date(text);
+            if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+        } catch (e) {}
+        return text;
+    }
+
     function autoSelectAnswer(answerText, force) {
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
         const allOptionElements = findOptionElements();
-        const scopedContainer = window.xdAnswers._oneClickContainer;
-        // In oneclick mode, only select options within the clicked question container
+        const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
+        // In oneclick/answer-scoped mode, only select options within the clicked question container
         const optionElements = scopedContainer
             ? allOptionElements.filter(el => scopedContainer.contains(el))
             : allOptionElements;
@@ -952,7 +992,7 @@ answer: правильна відповідь
             if (elements.length > 0) {
                 for (const el of elements) {
                     // Try multiple click target strategies
-                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
+                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
                     
                     // Strategy 1: Direct click
                     clickTarget.click();
@@ -972,24 +1012,30 @@ answer: правильна відповідь
                 // No option elements matched — try text/paragraph inputs
                 // GForms: input.whsOnd (short text), textarea.KHxj8b (paragraph)
                 // Vseosvita: .a-test-lab-inp input[type="text"] (open answer)
-                const textInput = scopedContainer.querySelector('input.whsOnd, .a-test-lab-inp input[type="text"], input[type="text"]');
+                const textInput = scopedContainer.querySelector('input.whsOnd, .a-test-lab-inp input[type="text"], input[data-automation-id="textInput"], input[role="combobox"], input[type="text"]');
                 const textArea = scopedContainer.querySelector('textarea.KHxj8b, textarea');
                 const target = textArea || textInput;
                 if (target) {
+                    // For MS Forms date combobox, parse and format as dd.MM.yyyy
+                    let fillText = answerText;
+                    if (target.matches('input[role="combobox"]')) {
+                        fillText = formatDateForMSForms(answerText);
+                    }
                     // Use native value setter matching the element type to bypass React/jQlite wrappers
                     const proto = target instanceof HTMLTextAreaElement
                         ? window.HTMLTextAreaElement.prototype
                         : window.HTMLInputElement.prototype;
                     const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-                    if (nativeSetter) nativeSetter.call(target, answerText);
-                    else target.value = answerText;
-                    // Dispatch input event so Google Forms picks up the change
+                    if (nativeSetter) nativeSetter.call(target, fillText);
+                    else target.value = fillText;
+                    // Dispatch input event so Google Forms/MS Forms picks up the change
                     target.dispatchEvent(new Event('input', { bubbles: true }));
                     target.dispatchEvent(new Event('change', { bubbles: true }));
                 }
             }
             // Clear scoped container after selection
             window.xdAnswers._oneClickContainer = null;
+            window.xdAnswers._answerContainer = null;
             window.xdAnswers._autoSelecting = false;
         }, window.xdAnswers.settings.autoAnswerCooldown);
     }
@@ -1057,9 +1103,14 @@ answer: правильна відповідь
 
         // Indicators: overlay dot next to correct answer (no text displacement)
         if (mode === 'indicators') {
-            const optionElements = matchAnswerToOptions(answerText, findOptionElements());
-            for (const el of optionElements) {
-                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"]') || el;
+            const allOptEls = findOptionElements();
+            const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
+            const optionElements = scopedContainer
+                ? allOptEls.filter(el => scopedContainer.contains(el))
+                : allOptEls;
+            const matched = matchAnswerToOptions(answerText, optionElements);
+            for (const el of matched) {
+                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
                 wrapper.style.position = 'relative';
                 const indicator = document.createElement('span');
                 indicator.className = 'xd-indicator-dot';
@@ -1224,8 +1275,21 @@ answer: правильна відповідь
                 if (!isSilent) {
                     highlightCorrectAnswer(parsed.answer);
                 }
-                // In oneclick mode, always auto-select (bypass autoAnswer setting)
-                autoSelectAnswer(parsed.answer, silentMode === 'oneclick');
+                // If provider set a custom auto-answer handler, use it instead of default
+                if (window.xdAnswers._customAutoAnswer) {
+                    const customFn = window.xdAnswers._customAutoAnswer;
+                    window.xdAnswers._customAutoAnswer = null;
+                    setTimeout(() => {
+                        window.xdAnswers._autoSelecting = true;
+                        try { customFn(parsed.answer, parsed); } catch (e) { console.error('xdAnswers customAutoAnswer:', e); }
+                        window.xdAnswers._oneClickContainer = null;
+                        window.xdAnswers._answerContainer = null;
+                        window.xdAnswers._autoSelecting = false;
+                    }, window.xdAnswers.settings.autoAnswerCooldown);
+                } else {
+                    // In oneclick mode, always auto-select (bypass autoAnswer setting)
+                    autoSelectAnswer(parsed.answer, silentMode === 'oneclick');
+                }
             }
         } catch (error) {
             if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
