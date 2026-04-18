@@ -13,80 +13,73 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build extensions for Firefox and Chrome
         run: |
           npm run build:firefox
           npm run build:chrome
-        
+
       - name: Generate Release Body
         id: generate_release_body
         run: |
           # Отримуємо попередній тег. Якщо його немає, беремо перший коміт в історії.
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 "tags/${{ github.ref_name }}~1" 2>/dev/null || git rev-list --max-parents=0 HEAD)
           echo "Previous tag: $PREVIOUS_TAG"
-          
+
           # Створюємо список комітів у потрібному форматі: "* назва (id)"
           CHANGELOG=$(git log $PREVIOUS_TAG...${{ github.ref_name }} --pretty=format:'* %s (%h)')
-          
-          # Офіційний спосіб передачі багаторядкового тексту в GitHub Actions
+
+          # Офіційний спосіб передачі багаторядкового тексту через Environment File
           {
             echo 'changelog<<EOF'
             echo "$CHANGELOG"
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Locate build artifacts
+        id: artifacts
+        run: |
+          firefox_path=$(find build -name "*.xpi" | head -n 1)
+          chrome_path=$(find build -name "xdAnswers-chrome-*.zip" -o -name "xdanswers-chrome-*.zip" | head -n 1)
+
+          if [ -z "$firefox_path" ]; then
+            echo "::error::Firefox .xpi artifact not found in build/ directory."
+            exit 1
+          fi
+          if [ -z "$chrome_path" ]; then
+            echo "::error::Chrome .zip artifact not found in build/ directory."
+            exit 1
+          fi
+
+          # Нормалізуємо імена файлів, щоб користувач у Releases бачив узгоджені назви
+          tag="${{ github.ref_name }}"
+          firefox_final="build/xdAnswers-firefox-${tag}.xpi"
+          chrome_final="build/xdAnswers-chrome-${tag}.zip"
+          mv "$firefox_path" "$firefox_final"
+          mv "$chrome_path"  "$chrome_final"
+
+          echo "firefox=$firefox_final" >> "$GITHUB_OUTPUT"
+          echo "chrome=$chrome_final"   >> "$GITHUB_OUTPUT"
+
+      - name: Create Release and upload artifacts
+        uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           body: ${{ steps.generate_release_body.outputs.changelog }}
           draft: false
           prerelease: false
-
-      - name: Get Firefox artifact path
-        id: get_firefox_path
-        run: |
-          # web-ext створює архів у папці build, знаходимо його
-          firefox_artifact_path=$(find build -name "*.zip" -o -name "*.xpi" | head -n 1)
-          if [ -z "$firefox_artifact_path" ]; then
-            echo "::error::Firefox artifact (.zip or .xpi) not found in build/ directory."
-            exit 1
-          fi
-          echo "Found Firefox artifact: $firefox_artifact_path"
-          echo "path=$firefox_artifact_path" >> $GITHUB_OUTPUT
-
-      - name: Upload Firefox Artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ steps.get_firefox_path.outputs.path }}
-          asset_name: xdAnswers-firefox-${{ github.ref_name }}.xpi
-          asset_content_type: application/x-xpinstall
-
-      - name: Upload Chrome Artifact to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/xdAnswers-chrome.zip
-          asset_name: xdAnswers-chrome-${{ github.ref_name }}.zip
-          asset_content_type: application/zip
+          files: |
+            ${{ steps.artifacts.outputs.firefox }}
+            ${{ steps.artifacts.outputs.chrome }}
