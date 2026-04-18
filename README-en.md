@@ -105,3 +105,4 @@ When you're done, remove the generated `manifest.json` with `npm run clean`.
 | Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | beta |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | beta |
