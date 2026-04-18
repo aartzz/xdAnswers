@@ -44,9 +44,9 @@ execSync('node scripts/build-manifest.js firefox', { stdio: 'inherit', cwd: root
 // ---------- sign ----------
 const buildDir = path.join(root, 'build');
 try {
-  console.log('Signing Firefox extension (channel: unlisted)...');
+  console.log('Signing Firefox extension (channel: listed)...');
   // web-ext reads WEB_EXT_API_KEY / WEB_EXT_API_SECRET from env automatically
-  execSync('cross-env TARGET=firefox web-ext sign --channel unlisted --config .web-ext-config.js', {
+  execSync('cross-env TARGET=firefox web-ext sign --channel listed --config .web-ext-config.js', {
     stdio: 'inherit',
     cwd: root,
   });
