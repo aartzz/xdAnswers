@@ -1391,11 +1391,11 @@ answer: правильна відповідь
             'height:' + (isMax ? maximizedHelperState.height : defaultHelperState.height) + ' !important;' +
             'max-height:' + (isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight) + ' !important;' +
             '}' +
-            '.ollama-helper-container *:not(.xd-loader),.ollama-helper-container *:before,.ollama-helper-container *:after:not(.xd-loader){' +
+            '.ollama-helper-container *:not(.xd-loader):not(.ollama-helper-header):not(.ollama-helper-footer),.ollama-helper-container *:before,.ollama-helper-container *:after:not(.xd-loader){' +
             'all:revert !important;font-family:var(--xd-font) !important;font-size:inherit !important;line-height:inherit !important;' +
             'color:var(--xd-text) !important;box-sizing:border-box !important;margin:0 !important;padding:0 !important;' +
             'background:none !important;border:none !important;}' +
-            '.ollama-helper-container .ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
+            '.ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
             'padding:10px 12px !important;background-color:var(--xd-header) !important;' +
             'border-bottom:1px solid var(--xd-border) !important;border-radius:12px 12px 0 0 !important;cursor:move !important;user-select:none !important;}' +
             '.ollama-header-title{font-weight:600 !important;margin-right:auto !important;font-size:13px !important;}' +
@@ -1411,7 +1411,7 @@ answer: правильна відповідь
             'border-radius:6px !important;cursor:pointer !important;margin-left:4px !important;height:24px !important;' +
             'padding:0 4px !important;line-height:1 !important;display:none !important;}' +
             '#silent-mode-inline-select option{background:var(--xd-bg) !important;color:var(--xd-text) !important;}' +
-            '.ollama-helper-container .ollama-helper-footer{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
+            '.ollama-helper-footer{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
             'padding:6px 12px !important;background-color:var(--xd-header) !important;border-top:1px solid var(--xd-border) !important;' +
             'border-radius:0 0 12px 12px !important;min-height:28px !important;position:relative !important;}' +
             '.xd-footer-elapsed{font-size:11px !important;opacity:0.45 !important;font-variant-numeric:tabular-nums !important;pointer-events:none !important;flex-shrink:0 !important;min-width:48px !important;z-index:1 !important;}' +
