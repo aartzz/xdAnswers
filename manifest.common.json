@@ -7,6 +7,15 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "commands": {
+    "xd-trigger-answer": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "xdAnswers: trigger answer for current question"
+    }
+  },
   "action": {
     "default_title": "xdAnswers Settings",
     "default_icon": {

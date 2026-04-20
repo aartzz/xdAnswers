@@ -195,3 +195,22 @@ chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
         });
     }
 });
+
+// ── Global hotkey dispatcher ──
+// Fires when user presses Ctrl+Shift+X (or remapped shortcut in chrome://extensions/shortcuts).
+// Forwards the command to the active tab so the content script can trigger the answer flow
+// (bypassing the click in oneclick silent mode).
+if (chrome.commands && chrome.commands.onCommand) {
+    chrome.commands.onCommand.addListener((command) => {
+        if (command !== 'xd-trigger-answer') return;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const tab = tabs && tabs[0];
+            if (!tab || !tab.id) return;
+            chrome.tabs.sendMessage(tab.id, { type: 'xd_hotkey', command }, () => {
+                if (chrome.runtime.lastError) {
+                    // Tab isn't running our content script; ignore silently.
+                }
+            });
+        });
+    });
+}
