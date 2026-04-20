@@ -1,10 +1,159 @@
 (function() {
     'use strict';
 
+    // ── Topic extraction ────────────────────────────────────────────────
+    // naurok exposes the test metadata at GET /api2/test/sessions/{numeric_id}.
+    // The numeric session ID is embedded in the page HTML as:
+    //   <div ng-init="init(settings_id, SESSION_ID, account_id)">
+    // We parse that ng-init attribute, then call the API directly via makeRequest.
+    // We ALSO intercept window.fetch + XMLHttpRequest as a secondary capture path
+    // in case the page makes the same API call after our script loads.
+    let _naurokTopic = null;      // string | null
+    let _naurokSessionId = null;  // number | null
+
+    function extractTopicFromSessionPayload(payload) {
+        try {
+            if (!payload || typeof payload !== 'object') return;
+            const name = payload && payload.settings && payload.settings.name;
+            if (name && typeof name === 'string' && name.trim()) {
+                _naurokTopic = name.trim();
+                console.log('[xdAnswers/naurok] Topic extracted:', _naurokTopic);
+            }
+            const sid = payload && payload.session && payload.session.id;
+            if (typeof sid === 'number') {
+                _naurokSessionId = sid;
+                console.log('[xdAnswers/naurok] Session ID:', _naurokSessionId);
+            }
+        } catch (e) { console.warn('[xdAnswers/naurok] extractTopicFromSessionPayload error:', e); }
+    }
+
+    // ── Intercept window.fetch ────────────────────────────────────────
+    try {
+        const origFetch = window.fetch;
+        if (origFetch && !window.__xdAnswersNaurokFetchHooked) {
+            window.__xdAnswersNaurokFetchHooked = true;
+            window.fetch = function(input, init) {
+                const url = (typeof input === 'string') ? input : (input && input.url) || '';
+                const promise = origFetch.apply(this, arguments);
+                if (url && /\/api2\/test\/sessions\//.test(url)) {
+                    console.log('[xdAnswers/naurok] Fetch intercepted:', url);
+                    promise.then(resp => {
+                        try {
+                            resp.clone().json().then(json => {
+                                extractTopicFromSessionPayload(json);
+                            }).catch(() => {});
+                        } catch (e) {}
+                    }).catch(() => {});
+                }
+                return promise;
+            };
+        }
+    } catch (e) { /* fetch patch failed */ }
+
+    // ── Intercept XMLHttpRequest (AngularJS $http uses XHR, not fetch) ──
+    try {
+        const origOpen = XMLHttpRequest.prototype.open;
+        const origSend = XMLHttpRequest.prototype.send;
+        if (!window.__xdAnswersNaurokXHRHooked) {
+            window.__xdAnswersNaurokXHRHooked = true;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this.__xdUrl = url;
+                return origOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function() {
+                if (this.__xdUrl && /\/api2\/test\/sessions\//.test(this.__xdUrl)) {
+                    console.log('[xdAnswers/naurok] XHR intercepted:', this.__xdUrl);
+                    this.addEventListener('load', function() {
+                        try {
+                            const json = JSON.parse(this.responseText);
+                            extractTopicFromSessionPayload(json);
+                        } catch (e) {}
+                    });
+                }
+                return origSend.apply(this, arguments);
+            };
+        }
+    } catch (e) { /* XHR patch failed */ }
+
+    // ── Parse ng-init from page DOM to extract numeric session ID ──────
+    function extractSessionIdFromDOM() {
+        // Angular puts ng-init="init(settings_id, session_id, account_id)" on the root element
+        const el = document.querySelector('[ng-init*="init("]');
+        if (!el) return null;
+        const ngInit = el.getAttribute('ng-init') || '';
+        // Match init(a,B,c) — second argument is the numeric session ID
+        const match = ngInit.match(/init\s*\(\s*\d+\s*,\s*(\d+)\s*,/);
+        if (match) {
+            const sid = parseInt(match[1], 10);
+            console.log('[xdAnswers/naurok] Session ID from ng-init:', sid);
+            return sid;
+        }
+        return null;
+    }
+
+    async function fetchNaurokTopic() {
+        if (_naurokTopic) {
+            console.log('[xdAnswers/naurok] Topic already known:', _naurokTopic);
+            return _naurokTopic;
+        }
+        try {
+            // Strategy 1: Parse numeric session ID from ng-init attribute in DOM
+            let sessionId = extractSessionIdFromDOM();
+
+            // Strategy 2: If no ng-init, try extracting from page URL (UUID → may not work for API)
+            if (!sessionId) {
+                const urlMatch = window.location.pathname.match(/\/test\/testing\/([a-f0-9-]+)/i);
+                if (urlMatch) {
+                    console.log('[xdAnswers/naurok] Found UUID in URL but need numeric ID — checking DOM more thoroughly');
+                    // Try broader search for any element containing the session ID
+                    const allNgInit = document.querySelectorAll('[ng-init]');
+                    for (const el of allNgInit) {
+                        const val = el.getAttribute('ng-init') || '';
+                        const m = val.match(/init\s*\([^)]*(\d{7,})[^)]*\)/);
+                        if (m) {
+                            sessionId = parseInt(m[1], 10);
+                            console.log('[xdAnswers/naurok] Session ID found in ng-init (broad search):', sessionId);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!sessionId) {
+                console.log('[xdAnswers/naurok] No session ID found in DOM, skipping topic fetch');
+                return _naurokTopic;
+            }
+
+            _naurokSessionId = sessionId;
+
+            // Fetch topic directly from API via background proxy (bypasses CSP)
+            if (window.xdAnswers && window.xdAnswers.makeRequest) {
+                console.log('[xdAnswers/naurok] Fetching session API, sessionId:', sessionId);
+                const res = await window.xdAnswers.makeRequest({
+                    url: 'https://naurok.com.ua/api2/test/sessions/' + sessionId,
+                    method: 'GET',
+                    timeout: 10000
+                });
+                if (res && typeof res === 'object') {
+                    extractTopicFromSessionPayload(res);
+                } else if (typeof res === 'string') {
+                    try {
+                        const json = JSON.parse(res);
+                        extractTopicFromSessionPayload(json);
+                    } catch (e) {}
+                }
+            }
+        } catch (e) { console.warn('[xdAnswers/naurok] fetchNaurokTopic error:', e); }
+        if (!_naurokTopic) console.log('[xdAnswers/naurok] No topic found');
+        return _naurokTopic;
+    }
+
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
             await window.xdAnswers.loadSettings();
+            // Kick off topic discovery — parse ng-init for session ID, then API fetch
+            fetchNaurokTopic();
             initNaurok();
         }
     }, 50);
@@ -149,12 +298,15 @@
                         const savedIsMultiQuiz = isMultiQuiz;
                         window.xdAnswers.setupOneClickHandler(container, async () => {
                             const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
+                            // Retry topic discovery at click-time if we still don't have it.
+                            if (!_naurokTopic) { try { await fetchNaurokTopic(); } catch (e) {} }
                             return {
                                 text: savedText,
                                 optionsText: savedOptionsText,
                                 base64Images: images.filter(img => img !== null),
                                 questionType: savedIsMultiQuiz ? 'multiquiz' : 'quiz',
-                                isMultiQuiz: savedIsMultiQuiz
+                                isMultiQuiz: savedIsMultiQuiz,
+                                topic: _naurokTopic || undefined
                             };
                         });
                     }
@@ -166,7 +318,8 @@
                             optionsText: optionsText,
                             base64Images: [],
                             questionType: isMultiQuiz ? 'multiquiz' : 'quiz',
-                            isMultiQuiz: isMultiQuiz
+                            isMultiQuiz: isMultiQuiz,
+                            topic: _naurokTopic || undefined
                         };
 
                         const imgPromises = validImages.map(src => window.xdAnswers.imageToBase64(src));

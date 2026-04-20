@@ -1,5 +1,89 @@
 (function() {
     'use strict';
+
+    // ── Topic extraction ────────────────────────────────────────────────
+    // vseosvita ships the test title inside the JSON returned from its own POST
+    // endpoints /ext/test-designer/testing-pupil/active-screen-data and
+    // /start-execution. We patch window.fetch so we can sniff these responses
+    // and cache data.testing_title (+ optional data.description_start).
+    let _vseosvitaTopic = null;       // string | null
+    let _vseosvitaDescription = null; // string | null (HTML stripped)
+
+    function stripHtml(html) {
+        try {
+            if (!html || typeof html !== 'string') return '';
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return (tmp.textContent || tmp.innerText || '').replace(/\s+/g, ' ').trim();
+        } catch (e) { return ''; }
+    }
+
+    function extractTopicFromVseosvitaPayload(payload) {
+        try {
+            if (!payload || typeof payload !== 'object') return;
+            const data = payload.data;
+            if (!data || typeof data !== 'object') return;
+            if (typeof data.testing_title === 'string' && data.testing_title.trim()) {
+                _vseosvitaTopic = data.testing_title.trim();
+                console.log('[xdAnswers/vseosvita] Topic extracted:', _vseosvitaTopic);
+            }
+            if (typeof data.description_start === 'string' && data.description_start.trim()) {
+                const plain = stripHtml(data.description_start);
+                if (plain) {
+                    _vseosvitaDescription = plain;
+                    console.log('[xdAnswers/vseosvita] Description:', plain.slice(0, 80) + (plain.length > 80 ? '...' : ''));
+                }
+            }
+        } catch (e) { console.warn('[xdAnswers/vseosvita] extractTopicFromVseosvitaPayload error:', e); }
+    }
+
+    try {
+        const origFetch = window.fetch;
+        if (origFetch && !window.__xdAnswersVseosvitaFetchHooked) {
+            window.__xdAnswersVseosvitaFetchHooked = true;
+            window.fetch = function(input, init) {
+                const url = (typeof input === 'string') ? input : (input && input.url) || '';
+                const promise = origFetch.apply(this, arguments);
+                if (url && /\/ext\/test-designer\/testing-pupil\/(active-screen-data|start-execution)/.test(url)) {
+                    console.log('[xdAnswers/vseosvita] Fetch intercepted:', url);
+                    promise.then(resp => {
+                        try {
+                            resp.clone().json().then(json => {
+                                extractTopicFromVseosvitaPayload(json);
+                            }).catch(() => {});
+                        } catch (e) {}
+                    }).catch(() => {});
+                }
+                return promise;
+            };
+        }
+    } catch (e) { /* fetch patch failed — topic will simply be missing */ }
+
+    // ── Intercept XMLHttpRequest (some frameworks use XHR instead of fetch) ──
+    try {
+        const origOpen = XMLHttpRequest.prototype.open;
+        const origSend = XMLHttpRequest.prototype.send;
+        if (!window.__xdAnswersVseosvitaXHRHooked) {
+            window.__xdAnswersVseosvitaXHRHooked = true;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this.__xdUrl = url;
+                return origOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function() {
+                if (this.__xdUrl && /\/ext\/test-designer\/testing-pupil\/(active-screen-data|start-execution)/.test(this.__xdUrl)) {
+                    console.log('[xdAnswers/vseosvita] XHR intercepted:', this.__xdUrl);
+                    this.addEventListener('load', function() {
+                        try {
+                            const json = JSON.parse(this.responseText);
+                            extractTopicFromVseosvitaPayload(json);
+                        } catch (e) {}
+                    });
+                }
+                return origSend.apply(this, arguments);
+            };
+        }
+    } catch (e) { /* XHR patch failed */ }
+
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -216,7 +300,9 @@
                             base64Images: images.filter(Boolean),
                             questionType: savedQuestionType,
                             isMultiQuiz: savedIsMultiQuiz,
-                            isMulti: savedIsMulti
+                            isMulti: savedIsMulti,
+                            topic: _vseosvitaTopic || undefined,
+                            topicDescription: _vseosvitaDescription || undefined
                         };
                     });
                 }
@@ -231,7 +317,9 @@
                         base64Images: images.filter(Boolean),
                         questionType: questionData.questionType,
                         isMultiQuiz: questionData.isMultiQuiz,
-                        isMulti: questionData.isMulti
+                        isMulti: questionData.isMulti,
+                        topic: _vseosvitaTopic || undefined,
+                        topicDescription: _vseosvitaDescription || undefined
                     });
                     window.xdAnswers.attachAndPositionHelper();
                 });
