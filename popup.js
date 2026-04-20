@@ -91,7 +91,13 @@ const TRANSLATIONS = {
         customModel: 'користувацька модель',
         // Context length
         ctxThousand: 'тис.',
-        ctxMillion: 'млн'
+        ctxMillion: 'млн',
+        // Web Search + Hotkey
+        webSearchLabel: 'Веб-пошук',
+        webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch або Serper.dev) з API-ключем у вкладці Провайдери.',
+        hotkeyLabel: 'Гаряча клавіша',
+        hotkeyHint: 'Перепризначити: chrome://extensions/shortcuts',
+        searchProviderBadge: 'ПОШУК'
     },
     ru: {
         tabAI: 'ИИ',
@@ -165,7 +171,12 @@ const TRANSLATIONS = {
         badgeCostOutput: 'Вывод',
         customModel: 'пользовательская модель',
         ctxThousand: 'тыс.',
-        ctxMillion: 'млн'
+        ctxMillion: 'млн',
+        webSearchLabel: 'Веб-поиск',
+        webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch или Serper.dev) с API-ключом во вкладке Провайдеры.',
+        hotkeyLabel: 'Горячая клавиша',
+        hotkeyHint: 'Переназначить: chrome://extensions/shortcuts',
+        searchProviderBadge: 'ПОИСК'
     },
     en: {
         tabAI: 'AI',
@@ -239,7 +250,12 @@ const TRANSLATIONS = {
         badgeCostOutput: 'Output',
         customModel: 'custom model',
         ctxThousand: 'K',
-        ctxMillion: 'M'
+        ctxMillion: 'M',
+        webSearchLabel: 'Web Search',
+        webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.',
+        hotkeyLabel: 'Hotkey',
+        hotkeyHint: 'Rebind at chrome://extensions/shortcuts',
+        searchProviderBadge: 'SEARCH'
     }
 };
 
@@ -302,6 +318,17 @@ function applyLanguage() {
     const rememberDragHint = document.querySelector('#remember-drag-toggle')?.closest('.toggle-group')?.querySelector('.field-hint');
     if (rememberDragHint) rememberDragHint.textContent = t('rememberDragHint');
 
+    // Web search toggle
+    const webSearchSpan = document.querySelector('#web-search-toggle + span');
+    if (webSearchSpan) webSearchSpan.textContent = t('webSearchLabel');
+    const webSearchHintEl = document.getElementById('web-search-hint');
+    if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
+    // Hotkey
+    const hotkeyLabel = document.getElementById('hotkey-label');
+    if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
+    const hotkeyHintEl = document.getElementById('hotkey-hint');
+    if (hotkeyHintEl) hotkeyHintEl.textContent = t('hotkeyHint');
+
     // Themes tab
     const themesDesc = document.querySelector('.tab-description');
     if (themesDesc) themesDesc.innerHTML = t('themesDesc');
@@ -346,7 +373,9 @@ const DEFAULT_BASE_URLS = {
     mistral: 'https://api.mistral.ai/v1',
     'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
     'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
-    'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1'
+    'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
+    langsearch: 'https://api.langsearch.com/v1',
+    serper: 'https://google.serper.dev'
 };
 
 const API_FORMAT_MAP = {
@@ -369,7 +398,10 @@ const API_PROVIDERS = [
     { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' },
     { id: 'unturf-hermes', name: 'Unturf Hermes', hint: 'Free — Hermes 3 Llama 3.1 8B', logo: 'unturf' },
     { id: 'unturf-qwen', name: 'Unturf Qwen', hint: 'Free — Qwen3 Coder + Gemma 4', logo: 'unturf' },
-    { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' }
+    { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' },
+    // Web Search providers (kind: 'search' — not LLM, used for tool-calling)
+    { id: 'langsearch', name: 'LangSearch', hint: 'Web Search — Free API', logo: 'openai', kind: 'search' },
+    { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' }
 ];
 
 const PROVIDER_ICON_MAP = {
@@ -499,22 +531,56 @@ function processModels(rawModels, format) {
             id: m.id,
             ownedBy: m.owned_by || '',
             root: m.root || m.id,
+            parent: m.parent || null,
             contextLength: m.context_length || null,
             capabilities: m.capabilities || null,
             type: m.type || null
         }));
     }
 
-    const seen = new Set();
-    return models.filter(m => {
+    // Filter out non-chat types (embedding, image, audio, rerank, etc.)
+    models = models.filter(m => {
         if (!m.id) return false;
         if (m.type && NON_CHAT_TYPES.has(m.type)) return false;
         if (m.type === 'embedding' || m.type === 'rerank') return false;
-        const key = m.id.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
         return true;
     });
+
+    // Deduplicate by root — keep the primary model (parent === null),
+    // drop aliases (parent !== null) that point to the same root.
+    const byRoot = new Map(); // root → primary model entry
+    const byId = new Map();   // id (lowercase) → model entry (fallback dedup)
+    for (const m of models) {
+        const root = m.root || m.id;
+        const idKey = m.id.toLowerCase();
+        // Exact ID dedup (case-insensitive)
+        if (byId.has(idKey)) continue;
+        byId.set(idKey, m);
+
+        if (!byRoot.has(root)) {
+            byRoot.set(root, m);
+        } else {
+            const existing = byRoot.get(root);
+            // Prefer the model WITHOUT a parent (primary) over one with a parent (alias)
+            if (existing.parent && !m.parent) {
+                byRoot.set(root, m);
+            }
+            // If both or neither have parent, keep the first one (shorter prefix = cleaner)
+        }
+    }
+
+    // Collect deduplicated results: unique by root, plus any leftover unique-by-id entries
+    const seenRoots = new Set();
+    const result = [];
+    for (const m of byId.values()) {
+        const root = m.root || m.id;
+        if (!seenRoots.has(root)) {
+            seenRoots.add(root);
+            result.push(byRoot.get(root) || m);
+        }
+    }
+
+    return result;
 }
 
 const DEFAULT_PROMPT = 'Відповідай на тестові питання. Відповідь — ТІЛЬКИ валідний JSON об\'єкт, без markdown, без ```json, без зайвого тексту.\n\nФормат:\n{"answer": "правильна відповідь", "explanation": "коротке пояснення (1-3 речення)", "solution": "Дано: ... Розв\'язок: ...", "confidence": "0-100%"}\n\nПравила:\n- answer: точний текст правильного варіанту, якщо є варіанти відповідей\n- Для кількох правильних відповідей розділяй "; "\n- Відповідай мовою питання\n- solution пиши тільки для задач з розрахунками (фізика, хімія, математика)\n- confidence необов\'язкове\n- Виводь ТІЛЬКИ JSON об\'єкт, нічого більше';
@@ -557,6 +623,7 @@ const DEFAULT_SETTINGS = {
     showAnswerOnly: false,
     silentMode: '',
     _silentModePreselect: 'indicators',
+    webSearchEnabled: false,
     defaultPosition: 'bottom-right',
     rememberDragPosition: false,
     savedPosition: null,
@@ -572,7 +639,9 @@ let uiElements = {};
 
 function getActiveProvider(s) {
     if (!s.providers || !s.providers.length) return null;
-    return s.providers.find(p => p.id === s.activeProviderId) || s.providers[0];
+    const active = s.providers.find(p => p.id === s.activeProviderId);
+    if (active && active.kind !== 'search') return active;
+    return s.providers.find(p => p.kind !== 'search') || null;
 }
 
 async function loadSettings() {
@@ -684,6 +753,9 @@ function populateUI() {
     el.silentModeSelectGroup.style.display = 'block';
     el.silentModeSelect.value = silentModeValue || 'indicators';
 
+    // Web search toggle
+    if (el.webSearchToggle) el.webSearchToggle.checked = !!settings.webSearchEnabled;
+
     el.glowEffectToggle.checked = settings.customization.glowEffect;
 
     // Position grid: mark active cell, sync remember-drag toggle
@@ -729,7 +801,7 @@ function renderActiveProviderSelector() {
         </span><span class="provider-caret">▾</span>`;
     }
 
-    dropdown.innerHTML = settings.providers.map(p => {
+    dropdown.innerHTML = settings.providers.filter(p => p.kind !== 'search').map(p => {
         const isActive = p.id === settings.activeProviderId ? ' active' : '';
         const logo = getProviderLogo(p);
         const isOther = p.type === 'other';
@@ -765,8 +837,9 @@ function renderProvidersTab() {
     const container = uiElements.providersContainer;
     if (!container) return;
 
-    const standard = settings.providers.filter(p => p.type !== 'other');
-    const custom = settings.providers.filter(p => p.type === 'other');
+    const standard = settings.providers.filter(p => p.type !== 'other' && p.kind !== 'search');
+    const search = settings.providers.filter(p => p.kind === 'search');
+    const custom = settings.providers.filter(p => p.type === 'other' && p.kind !== 'search');
 
     let html = '<div class="providers-section">';
     html += `<div class="providers-section-header">${t('providersHeader')}</div>`;
@@ -776,6 +849,15 @@ function renderProvidersTab() {
         html += `<div class="provider-empty-hint">${t('noProviders')}</div>`;
     }
     html += `<button type="button" class="add-provider-btn" data-section="standard">${t('addProvider')}</button>`;
+    html += '</div>';
+
+    // Web Search providers section (always show with add button)
+    html += '<div class="providers-section">';
+    html += `<div class="providers-section-header">🔍 ${t('webSearchLabel')}</div>`;
+    if (search.length) {
+        html += search.map(p => renderProviderCard(p)).join('');
+    }
+    html += `<button type="button" class="add-provider-btn" data-section="search">${t('addProvider')}</button>`;
     html += '</div>';
 
     html += '<div class="providers-section">';
@@ -800,20 +882,24 @@ function renderProviderCard(p) {
     const logo = getProviderLogo(p);
     const isActive = p.id === settings.activeProviderId;
     const activeBadge = isActive ? '<span class="provider-active-badge">active</span>' : '';
+    const searchBadge = p.kind === 'search' ? '<span class="provider-search-badge">🔍 SEARCH</span>' : '';
     const keyPreview = p.apiKey ? '••••' + p.apiKey.slice(-4) : '—';
     const isOther = p.type === 'other';
     const urlLine = isOther ? `<span class="provider-card-url">${escapeHTML(p.baseUrl)}</span>` : '';
 
-    return `<div class="provider-card${isActive ? ' active' : ''}" data-id="${p.id}">
+    const isSearch = p.kind === 'search';
+    const activateBtn = isSearch ? '' : '<button type="button" class="provider-card-btn provider-activate-btn" data-id="' + p.id + '" title="Set active">✓</button>';
+
+    return `<div class="provider-card${isActive && !isSearch ? ' active' : ''}" data-id="${p.id}">
         <div class="provider-card-header">
             <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
             <div class="provider-card-info">
-                <span class="provider-card-name">${escapeHTML(p.name)}${activeBadge}</span>
+                <span class="provider-card-name">${escapeHTML(p.name)}${activeBadge}${searchBadge}</span>
                 ${urlLine}
                 <span class="provider-card-key">${keyPreview}</span>
             </div>
             <div class="provider-card-actions">
-                <button type="button" class="provider-card-btn provider-activate-btn" data-id="${p.id}" title="Set active">✓</button>
+                ${activateBtn}
                 <button type="button" class="provider-card-btn provider-edit-btn" data-id="${p.id}" title="Edit">✎</button>
                 <button type="button" class="provider-card-btn provider-delete-btn" data-id="${p.id}" title="Delete">✕</button>
             </div>
@@ -855,20 +941,28 @@ function attachProviderCardListeners(container) {
     container.querySelectorAll('.add-provider-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const isOther = btn.dataset.section === 'other';
-            showProviderForm(null, isOther);
+            const isSearch = btn.dataset.section === 'search';
+            showProviderForm(null, isOther, isSearch);
         });
     });
 }
 
-function showProviderForm(existing, isOther) {
+function showProviderForm(existing, isOther, isSearch) {
     const container = uiElements.providersContainer;
     if (!container) return;
 
     const isEdit = !!existing;
-    const initialType = existing?.type || (isOther ? 'other' : 'openai');
+    const initialType = existing?.type || (isSearch ? 'langsearch' : (isOther ? 'other' : 'openai'));
     const isOtherType = initialType === 'other';
     const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (DEFAULT_BASE_URLS[initialType] || ''));
     const urlDisplay = isOtherType ? '' : ' style="display:none"';
+
+    // For search providers, only show search-type providers in the dropdown
+    const providerOptions = isSearch
+        ? API_PROVIDERS.filter(p => p.kind === 'search')
+        : (isOther
+            ? []
+            : API_PROVIDERS.filter(p => p.kind !== 'search'));
 
     const providerListHtml = isOther
         ? `<div class="pf-type-selected">
@@ -887,7 +981,7 @@ function showProviderForm(existing, isOther) {
                 </span><span class="provider-caret">▾</span>
             </button>
             <div class="pf-type-dropdown hidden" id="pf-type-dropdown">
-                ${API_PROVIDERS.map(p => `<button type="button" class="pf-type-option${p.id === initialType ? ' active' : ''}" data-type="${p.id}">
+                ${providerOptions.map(p => `<button type="button" class="pf-type-option${p.id === initialType ? ' active' : ''}" data-type="${p.id}">
                     <img class="provider-icon large" src="https://models.dev/logos/${p.logo}.svg" alt="" loading="lazy">
                     <span class="provider-option-text">
                         <span class="provider-option-title">${escapeHTML(p.name)}</span>
@@ -989,6 +1083,10 @@ function showProviderForm(existing, isOther) {
             existing.name = finalName;
             existing.baseUrl = finalUrl;
             existing.apiKey = key;
+            // Update kind based on new type
+            const editMeta = getApiProviderMeta(selectedType);
+            if (editMeta?.kind === 'search') existing.kind = 'search';
+            else delete existing.kind;
         } else {
             const newProvider = {
                 id: generateId(),
@@ -997,9 +1095,17 @@ function showProviderForm(existing, isOther) {
                 baseUrl: finalUrl,
                 apiKey: key
             };
+            // Tag search providers
+            const meta = getApiProviderMeta(selectedType);
+            if (meta?.kind === 'search') newProvider.kind = 'search';
             settings.providers.push(newProvider);
             if (!settings.activeProviderId) {
                 settings.activeProviderId = newProvider.id;
+            }
+            // Auto-enable web search when first search provider is added with an API key
+            if (meta?.kind === 'search' && key && !settings.webSearchEnabled) {
+                settings.webSearchEnabled = true;
+                if (uiElements.webSearchToggle) uiElements.webSearchToggle.checked = true;
             }
         }
 
@@ -1431,7 +1537,8 @@ function attachEventListeners() {
         { el: el.highlightCorrectToggle, key: 'highlightCorrect' },
         { el: el.showAnswerOnlyToggle, key: 'showAnswerOnly' },
         { el: el.glowEffectToggle, key: 'customization.glowEffect' },
-        { el: el.rememberDragToggle, key: 'rememberDragPosition' }
+        { el: el.rememberDragToggle, key: 'rememberDragPosition' },
+        { el: el.webSearchToggle, key: 'webSearchEnabled' }
     ];
     for (const { el: toggle, key } of autoToggles) {
         if (!toggle) continue;
@@ -1540,6 +1647,7 @@ async function autoSave(overrides) {
     settings.showAnswerOnly = el.showAnswerOnlyToggle.checked;
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
+    settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
     if (overrides) {
@@ -1596,6 +1704,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeToggle: document.getElementById('silent-mode-toggle'),
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
+        webSearchToggle: document.getElementById('web-search-toggle'),
         positionGrid: document.getElementById('position-grid'),
         rememberDragToggle: document.getElementById('remember-drag-toggle'),
         themesGrid: document.getElementById('themes-grid'),

@@ -101,6 +101,22 @@
             </p>
         </div>
         <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="web-search-toggle">
+                <span id="web-search-label">Web Search</span>
+            </label>
+            <p class="field-hint" id="web-search-hint">Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.</p>
+        </div>
+        <hr class="separator">
+        <div class="form-group">
+            <label id="hotkey-label">Hotkey</label>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 8px;font-size:12px;font-family:inherit;">Ctrl+Shift+X</kbd>
+                <span style="font-size:11px;opacity:0.5;" id="hotkey-hint">Rebind at chrome://extensions/shortcuts</span>
+            </div>
+        </div>
+        <hr class="separator">
         <div class="form-group">
             <label>Default position</label>
             <div id="position-grid" class="position-grid" role="radiogroup" aria-label="Default helper position">

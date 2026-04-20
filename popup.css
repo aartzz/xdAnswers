@@ -948,6 +948,17 @@ input.invalid {
     text-transform: uppercase;
 }
 
+.provider-search-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: rgba(234, 179, 8, 0.2);
+    color: #eab308;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-left: 4px;
+}
+
 .provider-card-actions {
     display: flex;
     gap: 2px;
