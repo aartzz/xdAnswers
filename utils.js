@@ -41,7 +41,9 @@ answer: правильна відповідь
         mistral: 'https://api.mistral.ai/v1',
         'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
         'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
-        'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1'
+        'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
+        langsearch: 'https://api.langsearch.com/v1',
+        serper: 'https://google.serper.dev'
     };
 
     const API_FORMAT_MAP = {
@@ -85,6 +87,7 @@ answer: правильна відповідь
         showAnswerOnly: false,
         silentMode: '',
         _silentModePreselect: 'indicators',
+        webSearchEnabled: false,
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,
         savedPosition: null,
@@ -99,12 +102,15 @@ answer: правильна відповідь
 
     function getActiveProvider(s) {
         if (!s.providers || !s.providers.length) return null;
-        return s.providers.find(p => p.id === s.activeProviderId) || s.providers[0];
+        const active = s.providers.find(p => p.id === s.activeProviderId);
+        if (active && active.kind !== 'search') return active;
+        // Fallback: first non-search provider
+        return s.providers.find(p => p.kind !== 'search') || null;
     }
 
     function getEffectiveSettings(s) {
         const active = getActiveProvider(s);
-        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix };
+        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix, webSearchEnabled: s.webSearchEnabled || false };
         const apiFormat = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
         const baseUrl = active.baseUrl || DEFAULT_BASE_URLS[active.type] || DEFAULT_BASE_URLS.openai;
         return {
@@ -112,7 +118,8 @@ answer: правильна відповідь
             baseUrl: baseUrl,
             apiKey: active.apiKey,
             model: s.model,
-            promptPrefix: s.promptPrefix
+            promptPrefix: s.promptPrefix,
+            webSearchEnabled: (s.webSearchEnabled || false) && !!getActiveSearchProvider(s)
         };
     }
 
@@ -303,6 +310,15 @@ answer: правильна відповідь
 
     // ── AI Request Building ──
 
+    function escapeHTML(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function buildMessages(questionData) {
         const settings = window.xdAnswers.settings;
         let systemPrompt = questionData.customPromptPrefix || settings.promptPrefix;
@@ -310,7 +326,23 @@ answer: правильна відповідь
             systemPrompt = ANSWER_ONLY_SYSTEM_PROMPT;
         }
 
+        // When web search is enabled, append tool usage instructions to system prompt
+        if (settings.webSearchEnabled && getActiveSearchProvider(settings)) {
+            systemPrompt += '\n\nУ тебе є доступ до інструмент web_search для пошуку в інтернеті. Використовуй його, коли потрібно знайти актуальну інформацію, факти, дати або деталі, яких може не бути у твоїх навчальних даних. Це особливо корисно для питань про поточні події, історичні дати, наукові факти тощо. Не викликай пошук, якщо впевнений у відповіді.';
+        }
+
         let userMsg = '';
+        // Inject test topic context when available (extracted by provider from page/API)
+        if (questionData.topic) {
+            console.log('[xdAnswers] Topic context injected:', questionData.topic, questionData.topicDescription ? '| ' + questionData.topicDescription.slice(0, 80) + '...' : '');
+            userMsg += 'Тема тесту: ' + questionData.topic + '\n';
+            if (questionData.topicDescription) {
+                userMsg += 'Опис: ' + questionData.topicDescription + '\n';
+            }
+            userMsg += '\n';
+        } else {
+            console.log('[xdAnswers] No topic context available for this question');
+        }
         if (questionData.questionType === 'matching') {
             userMsg += 'Це завдання на відповідність. Зістав елементи.\n\n';
         } else if (questionData.isMultiQuiz || questionData.isMulti) {
@@ -363,7 +395,116 @@ answer: правильна відповідь
         return h;
     }
 
+    // ── Web Search Execution ──
+
+    // Find the first search provider that has a non-empty apiKey.
+    function getActiveSearchProvider(s) {
+        if (!s.providers) return null;
+        return s.providers.find(p => p.kind === 'search' && p.apiKey) || null;
+    }
+
+    // Build a web_search tool definition for the current API format.
+    function buildWebSearchTool(apiFormat) {
+        const desc = 'Search the web for current information. Use this when you need up-to-date facts, references, or details that may not be in your training data. Call this before answering if you are unsure about something.';
+        const params = {
+            type: 'object',
+            properties: {
+                query: { type: 'string', description: 'The search query to look up on the web' }
+            },
+            required: ['query'],
+            additionalProperties: false
+        };
+
+        if (apiFormat === 'openai') {
+            return [{ type: 'function', function: { name: 'web_search', description: desc, parameters: params, strict: true } }];
+        }
+        if (apiFormat === 'anthropic') {
+            return [{ name: 'web_search', description: desc, input_schema: params }];
+        }
+        if (apiFormat === 'google') {
+            return [{ function_declarations: [{ name: 'web_search', description: desc, parameters: params }] }];
+        }
+        return [];
+    }
+
+    // Execute a web search via the active search provider (through background.js fetch proxy).
+    // Returns a JSON-stringified normalized result object.
+    async function executeSearch(query, count) {
+        const s = window.xdAnswers.settings || {};
+        const sp = getActiveSearchProvider(s);
+        if (!sp) throw new Error('No search provider configured');
+
+        const num = Math.min(Math.max(count || 5, 1), 10);
+        console.log('[xdAnswers] executeSearch:', sp.type, '| query="' + query + '" | count=' + num);
+
+        if (sp.type === 'langsearch') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.langsearch) + '/web-search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + sp.apiKey
+                },
+                data: JSON.stringify({ query, count: num, summary: true }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const items = parsed.data?.webPages?.value || [];
+            const normalized = {
+                organic: items.map(v => ({
+                    title: v.name || '',
+                    url: v.url || '',
+                    snippet: v.snippet || v.summary || '',
+                    date: v.datePublished || null
+                }))
+            };
+            console.log('[xdAnswers] LangSearch results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
+        if (sp.type === 'serper') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.serper) + '/search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': sp.apiKey
+                },
+                data: JSON.stringify({ q: query, num }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const normalized = {
+                organic: (parsed.organic || []).map(r => ({
+                    title: r.title || '',
+                    url: r.link || '',
+                    snippet: r.snippet || '',
+                    date: r.date || null
+                })),
+                knowledge: parsed.knowledgeGraph ? {
+                    title: parsed.knowledgeGraph.title || '',
+                    description: parsed.knowledgeGraph.description || ''
+                } : undefined,
+                peopleAlsoAsk: (parsed.peopleAlsoAsk || []).map(a => ({
+                    title: a.title || '',
+                    snippet: a.snippet || ''
+                }))
+            };
+            console.log('[xdAnswers] Serper results:', normalized.organic.length, 'organic' + (normalized.knowledge ? ' + knowledgeGraph' : '') + (normalized.peopleAlsoAsk?.length ? ' + ' + normalized.peopleAlsoAsk.length + ' peopleAlsoAsk' : ''));
+            return JSON.stringify(normalized);
+        }
+
+        throw new Error('Unknown search provider type: ' + sp.type);
+    }
+
     function buildRequestBody(s, systemPrompt, userMsg, images, stream) {
+        // Determine whether to include web_search tool
+        const includeTools = s.webSearchEnabled && s.apiFormat !== 'google'; // Google tools handled separately (non-stream)
+
         if (s.apiFormat === 'openai') {
             const messages = [];
             if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
@@ -372,6 +513,7 @@ answer: правильна відповідь
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
             const body = { model: s.model, messages, max_tokens: 4096 };
             if (stream) body.stream = true;
+            if (includeTools) body.tools = buildWebSearchTool('openai');
             return body;
         }
 
@@ -381,6 +523,7 @@ answer: правильна відповідь
             const body = { model: s.model, messages: [{ role: 'user', content: userContent }], max_tokens: 4096 };
             if (systemPrompt) body.system = systemPrompt;
             if (stream) body.stream = true;
+            if (includeTools) body.tools = buildWebSearchTool('anthropic');
             return body;
         }
 
@@ -389,7 +532,10 @@ answer: правильна відповідь
             if (systemPrompt) userParts.push({ text: systemPrompt + '\n\n' + userMsg });
             else userParts.push({ text: userMsg });
             images.forEach(img => userParts.push({ inline_data: { mime_type: 'image/jpeg', data: img } }));
-            return { contents: [{ parts: userParts }] };
+            const body = { contents: [{ parts: userParts }] };
+            // Google: include tools in non-stream path only (streaming tool calls unreliable)
+            if (s.webSearchEnabled) body.tools = buildWebSearchTool('google');
+            return body;
         }
 
         throw new Error('Unknown API format: ' + s.apiFormat);
@@ -410,20 +556,63 @@ answer: правильна відповідь
                 if (apiFormat === 'openai') {
                     const choice = json.choices?.[0];
                     if (!choice) continue;
+                    // Tool call finish — stop streaming, hand off to tool loop
+                    if (choice.finish_reason === 'tool_calls') {
+                        // Emit any remaining tool_calls delta in this chunk
+                        const delta = choice.delta || {};
+                        if (delta.tool_calls) {
+                            for (const tc of delta.tool_calls) {
+                                results.push({ tool_call_delta: { index: tc.index, id: tc.id || undefined, name: tc.function?.name || undefined, argsDelta: tc.function?.arguments || '' } });
+                            }
+                        }
+                        results.push({ tool_call_stop: true });
+                        continue;
+                    }
                     if (choice.finish_reason) { results.push({ done: true }); continue; }
                     const delta = choice.delta || {};
-                    if (delta.reasoning_content) results.push({ thinking: delta.reasoning_content });
-                    else if (delta.content) results.push({ content: delta.content });
+                    if (delta.reasoning_content) {
+                        results.push({ thinking: delta.reasoning_content });
+                    } else if (delta.tool_calls) {
+                        // Streaming tool call deltas
+                        for (const tc of delta.tool_calls) {
+                            results.push({ tool_call_delta: { index: tc.index, id: tc.id || undefined, name: tc.function?.name || undefined, argsDelta: tc.function?.arguments || '' } });
+                        }
+                    } else if (delta.content) {
+                        results.push({ content: delta.content });
+                    }
                 } else if (apiFormat === 'anthropic') {
-                    if (json.type === 'content_block_delta') {
+                    if (json.type === 'content_block_start') {
+                        const block = json.content_block;
+                        if (block?.type === 'tool_use') {
+                            results.push({ tool_call_start: { index: json.index || 0, id: block.id, name: block.name } });
+                        }
+                    } else if (json.type === 'content_block_delta') {
                         if (json.delta?.type === 'thinking_delta') results.push({ thinking: json.delta.thinking });
                         else if (json.delta?.type === 'text_delta') results.push({ content: json.delta.text });
+                        else if (json.delta?.type === 'input_json_delta') results.push({ tool_call_args_delta: { index: json.index || 0, argsDelta: json.delta.partial_json || '' } });
+                    } else if (json.type === 'message_delta') {
+                        if (json.delta?.stop_reason === 'tool_use') {
+                            results.push({ tool_call_stop: true });
+                        } else if (json.delta?.stop_reason) {
+                            results.push({ done: true });
+                        }
                     } else if (json.type === 'message_stop') {
-                        results.push({ done: true });
+                        // Only emit done if we didn't already emit tool_call_stop
+                        // (Anthropic may send message_stop after message_delta with stop_reason)
+                        // We handle this by checking if the last event was tool_call_stop
+                        if (!results.some(r => r.tool_call_stop)) {
+                            results.push({ done: true });
+                        }
                     }
                 } else if (apiFormat === 'google') {
-                    const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) results.push({ content: text });
+                    // Google tool calls come as functionCall in parts, non-streaming
+                    const parts = json.candidates?.[0]?.content?.parts || [];
+                    for (const part of parts) {
+                        if (part.functionCall) {
+                            results.push({ tool_call_complete: { name: part.functionCall.name, args: part.functionCall.args || {} } });
+                        }
+                        if (part.text) results.push({ content: part.text });
+                    }
                     if (json.candidates?.[0]?.finishReason === 'STOP') results.push({ done: true });
                 }
             } catch (e) { /* partial JSON chunk, skip */ }
@@ -437,21 +626,134 @@ answer: правильна відповідь
         const s = getEffectiveSettings(window.xdAnswers.settings);
         const { systemPrompt, userMsg } = buildMessages(questionData);
         const images = questionData.base64Images || [];
-        const body = buildRequestBody(s, systemPrompt, userMsg, images, false);
-        window.xdAnswers.lastRequestBody = body;
 
-        const response = await window.xdAnswers.makeRequest({
-            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body)
-        });
+        // Build initial messages for multi-turn tool support
+        const messages = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        const userContent = [{ type: 'text', text: userMsg }];
+        images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
+        messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
 
-        const parsed = JSON.parse(response.data);
-        if (s.apiFormat === 'openai') return parsed.choices[0].message.content;
-        if (s.apiFormat === 'anthropic') {
-            const tb = parsed.content.find(b => b.type === 'text');
-            return tb ? tb.text : '';
+        let toolLoops = 0;
+        const MAX_TOOL_LOOPS = 3;
+
+        while (toolLoops <= MAX_TOOL_LOOPS) {
+            const body = buildRequestBody(s, systemPrompt, userMsg, images, false);
+            // Override messages with the accumulated multi-turn history
+            if (s.apiFormat === 'openai' || s.apiFormat === 'google' || s.apiFormat === 'anthropic') {
+                body.messages = messages;
+            }
+            if (s.webSearchEnabled) {
+                if (s.apiFormat !== 'google') body.tools = buildWebSearchTool(s.apiFormat);
+                else body.tools = buildWebSearchTool('google');
+            }
+            window.xdAnswers.lastRequestBody = body;
+
+            const response = await window.xdAnswers.makeRequest({
+                url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body)
+            });
+
+            const parsed = JSON.parse(response.data);
+
+            // Check for tool calls (OpenAI)
+            if (s.apiFormat === 'openai') {
+                const msg = parsed.choices[0].message;
+                if (msg.tool_calls && msg.tool_calls.length > 0 && toolLoops < MAX_TOOL_LOOPS) {
+                    toolLoops++;
+                    messages.push(msg); // assistant with tool_calls
+                    for (const tc of msg.tool_calls) {
+                        try {
+                            const args = JSON.parse(tc.function.arguments || '{}');
+                            const query = args.query || '';
+                            const numResults = args.num_results || 5;
+                            const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                            messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
+                        } catch (err) {
+                            messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                        }
+                    }
+                    continue; // re-call with tool results
+                }
+                return msg.content;
+            }
+
+            // Check for tool calls (Anthropic)
+            if (s.apiFormat === 'anthropic') {
+                const hasToolUse = parsed.content?.some(b => b.type === 'tool_use');
+                if (hasToolUse && parsed.stop_reason === 'tool_use' && toolLoops < MAX_TOOL_LOOPS) {
+                    toolLoops++;
+                    messages.push({ role: 'assistant', content: parsed.content });
+                    const toolResultBlocks = [];
+                    for (const block of parsed.content) {
+                        if (block.type === 'tool_use') {
+                            try {
+                                const query = block.input?.query || '';
+                                const numResults = block.input?.num_results || 5;
+                                const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: resultJson });
+                            } catch (err) {
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: err.message }), is_error: true });
+                            }
+                        }
+                    }
+                    messages.push({ role: 'user', content: toolResultBlocks });
+                    continue;
+                }
+                const tb = parsed.content.find(b => b.type === 'text');
+                return tb ? tb.text : '';
+            }
+
+            // Google: check for functionCall in response
+            if (s.apiFormat === 'google') {
+                const parts = parsed.candidates?.[0]?.content?.parts || [];
+                const funcCall = parts.find(p => p.functionCall);
+                if (funcCall && toolLoops < MAX_TOOL_LOOPS) {
+                    toolLoops++;
+                    // Add assistant's function call to conversation
+                    const assistantParts = parts.map(p => {
+                        if (p.functionCall) return { functionCall: p.functionCall };
+                        return p;
+                    });
+                    // Google requires functionResponse in the next turn
+                    const functionResponses = [];
+                    for (const p of parts) {
+                        if (p.functionCall) {
+                            try {
+                                const query = p.functionCall.args?.query || '';
+                                const numResults = p.functionCall.args?.num_results || 5;
+                                const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                                functionResponses.push({ functionResponse: { name: p.functionCall.name, response: JSON.parse(resultJson) } });
+                            } catch (err) {
+                                functionResponses.push({ functionResponse: { name: p.functionCall.name, response: { error: err.message } } });
+                            }
+                        }
+                    }
+                    // Rebuild contents with both turns
+                    const newContents = body.contents || [];
+                    newContents.push({ role: 'model', parts: assistantParts });
+                    newContents.push({ role: 'user', parts: functionResponses });
+                    body.contents = newContents;
+                    // Re-request
+                    const resp2 = await window.xdAnswers.makeRequest({
+                        url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body)
+                    });
+                    const parsed2 = JSON.parse(resp2.data);
+                    return parsed2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                }
+                return parts[0]?.text || '';
+            }
+
+            throw new Error('Unknown API format');
         }
-        if (s.apiFormat === 'google') return parsed.candidates[0].content.parts[0].text;
-        throw new Error('Unknown API format');
+
+        // Fallback after max loops — just return whatever we have
+        const lastParsed = JSON.parse((await window.xdAnswers.makeRequest({
+            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(buildRequestBody(s, systemPrompt, userMsg, images, false))
+        })).data);
+        if (s.apiFormat === 'openai') return lastParsed.choices[0].message.content;
+        if (s.apiFormat === 'anthropic') { const tb = lastParsed.content?.find(b => b.type === 'text'); return tb?.text || ''; }
+        if (s.apiFormat === 'google') return lastParsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return '';
     };
 
     window.xdAnswers.streamAnswer = function(questionData, outerStartTime) {
@@ -459,10 +761,18 @@ answer: правильна відповідь
             const s = getEffectiveSettings(window.xdAnswers.settings);
             const { systemPrompt, userMsg } = buildMessages(questionData);
             const images = questionData.base64Images || [];
-            const body = buildRequestBody(s, systemPrompt, userMsg, images, true);
-            window.xdAnswers.lastRequestBody = body;
 
-             let fullContent = '';
+            // Build initial messages array for multi-turn tool-call support
+            const messages = [];
+            if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+            const userContent = [{ type: 'text', text: userMsg }];
+            images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
+            messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
+
+            const initialBody = buildRequestBody(s, systemPrompt, userMsg, images, true);
+            window.xdAnswers.lastRequestBody = initialBody;
+
+            let fullContent = '';
             let fullThinking = '';
             const startTime = outerStartTime || Date.now();
             const contentDiv = window.xdAnswers.answerContentDiv;
@@ -470,6 +780,14 @@ answer: правильна відповідь
             let thinkingDone = false;
             let streamTimerInterval = null;
             let statusCleared = false;
+            let toolLoopDepth = 0;
+            const MAX_TOOL_LOOPS = 3;
+
+            // Search indicator state
+            let searchCalls = []; // [{query, status:'searching'|'done', resultCount}]
+
+            // Tool call accumulation state (per stream round)
+            let pendingToolCalls = {}; // {index: {id, name, args:''}}
 
             function getElapsed() {
                 const sec = Math.floor((Date.now() - startTime) / 1000);
@@ -533,12 +851,35 @@ answer: правильна відповідь
                         '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
                 }
 
+                // Search indicator block between thinking and answer
+                if (searchCalls.length > 0) {
+                    const doneCount = searchCalls.filter(sc => sc.status === 'done').length;
+                    const searchingCount = searchCalls.length - doneCount;
+                    const headerLabel = searchingCount > 0
+                        ? '🔍 Web Search... <span class="xd-search-count">(' + searchCalls.length + ')</span>'
+                        : '🔍 Web Search <span class="xd-search-count">(' + doneCount + ')</span>';
+                    html += '<div class="xd-search-block">' +
+                        '<div class="xd-search-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-search-toggle">▼</span></div>' +
+                        '<div class="xd-search-content" style="display:none !important;">';
+                    for (let i = 0; i < searchCalls.length; i++) {
+                        const sc = searchCalls[i];
+                        if (sc.status === 'searching') {
+                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '">⏳ <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span></div>';
+                        } else {
+                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '">✓ <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + sc.resultCount + ' results)</span></div>';
+                        }
+                    }
+                    html += '</div></div>';
+                }
+
                 const parsed = parsePartialLabeled(fullContent) || salvagePartialJSON(fullContent);
                 
                 if (parsed) {
                     html += renderPartial(parsed);
                 } else if (fullContent.trim()) {
                     html += '<div class="xd-answer xd-answer-partial">' + window.xdAnswers.renderMarkdown(fullContent) + '</div>';
+                } else if (searchCalls.some(sc => sc.status === 'searching')) {
+                    html += '<div class="xd-waiting">⏳ Executing web search...</div>';
                 } else {
                     html += '<div class="xd-waiting">⏳ Waiting for answer...</div>';
                 }
@@ -546,39 +887,222 @@ answer: правильна відповідь
                 contentDiv.innerHTML = html;
                 const th = contentDiv.querySelector('.xd-thinking-header');
                 if (th) th.addEventListener('click', function() { toggleThinkingContent(this); });
+                const sh = contentDiv.querySelector('.xd-search-header');
+                if (sh) sh.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    if (!content) return;
+                    const toggle = this.querySelector('.xd-search-toggle');
+                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
+                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                });
             }
 
-            const cancel = window.xdAnswers.streamRequest(
-                { url: buildStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body) },
-                (chunk) => {
-                    const events = parseSSEChunks(chunk, s.apiFormat);
-                    for (const ev of events) {
-                        if (ev.thinking) {
-                            ensureThinkingUI();
-                            fullThinking += ev.thinking;
-                            const tc = contentDiv?.querySelector('.xd-thinking-content');
-                            if (tc) tc.innerHTML = window.xdAnswers.renderMarkdown(fullThinking);
-                            const chars = contentDiv?.querySelector('.xd-thinking-chars');
-                            if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
-                        }
-                        if (ev.content) {
-                            if (thinkingStarted && !thinkingDone) thinkingDone = true;
-                            fullContent += ev.content;
+            // Execute pending tool calls and continue streaming
+            async function handleToolCalls() {
+                const toolCalls = Object.values(pendingToolCalls);
+                if (toolCalls.length === 0) { finishStream(); return; }
+                
+                toolLoopDepth++;
+                console.log('[xdAnswers] Tool call detected (depth=' + toolLoopDepth + '):', toolCalls.map(tc => tc.name + '(' + tc.args.slice(0, 100) + ')').join(', '));
+                if (toolLoopDepth > MAX_TOOL_LOOPS) {
+                    console.warn('[xdAnswers] Max tool loop depth reached, stopping');
+                    fullContent += '\n\n[Web search limit reached — skipping further searches]';
+                    finishStream();
+                    return;
+                }
+
+                // Build assistant message with tool_calls (OpenAI format) or content blocks (Anthropic)
+                if (s.apiFormat === 'openai') {
+                    const assistantMsg = {
+                        role: 'assistant',
+                        content: null,
+                        tool_calls: toolCalls.map(tc => ({
+                            id: tc.id,
+                            type: 'function',
+                            function: { name: tc.name, arguments: tc.args }
+                        }))
+                    };
+                    messages.push(assistantMsg);
+
+                    // Execute each tool call and add tool results
+                    for (const tc of toolCalls) {
+                        try {
+                            let args = {};
+                            try { args = JSON.parse(tc.args); } catch {}
+                            const query = args.query || args.q || '';
+                            const numResults = args.num_results || args.num || 5;
+                            if (!query) throw new Error('Empty query');
+
+                            searchCalls.push({ query, status: 'searching', resultCount: 0 });
                             updateStreamUI();
+
+                            const resultJson = await executeSearch(query, numResults);
+                            const resultObj = JSON.parse(resultJson);
+                            const count = resultObj.organic?.length || 0;
+                            searchCalls[searchCalls.length - 1].status = 'done';
+                            searchCalls[searchCalls.length - 1].resultCount = count;
+                            updateStreamUI();
+
+                            messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
+                        } catch (err) {
+                            messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }), is_error: true });
                         }
                     }
-                },
-                () => {
-                    stopStreamTimer();
-                    resolve({ content: fullContent, thinking: fullThinking });
-                },
-                (error, details) => {
-                    stopStreamTimer();
-                    reject(new Error(error + (details ? '\n' + details : '')));
-                }
-            );
+                } else if (s.apiFormat === 'anthropic') {
+                    // Build assistant content blocks
+                    const assistantBlocks = [];
+                    if (fullThinking) {
+                        // Don't include thinking blocks — they're not part of the API message schema
+                    }
+                    if (fullContent) {
+                        assistantBlocks.push({ type: 'text', text: fullContent });
+                    }
+                    for (const tc of toolCalls) {
+                        assistantBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: {} });
+                        try { tc._parsedInput = JSON.parse(tc.args || '{}'); } catch { tc._parsedInput = {}; }
+                        assistantBlocks[assistantBlocks.length - 1].input = tc._parsedInput;
+                    }
+                    messages.push({ role: 'assistant', content: assistantBlocks });
 
-            window.xdAnswers._cancelStream = cancel;
+                    // Execute and add tool_result
+                    const toolResultBlocks = [];
+                    for (const tc of toolCalls) {
+                        try {
+                            const args = tc._parsedInput || {};
+                            const query = args.query || '';
+                            const numResults = args.num_results || 5;
+                            if (!query) throw new Error('Empty query');
+
+                            searchCalls.push({ query, status: 'searching', resultCount: 0 });
+                            updateStreamUI();
+
+                            const resultJson = await executeSearch(query, numResults);
+                            const resultObj = JSON.parse(resultJson);
+                            const count = resultObj.organic?.length || 0;
+                            searchCalls[searchCalls.length - 1].status = 'done';
+                            searchCalls[searchCalls.length - 1].resultCount = count;
+                            updateStreamUI();
+
+                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
+                        } catch (err) {
+                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }), is_error: true });
+                        }
+                    }
+                    messages.push({ role: 'user', content: toolResultBlocks });
+                }
+
+                // Reset per-round state for the next stream
+                pendingToolCalls = {};
+                fullContent = '';
+                fullThinking = '';
+                thinkingStarted = false;
+                thinkingDone = false;
+
+                // Re-stream with updated messages
+                startStreamRound(messages);
+            }
+
+            function finishStream() {
+                stopStreamTimer();
+                resolve({ content: fullContent, thinking: fullThinking, searchCalls });
+            }
+
+            function startStreamRound(currentMessages) {
+                // Build the request body from the current message history
+                const body = Object.assign({}, initialBody);
+                body.messages = currentMessages;
+                if (s.webSearchEnabled && s.apiFormat !== 'google') {
+                    body.tools = buildWebSearchTool(s.apiFormat);
+                }
+                window.xdAnswers.lastRequestBody = body;
+
+                const cancel = window.xdAnswers.streamRequest(
+                    { url: buildStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body) },
+                    (chunk) => {
+                        const events = parseSSEChunks(chunk, s.apiFormat);
+                        for (const ev of events) {
+                            if (ev.thinking) {
+                                ensureThinkingUI();
+                                fullThinking += ev.thinking;
+                                const tc = contentDiv?.querySelector('.xd-thinking-content');
+                                if (tc) tc.innerHTML = window.xdAnswers.renderMarkdown(fullThinking);
+                                const chars = contentDiv?.querySelector('.xd-thinking-chars');
+                                if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
+                            }
+                            if (ev.content) {
+                                if (thinkingStarted && !thinkingDone) thinkingDone = true;
+                                fullContent += ev.content;
+                                updateStreamUI();
+                            }
+                            // Tool call events
+                            if (ev.tool_call_start) {
+                                const tcs = ev.tool_call_start;
+                                pendingToolCalls[tcs.index] = { id: tcs.id, name: tcs.name, args: '' };
+                            }
+                            if (ev.tool_call_delta) {
+                                const tcd = ev.tool_call_delta;
+                                if (!pendingToolCalls[tcd.index]) {
+                                    pendingToolCalls[tcd.index] = { id: tcd.id || '', name: tcd.name || '', args: '' };
+                                }
+                                if (tcd.id) pendingToolCalls[tcd.index].id = tcd.id;
+                                if (tcd.name) pendingToolCalls[tcd.index].name = tcd.name;
+                                if (tcd.argsDelta) pendingToolCalls[tcd.index].args += tcd.argsDelta;
+
+                                // Show searching indicator as soon as we have a query
+                                try {
+                                    const partial = JSON.parse(pendingToolCalls[tcd.index].args);
+                                    if (partial.query && !searchCalls.some(sc => sc.query === partial.query)) {
+                                        searchCalls.push({ query: partial.query, status: 'searching', resultCount: 0 });
+                                        updateStreamUI();
+                                    }
+                                } catch {} // partial JSON, will update later
+                            }
+                            if (ev.tool_call_args_delta) {
+                                const tcad = ev.tool_call_args_delta;
+                                if (!pendingToolCalls[tcad.index] && tcad.name) {
+                                    pendingToolCalls[tcad.index] = { id: tcad.id || '', name: tcad.name, args: '' };
+                                }
+                                if (pendingToolCalls[tcad.index]) {
+                                    pendingToolCalls[tcad.index].args += tcad.argsDelta;
+                                    // Try to show searching indicator for partial args
+                                    try {
+                                        const partial = JSON.parse(pendingToolCalls[tcad.index].args);
+                                        if (partial.query && !searchCalls.some(sc => sc.query === partial.query)) {
+                                            searchCalls.push({ query: partial.query, status: 'searching', resultCount: 0 });
+                                            updateStreamUI();
+                                        }
+                                    } catch {}
+                                }
+                            }
+                            if (ev.tool_call_stop) {
+                                // Tool call finished — execute and continue
+                                handleToolCalls();
+                                return; // stop processing this chunk, handleToolCalls will start new stream
+                            }
+                            // Google non-streaming tool call (already complete)
+                            if (ev.tool_call_complete) {
+                                const tcc = ev.tool_call_complete;
+                                const idx = Object.keys(pendingToolCalls).length;
+                                pendingToolCalls[idx] = { id: 'google_tc_' + idx, name: tcc.name, args: JSON.stringify(tcc.args || {}) };
+                            }
+                        }
+                    },
+                    () => {
+                        // Stream done normally (no tool calls)
+                        finishStream();
+                    },
+                    (error, details) => {
+                        stopStreamTimer();
+                        reject(new Error(error + (details ? '\n' + details : '')));
+                    }
+                );
+
+                window.xdAnswers._cancelStream = cancel;
+            }
+
+            // Start the first stream round
+            startStreamRound(messages);
         });
     };
 
@@ -808,7 +1332,10 @@ answer: правильна відповідь
         if (parsed.raw && parsed.raw.trim()) {
             return '<div class="xd-answer">' + window.xdAnswers.renderMarkdown(parsed.raw) + '</div>';
         }
-        return '<div class="xd-error"><strong>Parse error:</strong> Model returned an unreadable response.</div>';
+        // If we couldn't parse anything and have no raw text, don't overwrite the
+        // streaming UI with "Parse error" — the stream already showed partial content.
+        // Return empty string to preserve whatever the stream UI rendered.
+        return '';
     }
 
     // ── Option Matching ──
@@ -1255,8 +1782,60 @@ answer: правильна відповідь
         };
 
         container.addEventListener('click', handler, true);
-        _oneClickHandlers.push({ container, handler });
+        // Store getQuestionDataFn so the hotkey can bypass the click in oneclick silent mode.
+        _oneClickHandlers.push({ container, handler, getQuestionDataFn });
     };
+
+    // Trigger the answer flow from anywhere (e.g. global Ctrl+Shift+X hotkey).
+    // - In oneclick silent mode: bypass the click — reuse the most recently registered
+    //   oneclick container, call its getQuestionDataFn, and run processQuestion directly.
+    // - In every other mode: fall back to the provider-supplied onRefresh hook
+    //   (same code path as the helper's refresh button).
+    window.xdAnswers.triggerHotkey = async function() {
+        try {
+            const silentMode = (window.xdAnswers.settings && window.xdAnswers.settings.silentMode) || '';
+            if (silentMode === 'oneclick' && _oneClickHandlers.length > 0) {
+                // Prefer the last-registered container (current question in SPA flows).
+                const entry = _oneClickHandlers[_oneClickHandlers.length - 1];
+                if (!entry || !entry.container) return;
+                if (window.xdAnswers._autoSelecting) return;
+                window.xdAnswers._oneClickUserTriggered = true;
+                window.xdAnswers._oneClickContainer = entry.container;
+                try {
+                    const questionData = entry.getQuestionDataFn
+                        ? await entry.getQuestionDataFn()
+                        : null;
+                    if (questionData) {
+                        window.xdAnswers.processQuestion(questionData);
+                    } else {
+                        // No data available — fall back to a synthetic click so the
+                        // provider's own click handler can re-detect.
+                        window.xdAnswers._oneClickUserTriggered = false;
+                        try { entry.container.click(); } catch (e) {}
+                    }
+                } catch (err) {
+                    console.warn('xdAnswers hotkey oneclick failed:', err);
+                    window.xdAnswers._oneClickUserTriggered = false;
+                }
+                return;
+            }
+            // Default: re-run the provider's refresh flow.
+            if (typeof window.xdAnswers.onRefresh === 'function') {
+                window.xdAnswers.onRefresh();
+            }
+        } catch (err) {
+            console.warn('xdAnswers.triggerHotkey error:', err);
+        }
+    };
+
+    // Listen for the hotkey dispatched by background.js (chrome.commands.onCommand).
+    if (chrome.runtime && chrome.runtime.onMessage) {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            if (message && message.type === 'xd_hotkey' && message.command === 'xd-trigger-answer') {
+                window.xdAnswers.triggerHotkey();
+            }
+        });
+    }
 
     // ── Main Process ──
 
@@ -1267,6 +1846,8 @@ answer: правильна відповідь
         }
 
         const silentMode = window.xdAnswers.settings.silentMode || '';
+        const webSearch = window.xdAnswers.settings.webSearchEnabled && getActiveSearchProvider(window.xdAnswers.settings);
+        console.log('[xdAnswers] processQuestion:', questionData.text?.slice(0, 80) + '...', '| topic=' + (questionData.topic || 'none'), '| webSearch=' + !!webSearch, '| silent=' + silentMode);
 
         // In oneclick mode, only process when user explicitly clicked (flag set by setupOneClickHandler)
         if (silentMode === 'oneclick' && !window.xdAnswers._oneClickUserTriggered) {
@@ -1335,11 +1916,30 @@ answer: правильна відповідь
                         '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">▼</span></div>' +
                         '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
                 }
+                if (result.searchCalls && result.searchCalls.length > 0) {
+                    const scDone = result.searchCalls.filter(sc => sc.status === 'done').length;
+                    html += '<div class="xd-search-block">' +
+                        '<div class="xd-search-header" style="cursor:pointer;">🔍 Web Search <span class="xd-search-count">(' + scDone + ')</span> <span class="xd-search-toggle">▼</span></div>' +
+                        '<div class="xd-search-content" style="display:none !important;">';
+                    for (const sc of result.searchCalls) {
+                        html += '<div class="xd-search-entry">✓ <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + (sc.resultCount || 0) + ' results)</span></div>';
+                    }
+                    html += '</div></div>';
+                }
                 html += renderParsedResponse(parsed);
                 window.xdAnswers.answerContentDiv.innerHTML = html;
 
                 const th = window.xdAnswers.answerContentDiv.querySelector('.xd-thinking-header');
                 if (th) th.addEventListener('click', function() { toggleThinkingContent(this); });
+                const sh = window.xdAnswers.answerContentDiv.querySelector('.xd-search-header');
+                if (sh) sh.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    if (!content) return;
+                    const toggle = this.querySelector('.xd-search-toggle');
+                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
+                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                });
             }
 
             if (parsed.answer) {
@@ -1527,6 +2127,14 @@ answer: правильна відповідь
             '.xd-confidence{font-size:11px !important;opacity:0.5 !important;margin-top:4px !important;}' +
             '.xd-raw-preview{font-size:12px !important;opacity:0.4 !important;}' +
             '.xd-waiting{font-size:12px !important;opacity:0.4 !important;text-align:center !important;padding:10px !important;}' +
+            '.xd-search-block{margin-bottom:10px !important;padding:8px !important;background:rgba(255,255,255,0.03) !important;border-radius:6px !important;border-left:3px solid rgba(255,165,0,0.3) !important;}' +
+            '.xd-search-header{color:#c89640 !important;font-style:italic !important;font-size:12px !important;display:flex !important;align-items:center !important;gap:6px !important;}' +
+            '.xd-search-count{font-style:normal !important;font-weight:500 !important;opacity:0.7 !important;}' +
+            '.xd-search-toggle{font-style:normal !important;opacity:0.5 !important;font-size:10px !important;margin-left:auto !important;}' +
+            '.xd-search-content{font-size:12px !important;opacity:0.7 !important;margin-top:6px !important;}' +
+            '.xd-search-entry{padding:3px 0 !important;font-size:12px !important;opacity:0.8 !important;}' +
+            '.xd-searching-query{font-style:normal !important;font-weight:500 !important;opacity:0.85 !important;}' +
+            '.xd-searching-count{font-style:normal !important;opacity:0.5 !important;font-size:11px !important;}' +
             '.xd-error{color:#f87171 !important;font-size:13px !important;padding:8px !important;background:rgba(248,113,113,0.08) !important;border-radius:6px !important;border-left:3px solid #f87171 !important;}' +
             '.xd-elapsed{display:none !important;}' +
             '.xd-status{text-align:center !important;font-size:12px !important;opacity:0.5 !important;margin-top:8px !important;}' +
