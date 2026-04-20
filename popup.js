@@ -1018,7 +1018,14 @@ function showProviderForm(existing, isOther, isSearch) {
     const formWrapper = document.createElement('div');
     formWrapper.className = 'provider-form-overlay';
     formWrapper.innerHTML = formHtml;
-    container.appendChild(formWrapper);
+    // Remove any existing overlay first
+    document.querySelector('.provider-form-overlay')?.remove();
+    document.body.appendChild(formWrapper);
+
+    // Close on backdrop click (outside the form card)
+    formWrapper.addEventListener('click', (e) => {
+        if (e.target === formWrapper) formWrapper.remove();
+    });
 
     const pfType = formWrapper.querySelector('#pf-type');
     const pfUrl = formWrapper.querySelector('#pf-url');
