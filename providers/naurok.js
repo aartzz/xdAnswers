@@ -129,18 +129,18 @@
             // Fetch topic directly from API via background proxy (bypasses CSP)
             if (window.xdAnswers && window.xdAnswers.makeRequest) {
                 console.log('[xdAnswers/naurok] Fetching session API, sessionId:', sessionId);
-                const res = await window.xdAnswers.makeRequest({
-                    url: 'https://naurok.com.ua/api2/test/sessions/' + sessionId,
-                    method: 'GET',
-                    timeout: 10000
-                });
-                if (res && typeof res === 'object') {
-                    extractTopicFromSessionPayload(res);
-                } else if (typeof res === 'string') {
-                    try {
-                        const json = JSON.parse(res);
-                        extractTopicFromSessionPayload(json);
-                    } catch (e) {}
+                try {
+                    const res = await window.xdAnswers.makeRequest({
+                        url: 'https://naurok.com.ua/api2/test/sessions/' + sessionId,
+                        method: 'GET',
+                        timeout: 10000
+                    });
+                    // makeRequest returns { success: true, data: <string> } from background.js
+                    const rawData = res?.data || res;
+                    const json = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+                    extractTopicFromSessionPayload(json);
+                } catch (e) {
+                    console.warn('[xdAnswers/naurok] Session API fetch failed:', e.message || e);
                 }
             }
         } catch (e) { console.warn('[xdAnswers/naurok] fetchNaurokTopic error:', e); }
