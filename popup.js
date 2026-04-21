@@ -94,7 +94,7 @@ const TRANSLATIONS = {
         ctxMillion: 'млн',
         // Web Search + Hotkey
         webSearchLabel: 'Веб-пошук',
-        webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch або Serper.dev) з API-ключем у вкладці Провайдери.',
+        webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup або SearchAPI) з API-ключем у вкладці Провайдери.',
         hotkeyLabel: 'Гаряча клавіша',
         hotkeyHint: 'Натисніть на комбінацію клавіш вище, щоб перепризначити.',
         hotkeyRecording: 'Натисніть комбінацію клавіш…',
@@ -175,7 +175,7 @@ const TRANSLATIONS = {
         ctxThousand: 'тыс.',
         ctxMillion: 'млн',
         webSearchLabel: 'Веб-поиск',
-        webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch или Serper.dev) с API-ключом во вкладке Провайдеры.',
+        webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup или SearchAPI) с API-ключом во вкладке Провайдеры.',
         hotkeyLabel: 'Горячая клавиша',
         hotkeyHint: 'Нажмите на комбинацию клавиш выше, чтобы переназначить.',
         hotkeyRecording: 'Нажмите комбинацию клавиш…',
@@ -256,7 +256,7 @@ const TRANSLATIONS = {
         ctxThousand: 'K',
         ctxMillion: 'M',
         webSearchLabel: 'Web Search',
-        webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.',
+        webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup or SearchAPI) with API key in the Providers tab.',
         hotkeyLabel: 'Hotkey',
         hotkeyHint: 'Click the key combination above to rebind.',
         hotkeyRecording: 'Press a key combination…',
@@ -409,7 +409,12 @@ const API_PROVIDERS = [
     { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' },
     // Web Search providers (kind: 'search' — not LLM, used for tool-calling)
     { id: 'langsearch', name: 'LangSearch', hint: 'Web Search — Free API', logo: 'openai', kind: 'search' },
-    { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' }
+    { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' },
+    { id: 'perplexity', name: 'Perplexity', hint: 'Web Search — pplx- API key', logo: 'openai', kind: 'search' },
+    { id: 'exa', name: 'Exa', hint: 'Web Search — neural/fast search', logo: 'openai', kind: 'search' },
+    { id: 'tavily', name: 'Tavily', hint: 'Web Search — tvly- API key', logo: 'openai', kind: 'search' },
+    { id: 'linkup', name: 'Linkup', hint: 'Web Search — fast/standard/deep', logo: 'openai', kind: 'search' },
+    { id: 'searchapi', name: 'SearchAPI', hint: 'Web Search — Google/Bing/Yahoo', logo: 'openai', kind: 'search' }
 ];
 
 const PROVIDER_ICON_MAP = {

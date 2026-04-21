@@ -106,6 +106,165 @@
             return JSON.stringify(normalized);
         }
 
+        if (sp.type === 'perplexity') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.perplexity) + '/search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + sp.apiKey
+                },
+                data: JSON.stringify({ query, max_results: num }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const items = parsed.results || [];
+            const normalized = {
+                organic: items.map(r => ({
+                    title: r.title || '',
+                    url: r.url || '',
+                    snippet: r.snippet || '',
+                    date: r.date || r.last_updated || null
+                }))
+            };
+            console.log('[xdAnswers] Perplexity results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
+        if (sp.type === 'exa') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.exa) + '/search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': sp.apiKey
+                },
+                data: JSON.stringify({
+                    query,
+                    type: 'auto',
+                    numResults: num,
+                    contents: { text: { maxCharacters: 500 }, highlights: true }
+                }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const items = parsed.results || [];
+            const normalized = {
+                organic: items.map(r => ({
+                    title: r.title || '',
+                    url: r.url || '',
+                    snippet: r.text || (r.highlights || []).join(' … ') || '',
+                    date: r.publishedDate || null
+                }))
+            };
+            console.log('[xdAnswers] Exa results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
+        if (sp.type === 'tavily') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.tavily) + '/search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + sp.apiKey
+                },
+                data: JSON.stringify({
+                    query,
+                    search_depth: 'basic',
+                    max_results: num,
+                    include_answer: false
+                }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const items = parsed.results || [];
+            const normalized = {
+                organic: items.map(r => ({
+                    title: r.title || '',
+                    url: r.url || '',
+                    snippet: r.content || '',
+                    date: null
+                }))
+            };
+            console.log('[xdAnswers] Tavily results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
+        if (sp.type === 'linkup') {
+            const url = (sp.baseUrl || DEFAULT_BASE_URLS.linkup) + '/search';
+            const resp = await window.xdAnswers.makeRequest({
+                url,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + sp.apiKey
+                },
+                data: JSON.stringify({
+                    q: query,
+                    depth: 'standard',
+                    outputType: 'searchResults',
+                    maxResults: num
+                }),
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            // searchResults format
+            const items = parsed.results || [];
+            const normalized = {
+                organic: items.map(r => ({
+                    title: r.name || '',
+                    url: r.url || '',
+                    snippet: r.content || r.snippet || '',
+                    date: null
+                }))
+            };
+            console.log('[xdAnswers] Linkup results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
+        if (sp.type === 'searchapi') {
+            const baseUrl = sp.baseUrl || DEFAULT_BASE_URLS.searchapi;
+            // Engine can be changed via provider name: "SearchAPI (Bing)" → engine=bing
+            const engine = (sp.name && /bing/i.test(sp.name)) ? 'bing'
+                : (sp.name && /yahoo/i.test(sp.name)) ? 'yahoo'
+                : (sp.name && /duckduckgo/i.test(sp.name)) ? 'duckduckgo'
+                : 'google';
+            const resp = await window.xdAnswers.makeRequest({
+                url: baseUrl + '/search?engine=' + engine + '&q=' + encodeURIComponent(query) + '&num=' + num + '&api_key=' + encodeURIComponent(sp.apiKey),
+                method: 'GET',
+                responseType: 'text',
+                timeout: 15000
+            });
+            const parsed = JSON.parse(resp.data);
+            const items = parsed.organic_results || [];
+            const normalized = {
+                organic: items.map(r => ({
+                    title: r.title || '',
+                    url: r.link || '',
+                    snippet: r.snippet || '',
+                    date: r.date || null
+                })),
+                knowledge: parsed.knowledge_graph ? {
+                    title: parsed.knowledge_graph.title || '',
+                    description: parsed.knowledge_graph.description || ''
+                } : undefined,
+                peopleAlsoAsk: (parsed.related_searches || []).map(s => ({
+                    title: s.query || s.title || '',
+                    snippet: ''
+                }))
+            };
+            console.log('[xdAnswers] SearchAPI results:', normalized.organic.length, 'items');
+            return JSON.stringify(normalized);
+        }
+
         throw new Error('Unknown search provider type: ' + sp.type);
     }
 

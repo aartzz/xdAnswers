@@ -44,7 +44,12 @@ answer: правильна відповідь
         'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
         'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
         langsearch: 'https://api.langsearch.com/v1',
-        serper: 'https://google.serper.dev'
+        serper: 'https://google.serper.dev',
+        perplexity: 'https://api.perplexity.ai',
+        exa: 'https://api.exa.ai',
+        tavily: 'https://api.tavily.com',
+        linkup: 'https://api.linkup.so/v1',
+        searchapi: 'https://www.searchapi.io/api/v1'
     };
 
     const API_FORMAT_MAP = {
