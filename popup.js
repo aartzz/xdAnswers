@@ -96,7 +96,9 @@ const TRANSLATIONS = {
         webSearchLabel: 'Веб-пошук',
         webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch або Serper.dev) з API-ключем у вкладці Провайдери.',
         hotkeyLabel: 'Гаряча клавіша',
-        hotkeyHint: 'Перепризначити: chrome://extensions/shortcuts',
+        hotkeyHint: 'Натисніть на комбінацію клавіш вище, щоб перепризначити.',
+        hotkeyRecording: 'Натисніть комбінацію клавіш…',
+        hotkeyClear: 'Скинути',
         searchProviderBadge: 'ПОШУК'
     },
     ru: {
@@ -175,7 +177,9 @@ const TRANSLATIONS = {
         webSearchLabel: 'Веб-поиск',
         webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch или Serper.dev) с API-ключом во вкладке Провайдеры.',
         hotkeyLabel: 'Горячая клавиша',
-        hotkeyHint: 'Переназначить: chrome://extensions/shortcuts',
+        hotkeyHint: 'Нажмите на комбинацию клавиш выше, чтобы переназначить.',
+        hotkeyRecording: 'Нажмите комбинацию клавиш…',
+        hotkeyClear: 'Сбросить',
         searchProviderBadge: 'ПОИСК'
     },
     en: {
@@ -254,7 +258,9 @@ const TRANSLATIONS = {
         webSearchLabel: 'Web Search',
         webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.',
         hotkeyLabel: 'Hotkey',
-        hotkeyHint: 'Rebind at chrome://extensions/shortcuts',
+        hotkeyHint: 'Click the key combination above to rebind.',
+        hotkeyRecording: 'Press a key combination…',
+        hotkeyClear: 'Reset',
         searchProviderBadge: 'SEARCH'
     }
 };
@@ -328,6 +334,8 @@ function applyLanguage() {
     if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
     const hotkeyHintEl = document.getElementById('hotkey-hint');
     if (hotkeyHintEl) hotkeyHintEl.textContent = t('hotkeyHint');
+    const hotkeyClearBtn = document.getElementById('hotkey-clear');
+    if (hotkeyClearBtn) hotkeyClearBtn.title = t('hotkeyClear');
 
     // Themes tab
     const themesDesc = document.querySelector('.tab-description');
@@ -623,6 +631,7 @@ const DEFAULT_SETTINGS = {
     showAnswerOnly: false,
     silentMode: '',
     _silentModePreselect: 'indicators',
+    hotkey: 'Ctrl+Shift+X',
     webSearchEnabled: false,
     defaultPosition: 'bottom-right',
     rememberDragPosition: false,
@@ -768,6 +777,9 @@ function populateUI() {
         });
     }
     if (el.rememberDragToggle) el.rememberDragToggle.checked = !!settings.rememberDragPosition;
+
+    // Hotkey display
+    if (el.hotkeyRecorderKbd) el.hotkeyRecorderKbd.textContent = settings.hotkey || 'Ctrl+Shift+X';
 
     applyLanguage();
     populateThemesGrid();
@@ -1642,6 +1654,83 @@ function attachEventListeners() {
     if (el.themeEditorClose) el.themeEditorClose.addEventListener('click', closeThemeEditor);
     if (el.themeEditorCancel) el.themeEditorCancel.addEventListener('click', closeThemeEditor);
     if (el.themeEditorSave) el.themeEditorSave.addEventListener('click', saveCustomTheme);
+
+    // Close theme editor on backdrop click
+    if (el.themeEditor) {
+        el.themeEditor.addEventListener('click', (e) => {
+            if (e.target === el.themeEditor) closeThemeEditor();
+        });
+    }
+
+    // Hotkey recorder: click to enter recording mode, capture keydown, save
+    if (el.hotkeyRecorder) {
+        let isRecording = false;
+
+        el.hotkeyRecorder.addEventListener('click', () => {
+            if (isRecording) return;
+            isRecording = true;
+            el.hotkeyRecorder.classList.add('recording');
+            el.hotkeyRecorderKbd.textContent = t('hotkeyRecording');
+            el.hotkeyRecorder.focus();
+        });
+
+        el.hotkeyRecorder.addEventListener('keydown', (e) => {
+            if (!isRecording) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Ignore lone modifier presses
+            const modKeys = ['Control', 'Alt', 'Shift', 'Meta'];
+            if (modKeys.includes(e.key)) return;
+
+            // Build combination string
+            const parts = [];
+            if (e.ctrlKey || e.metaKey) parts.push(e.metaKey ? 'Cmd' : 'Ctrl');
+            if (e.altKey) parts.push('Alt');
+            if (e.shiftKey) parts.push('Shift');
+
+            // Map key code to readable name
+            let keyName = e.key;
+            if (e.code === 'Space') keyName = 'Space';
+            else if (e.key.length === 1) keyName = e.key.toUpperCase();
+            else keyName = e.key;
+
+            parts.push(keyName);
+            const combo = parts.join('+');
+
+            settings.hotkey = combo;
+            el.hotkeyRecorderKbd.textContent = combo;
+            isRecording = false;
+            el.hotkeyRecorder.classList.remove('recording');
+            autoSave({ hotkey: combo });
+        });
+
+        // Cancel recording on blur or Escape
+        el.hotkeyRecorder.addEventListener('blur', () => {
+            if (!isRecording) return;
+            isRecording = false;
+            el.hotkeyRecorder.classList.remove('recording');
+            el.hotkeyRecorderKbd.textContent = settings.hotkey || 'Ctrl+Shift+X';
+        });
+
+        el.hotkeyRecorder.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isRecording) {
+                e.preventDefault();
+                isRecording = false;
+                el.hotkeyRecorder.classList.remove('recording');
+                el.hotkeyRecorderKbd.textContent = settings.hotkey || 'Ctrl+Shift+X';
+            }
+        });
+    }
+
+    // Hotkey clear/reset button
+    if (el.hotkeyClear) {
+        el.hotkeyClear.addEventListener('click', () => {
+            settings.hotkey = 'Ctrl+Shift+X';
+            if (el.hotkeyRecorderKbd) el.hotkeyRecorderKbd.textContent = 'Ctrl+Shift+X';
+            autoSave({ hotkey: 'Ctrl+Shift+X' });
+        });
+    }
 }
 
 async function autoSave(overrides) {
@@ -1728,7 +1817,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         editorContentInput: document.getElementById('editor-content-input'),
         editorContentPicker: document.getElementById('editor-content-picker'),
         editorTextInput: document.getElementById('editor-text-input'),
-        editorTextPicker: document.getElementById('editor-text-picker')
+        editorTextPicker: document.getElementById('editor-text-picker'),
+        hotkeyRecorder: document.getElementById('hotkey-recorder'),
+        hotkeyRecorderKbd: document.getElementById('hotkey-recorder-kbd'),
+        hotkeyClear: document.getElementById('hotkey-clear')
     };
 
     settings = await loadSettings();

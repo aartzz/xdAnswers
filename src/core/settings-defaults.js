@@ -40,6 +40,7 @@
         showAnswerOnly: false,
         silentMode: '',
         _silentModePreselect: 'indicators',
+        hotkey: 'Ctrl+Shift+X',
         webSearchEnabled: false,
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,

@@ -288,27 +288,87 @@
 
                 if (isOneClick) {
                     // One-click mode: register click handler instead of auto-processing
-                    const container = document.querySelector('.test-question-content') || document.querySelector('.test-content-text-inner');
-                    if (container && !container.classList.contains('xd-oneclick-ready')) {
+                    // Use .test-container-inner as the oneclick container — it encompasses
+                    // BOTH .test-question-content (question text) AND .test-question-options
+                    // (answer options), so autoSelectAnswer's scopedContainer.contains() check
+                    // will correctly include option elements that are siblings of the question.
+                    const container = document.querySelector('.test-container-inner');
+                    // Also set cursor:pointer on the question text area to hint clickability
+                    const questionContent = document.querySelector('.test-question-content');
+                    if (questionContent) questionContent.style.cursor = 'pointer';
+                    if (container) {
+                        // Always clear and re-register so the closure captures fresh data
+                        // (Angular may re-render the container, losing the old handler)
                         window.xdAnswers.clearOneClickHandlers();
-                        // Save detected data for click-time processing
-                        const savedText = questionText;
-                        const savedOptionsText = optionsText;
-                        const savedImageUrls = validImages;
-                        const savedIsMultiQuiz = isMultiQuiz;
-                        window.xdAnswers.setupOneClickHandler(container, async () => {
-                            const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
-                            // Retry topic discovery at click-time if we still don't have it.
+                        const getQuestionDataFn = async () => {
+                            // Re-read current question data from DOM at click time
+                            const textContainer = document.querySelector('.test-content-text-inner');
+                            const currentText = textContainer ? textContainer.innerText.trim() : '';
+                            if (!currentText) return null;
+
+                            const optionInners = document.querySelectorAll('.question-option-inner');
+                            const optionLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                            const currentOptions = [];
+                            const currentImageUrls = [];
+                            optionInners.forEach((inner, idx) => {
+                                const textEl = inner.querySelector('.question-option-inner-content');
+                                const text = textEl ? textEl.innerText.trim() : '';
+                                const imgEl = inner.querySelector('.question-option-image');
+                                let bgUrl = '';
+                                if (imgEl) {
+                                    const bgStyle = imgEl.style.backgroundImage || '';
+                                    const match = bgStyle.match(/url\(["']?([^"')]+)["']?\)/);
+                                    bgUrl = match ? match[1] : '';
+                                }
+                                const label = optionLabels[idx] || (idx + 1);
+                                if (text) {
+                                    currentOptions.push(label + ': ' + text);
+                                } else if (bgUrl) {
+                                    currentOptions.push(label + ': [зображення]');
+                                    currentImageUrls.push(bgUrl);
+                                }
+                            });
+
+                            // Collect question images
+                            const currentValidImages = [];
+                            const allImgs = document.querySelectorAll('img');
+                            allImgs.forEach(img => {
+                                const isHidden = img.classList.contains('ng-hide') || img.offsetParent === null;
+                                const hasSrc = img.src && img.src.length > 0 && !img.src.startsWith('data:image/gif');
+                                const isInQuestion = img.closest('.test-question-content');
+                                if (!isHidden && hasSrc && isInQuestion && img.width > 40) {
+                                    currentValidImages.push(img.src);
+                                }
+                            });
+                            const questionImgDiv = document.querySelector('.test-content-image');
+                            if (questionImgDiv && !questionImgDiv.classList.contains('ng-hide')) {
+                                const bgStyle = questionImgDiv.style.backgroundImage || '';
+                                const match = bgStyle.match(/url\(["']?([^"')]+)["']?\)/);
+                                if (match && match[1]) currentValidImages.push(match[1]);
+                                const qImg = questionImgDiv.querySelector('img');
+                                if (qImg && qImg.src && !qImg.classList.contains('ng-hide')) {
+                                    if (!qImg.src.startsWith('data:image/gif') && qImg.width > 40) {
+                                        currentValidImages.push(qImg.src);
+                                    }
+                                }
+                            }
+                            currentImageUrls.forEach(url => { if (!currentValidImages.includes(url)) currentValidImages.push(url); });
+
+                            const currentIsMultiQuiz = !!document.querySelector('.question-option-inner[ng-click*="multiquiz"], [ng-if="test.question.type == \'multiquiz\'"]:not(.ng-hide)');
+
+                            const images = await Promise.all(currentValidImages.map(src => window.xdAnswers.imageToBase64(src)));
                             if (!_naurokTopic) { try { await fetchNaurokTopic(); } catch (e) {} }
                             return {
-                                text: savedText,
-                                optionsText: savedOptionsText,
+                                text: currentText,
+                                optionsText: currentOptions.join('\n'),
                                 base64Images: images.filter(img => img !== null),
-                                questionType: savedIsMultiQuiz ? 'multiquiz' : 'quiz',
-                                isMultiQuiz: savedIsMultiQuiz,
+                                questionType: currentIsMultiQuiz ? 'multiquiz' : 'quiz',
+                                isMultiQuiz: currentIsMultiQuiz,
                                 topic: _naurokTopic || undefined
                             };
-                        });
+                        };
+                        // setCursor=false — cursor:pointer is set on .test-question-content instead
+                        window.xdAnswers.setupOneClickHandler(container, getQuestionDataFn, false);
                     }
                 } else {
                     // Normal: auto-process after delay (skip for user-initiated refresh)

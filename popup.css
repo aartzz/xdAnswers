@@ -788,18 +788,41 @@ textarea {
     margin-top: 4px;
 }
 
-/* Theme editor */
+/* Theme editor — overlay (same pattern as provider-form-overlay) */
 
-.theme-editor {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 12px;
-    margin-top: 12px;
-    background: rgba(255, 255, 255, 0.03);
+.theme-editor-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 
-.theme-editor.hidden {
+.theme-editor-overlay.hidden {
     display: none;
+}
+
+.theme-editor-card {
+    background: var(--popup-bg, #1e1e2e);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 16px;
+    width: 92%;
+    max-width: 360px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.theme-editor-card .form-group {
+    margin-bottom: 8px;
 }
 
 .theme-editor-header {
@@ -1236,5 +1259,87 @@ input.invalid {
     background-color: var(--popup-border);
     border-color: var(--popup-border);
     transform: scale(1.05);
+}
+
+/* ── Hotkey recorder ── */
+
+.hotkey-recorder-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.hotkey-recorder {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--popup-text);
+    outline: none;
+    transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+    min-height: 30px;
+}
+
+.hotkey-recorder:hover {
+    border-color: var(--popup-border);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.hotkey-recorder:focus-visible {
+    border-color: var(--popup-border);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 30%, transparent);
+}
+
+.hotkey-recorder.recording {
+    border-color: var(--popup-border);
+    background: color-mix(in srgb, var(--popup-border) 12%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 20%, transparent);
+    animation: hotkey-pulse 1s ease-in-out infinite;
+}
+
+.hotkey-recorder.recording kbd {
+    opacity: 0.6;
+    font-style: italic;
+}
+
+@keyframes hotkey-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--popup-border) 20%, transparent); }
+    50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--popup-border) 30%, transparent); }
+}
+
+.hotkey-recorder kbd {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--popup-text);
+}
+
+.hotkey-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--popup-text);
+    font-size: 14px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s, border-color 0.15s;
+    padding: 0;
+}
+
+.hotkey-clear:hover {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.25);
 }
 

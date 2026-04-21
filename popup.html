@@ -111,10 +111,13 @@
         <hr class="separator">
         <div class="form-group">
             <label id="hotkey-label">Hotkey</label>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <kbd style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 8px;font-size:12px;font-family:inherit;">Ctrl+Shift+X</kbd>
-                <span style="font-size:11px;opacity:0.5;" id="hotkey-hint">Rebind at chrome://extensions/shortcuts</span>
+            <div class="hotkey-recorder-wrapper">
+                <button type="button" id="hotkey-recorder" class="hotkey-recorder" title="Click to record a new shortcut">
+                    <kbd id="hotkey-recorder-kbd">Ctrl+Shift+X</kbd>
+                </button>
+                <button type="button" id="hotkey-clear" class="hotkey-clear" title="Reset to default">↺</button>
             </div>
+            <p class="field-hint" id="hotkey-hint">Click the key combination above to rebind.</p>
         </div>
         <hr class="separator">
         <div class="form-group">
@@ -145,7 +148,18 @@
         <p class="tab-description">Choose a preset or click <strong>+</strong> to build your own.</p>
         <div id="themes-grid" class="themes-grid"></div>
 
-        <div id="theme-editor" class="theme-editor hidden">
+        <hr class="separator">
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="glow-effect-toggle">
+                <span>Glow effect</span>
+            </label>
+            <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
+        </div>
+    </div>
+
+    <div id="theme-editor" class="theme-editor-overlay hidden">
+        <div class="theme-editor-card">
             <div class="theme-editor-header">
                 <span class="theme-editor-title">New theme</span>
                 <button type="button" id="theme-editor-close" class="theme-editor-close" aria-label="Close">×</button>
@@ -186,15 +200,6 @@
                 <button type="button" id="theme-editor-cancel" class="theme-editor-btn secondary">Cancel</button>
                 <button type="button" id="theme-editor-save" class="theme-editor-btn primary">Save theme</button>
             </div>
-        </div>
-
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="glow-effect-toggle">
-                <span>Glow effect</span>
-            </label>
-            <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
         </div>
     </div>
 

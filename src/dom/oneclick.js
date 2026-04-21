@@ -23,17 +23,19 @@
 
     // Register a question container for one-click mode.
     // getQuestionDataFn: async () => questionData (called on click)
-    window.xdAnswers.setupOneClickHandler = function(container, getQuestionDataFn) {
+    window.xdAnswers.setupOneClickHandler = function(container, getQuestionDataFn, setCursor = true) {
         if (!container) return;
         // Don't re-register the same container
         if (_oneClickHandlers.some(h => h.container === container)) return;
 
         container.classList.add('xd-oneclick-ready');
-        container.style.cursor = 'pointer';
+        if (setCursor) container.style.cursor = 'pointer';
 
         const handler = async (e) => {
             // Don't re-trigger when autoSelectAnswer clicks an option inside this container
             if (window.xdAnswers._autoSelecting) return;
+            // Don't trigger when user clicks an answer option — let the site handle it
+            if (e.target.closest('.question-option-inner, .test-option, .question-option-inner-content')) return;
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
             // Scope autoSelectAnswer to this container only
@@ -65,12 +67,17 @@
     window.xdAnswers.triggerHotkey = async function() {
         try {
             const silentMode = (window.xdAnswers.settings && window.xdAnswers.settings.silentMode) || '';
+
+            // In oneclick mode: always set the flag so processQuestion doesn't block
+            if (silentMode === 'oneclick') {
+                window.xdAnswers._oneClickUserTriggered = true;
+            }
+
             if (silentMode === 'oneclick' && _oneClickHandlers.length > 0) {
                 // Prefer the last-registered container (current question in SPA flows).
                 const entry = _oneClickHandlers[_oneClickHandlers.length - 1];
                 if (!entry || !entry.container) return;
                 if (window.xdAnswers._autoSelecting) return;
-                window.xdAnswers._oneClickUserTriggered = true;
                 window.xdAnswers._oneClickContainer = entry.container;
                 try {
                     const questionData = entry.getQuestionDataFn
@@ -107,6 +114,59 @@
             }
         });
     }
+
+    // Parse a hotkey string like "Ctrl+Shift+X" into { ctrlKey, altKey, shiftKey, metaKey, key }
+    function parseHotkey(hotkey) {
+        if (!hotkey) return null;
+        const parts = hotkey.split('+').map(p => p.trim());
+        const result = { ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, key: '' };
+        for (const part of parts) {
+            const lower = part.toLowerCase();
+            if (lower === 'ctrl' || lower === 'control') result.ctrlKey = true;
+            else if (lower === 'cmd' || lower === 'meta' || lower === 'command') result.metaKey = true;
+            else if (lower === 'alt') result.altKey = true;
+            else if (lower === 'shift') result.shiftKey = true;
+            else result.key = part;
+        }
+        if (!result.key) return null;
+        return result;
+    }
+
+    // Check if a KeyboardEvent matches the stored hotkey
+    function eventMatchesHotkey(e) {
+        const settings = window.xdAnswers.settings;
+        const hotkey = settings && settings.hotkey;
+        if (!hotkey) return false;
+        const parsed = parseHotkey(hotkey);
+        if (!parsed) return false;
+
+        // Match key (case-insensitive for single chars)
+        const eKey = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        const pKey = parsed.key.length === 1 ? parsed.key.toUpperCase() : parsed.key;
+        if (eKey !== pKey) return false;
+
+        // Match modifiers exactly
+        if (e.ctrlKey !== parsed.ctrlKey) return false;
+        if (e.altKey !== parsed.altKey) return false;
+        if (e.shiftKey !== parsed.shiftKey) return false;
+        if (e.metaKey !== parsed.metaKey) return false;
+
+        return true;
+    }
+
+    // Listen for custom hotkey on the page
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger in input/textarea/contenteditable
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (e.target && e.target.isContentEditable) return;
+
+        if (eventMatchesHotkey(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.xdAnswers.triggerHotkey();
+        }
+    }, true);
 
     // Export to _internal for cross-file access
     window.xdAnswers._internal.clearOneClickHandlers = clearOneClickHandlers;
