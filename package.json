@@ -1,6 +1,6 @@
 {
   "name": "xdanswers-extension",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "private": true,
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
@@ -8,11 +8,9 @@
     "build:firefox": "npm run _build:firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && npm run clean",
     "build:firefox:debug": "node scripts/build-manifest.js firefox && node scripts/inject-version.js debug && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && node -e \"const h=require('child_process').execSync('git rev-parse --short HEAD',{encoding:'utf8'}).trim();const f=require('fs').readdirSync('build').find(f=>f.endsWith('.xpi'));if(f)require('fs').renameSync('build/'+f,'build/xdanswers-firefox-'+h+'.xpi')\" && npm run clean",
     "sign:firefox": "node scripts/sign-firefox.js",
-
     "_build:chrome": "node scripts/build-manifest.js chrome && node scripts/inject-version.js",
     "build:chrome": "npm run _build:chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && npm run clean",
     "build:chrome:debug": "node scripts/build-manifest.js chrome && node scripts/inject-version.js debug && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && node -e \"const h=require('child_process').execSync('git rev-parse --short HEAD',{encoding:'utf8'}).trim();const f=require('fs').readdirSync('build').find(f=>f.match(/xdanswers-chrome.*\\.zip$/));if(f)require('fs').renameSync('build/'+f,'build/xdanswers-chrome-'+h+'.zip')\" && npm run clean",
-
     "clean": "node -e \"require('fs').rmSync('manifest.json',{force:true});require('fs').rmSync('version.js',{force:true})\"",
     "dev": "node scripts/build-manifest.js chrome && node scripts/inject-version.js debug",
     "version": "node scripts/sync-version.js && git add manifest.common.json"
