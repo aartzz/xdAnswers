@@ -34,6 +34,21 @@
         }
         if (questionData.questionType === 'matching') {
             userMsg += 'Це завдання на відповідність. Зістав елементи.\n\n';
+        } else if (questionData.questionType === 'true_false') {
+            userMsg += 'Це питання на "Правда / Неправда". Відповідай СТРОГО одним словом у полі answer: "Правда" АБО "Неправда".\n\n';
+        } else if (questionData.questionType === 'fill_blank') {
+            userMsg += 'У питанні є пропуски з ключами A0, A1, A2 тощо (див. текст питання). '
+                + 'У полі answer перерахуй заповнення для кожного ключа у форматі: A0=значення1; A1=значення2; A2=значення3. '
+                + 'Значення — коротке слово або фраза, яка підходить у пропуск.\n\n';
+        } else if (questionData.questionType === 'select_in_text') {
+            userMsg += 'У питанні є пропуски з ключами A0, A1, A2 — для кожного вказано список доступних варіантів у квадратних дужках [варіант1 | варіант2 | ...]. '
+                + 'Обери ОДИН варіант зі списку для кожного пропуску. У полі answer вкажи: A0=обраний_варіант; A1=обраний_варіант.\n\n';
+        } else if (questionData.questionType === 'order_words') {
+            userMsg += 'Розташуй слова/фрагменти у правильному порядку. У полі answer перерахуй їх через крапку з комою у потрібному порядку: слово1; слово2; слово3. '
+                + 'Використовуй точно ті слова, що перелічені у варіантах.\n\n';
+        } else if (questionData.questionType === 'text_input_multi') {
+            userMsg += 'Це питання з кількома полями для відповідей (перелічені у варіантах). '
+                + 'У полі answer дай відповіді у тому ж порядку через крапку з комою: відповідь1; відповідь2; відповідь3.\n\n';
         } else if (questionData.isMultiQuiz || questionData.isMulti) {
             userMsg += 'Це питання може мати КІЛЬКА правильних відповідей.\n\n';
         } else if (['short_text', 'paragraph', 'open_ended'].includes(questionData.questionType)) {

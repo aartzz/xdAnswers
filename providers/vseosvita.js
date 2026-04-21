@@ -196,7 +196,422 @@
             questionRoot.querySelectorAll('.v-test-questions-select-block .t-text, .v-test-questions-select-block .t-text-guest, .answer-text, .test-answer').forEach(el => {
                 el.setAttribute('data-xd-option', 'true');
             });
+            // NEW: premium format interactive elements (types 12, 13)
+            // type 12 - true/false buttons
+            questionRoot.querySelectorAll('button.item-true-false').forEach(btn => {
+                btn.setAttribute('data-xd-option', 'true');
+            });
+            // type 13 - order-words clickable tokens
+            questionRoot.querySelectorAll('.word-queue-test_question_sentence-item').forEach(token => {
+                token.setAttribute('data-xd-option', 'true');
+            });
         }
+
+        // ── Premium format support (dispatched by data-quest_type attribute) ──
+        // These handlers cover vseosvita premium question formats that the legacy
+        // CSS-heuristic branch above doesn't recognise. They kick in ONLY when
+        // the heuristic branch returns questionType='unknown'.
+
+        // Find the .vr-quest wrapper carrying data-quest_type, starting from questionRoot.
+        function findVrQuest(questionRoot) {
+            if (!questionRoot) return null;
+            return questionRoot.closest?.('.vr-quest[data-quest_type]')
+                || questionRoot.querySelector?.('.vr-quest[data-quest_type]')
+                || null;
+        }
+
+        // Format normalisation: vseosvita uses a mix of non-breaking spaces and odd whitespace.
+        function normalize(text) {
+            return (text || '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        // ── Type 12: true/false ────────────────────────────────────────────
+        function collectTrueFalse(vrQuest) {
+            const buttons = Array.from(vrQuest.querySelectorAll('.true-false_test-wrap button.item-true-false'));
+            if (buttons.length < 2) return null;
+            const items = buttons.map(btn => ({
+                text: normalize(btn.textContent) || (btn.classList.contains('green') ? 'Правда' : 'Неправда'),
+                element: btn
+            }));
+            return { formatType: 'true_false', buttons: items };
+        }
+
+        // ── Type 3: single text input ──────────────────────────────────────
+        // ── Type 5: multi text input ───────────────────────────────────────
+        function collectTextInputs(vrQuest) {
+            // Prefer labels because they carry the field ordering semantic ("Відповідь 1:", ...)
+            const inputs = [];
+            vrQuest.querySelectorAll('label').forEach(label => {
+                const input = label.querySelector('input[type="text"]');
+                if (input) {
+                    const labelText = normalize(label.childNodes[0]?.textContent) || normalize(label.textContent).split(':')[0];
+                    inputs.push({ label: labelText || `Поле ${inputs.length + 1}`, element: input });
+                }
+            });
+            // Fallback: any text input directly inside the quest
+            if (inputs.length === 0) {
+                vrQuest.querySelectorAll('input[type="text"]').forEach((input, idx) => {
+                    inputs.push({ label: `Поле ${idx + 1}`, element: input });
+                });
+            }
+            if (inputs.length === 0) return null;
+            return {
+                formatType: inputs.length > 1 ? 'text_input_multi' : 'text_input_single',
+                inputs
+            };
+        }
+
+        // ── Type 6: fill-in-blank (inline contenteditable spans) ───────────
+        function collectFillBlanks(vrQuest) {
+            const spans = Array.from(vrQuest.querySelectorAll('span.vr-fill-the-gap.vr-control[data-key]'));
+            if (spans.length === 0) return null;
+            const blanks = spans.map(span => ({
+                key: span.getAttribute('data-key') || '',
+                element: span
+            })).filter(b => b.key);
+            if (blanks.length === 0) return null;
+            return { formatType: 'fill_blank', blanks };
+        }
+
+        // ── Type 7: select-in-text (inline dropdown) ───────────────────────
+        // Each blank has a sibling <span>[<strong>opt1, opt2, opt3</strong>]</span>
+        // We extract the options list from the sibling so the AI knows what to pick.
+        function collectSelectInText(vrQuest) {
+            const spans = Array.from(vrQuest.querySelectorAll('span.vr-fill-the-gap-select.vr-control[data-key]'));
+            if (spans.length === 0) return null;
+            const blanks = spans.map(span => {
+                const key = span.getAttribute('data-key') || '';
+                // Look for the options listed in the sibling/next element
+                let options = [];
+                let sibling = span.nextElementSibling;
+                // Walk a few siblings forward to find the options span with <strong>
+                for (let i = 0; i < 3 && sibling; i++) {
+                    const strong = sibling.querySelector?.('strong');
+                    if (strong) {
+                        options = normalize(strong.textContent).split(',').map(s => s.trim()).filter(Boolean);
+                        break;
+                    }
+                    sibling = sibling.nextElementSibling;
+                }
+                return { key, options, element: span };
+            }).filter(b => b.key);
+            if (blanks.length === 0) return null;
+            return { formatType: 'select_in_text', blanks };
+        }
+
+        // ── Type 8 extras: ordering with <select> dropdowns ────────────────
+        // (Already detected by legacy branch as 'ordering', but that branch doesn't
+        // support the select-based variant. Kept here as a fallback if the legacy
+        // branch ever returns 'unknown' for this DOM shape.)
+        function collectOrderingSelect(vrQuest) {
+            const blocks = Array.from(vrQuest.querySelectorAll('.v-test-questions-select-block'));
+            if (blocks.length === 0) return null;
+            const items = blocks.map((block, idx) => {
+                const select = block.querySelector('select');
+                const textEl = block.querySelector('.t-text-guest, .t-text');
+                return {
+                    index: idx + 1,
+                    text: normalize(textEl?.textContent) || '',
+                    element: select || block
+                };
+            }).filter(i => i.text);
+            if (items.length === 0) return null;
+            return { formatType: 'ordering_select', items };
+        }
+
+        // ── Type 13: order-words (click tokens in order) ───────────────────
+        function collectOrderWords(vrQuest) {
+            const tokens = Array.from(vrQuest.querySelectorAll('.word-queue-test_question_sentence-wrap-testing .word-queue-test_question_sentence-item'));
+            if (tokens.length < 2) return null;
+            const items = tokens.map(t => ({ text: normalize(t.textContent), element: t })).filter(t => t.text);
+            if (items.length < 2) return null;
+            return { formatType: 'order_words', tokens: items };
+        }
+
+        // ── Type 18: free-response (essay / textarea) ──────────────────────
+        function collectFreeResponse(vrQuest) {
+            const textarea = vrQuest.querySelector('textarea') || vrQuest.querySelector('[contenteditable="true"]');
+            // Static dumps may have no textarea (preview mode) — still classify the type
+            // so the AI prompt triggers and autoSelectAnswer's fallback branch can fill
+            // the textarea that vseosvita renders at runtime.
+            return { formatType: 'free_response', element: textarea || null };
+        }
+
+        // Dispatch by data-quest_type; returns { formatType, ...meta } or null.
+        function detectPremiumFormat(questionRoot) {
+            const vrQuest = findVrQuest(questionRoot);
+            if (!vrQuest) return null;
+            const dqt = vrQuest.getAttribute('data-quest_type');
+            if (!dqt) return null;
+
+            let meta = null;
+            switch (dqt) {
+                case '3':  meta = collectTextInputs(vrQuest); break;    // single input
+                case '5':  meta = collectTextInputs(vrQuest); break;    // multi input (same collector, distinguishes by count)
+                case '6':  meta = collectFillBlanks(vrQuest); break;
+                case '7':  meta = collectSelectInText(vrQuest); break;
+                case '8':  meta = collectOrderingSelect(vrQuest); break; // fallback only - legacy branch usually catches this
+                case '12': meta = collectTrueFalse(vrQuest); break;
+                case '13': meta = collectOrderWords(vrQuest); break;
+                case '18': meta = collectFreeResponse(vrQuest); break;
+                default:
+                    return null; // unsupported premium type (drag/canvas/slider/image-hotspot)
+            }
+            if (!meta) return null;
+            meta.vrQuest = vrQuest;
+            meta.dataQuestType = dqt;
+            return meta;
+        }
+
+        // Build the AI-side optionsText for formats that expose choices.
+        function premiumOptionsText(meta) {
+            if (!meta) return undefined;
+            if (meta.formatType === 'true_false') {
+                return meta.buttons.map((b, i) => `${String.fromCharCode(65 + i)}: ${b.text}`).join('\n');
+            }
+            if (meta.formatType === 'order_words') {
+                return meta.tokens.map(t => `- ${t.text}`).join('\n');
+            }
+            if (meta.formatType === 'text_input_multi') {
+                return meta.inputs.map(i => `- ${i.label}`).join('\n');
+            }
+            if (meta.formatType === 'fill_blank') {
+                return meta.blanks.map(b => `- Пропуск ${b.key}`).join('\n');
+            }
+            if (meta.formatType === 'select_in_text') {
+                return meta.blanks
+                    .map(b => `- ${b.key}: [${b.options.join(' | ')}]`)
+                    .join('\n');
+            }
+            if (meta.formatType === 'ordering_select') {
+                return meta.items.map(i => `- ${i.text}`).join('\n');
+            }
+            return undefined;
+        }
+
+        // Map premium formatType to the existing questionType vocabulary that
+        // src/ai/request.js understands (plus new ones we're adding).
+        function premiumQuestionType(formatType) {
+            switch (formatType) {
+                case 'true_false':       return 'true_false';
+                case 'text_input_single':return 'short_text';
+                case 'text_input_multi': return 'text_input_multi';
+                case 'fill_blank':       return 'fill_blank';
+                case 'select_in_text':   return 'select_in_text';
+                case 'order_words':      return 'order_words';
+                case 'ordering_select':  return 'ordering';
+                case 'free_response':    return 'paragraph';
+                default:                 return 'unknown';
+            }
+        }
+
+        // ── Appliers: execute AI answer against the DOM ───────────────────
+        // Each applier receives the parsed AI answer string and the meta captured
+        // at detection time. They're wired into window.xdAnswers._customAutoAnswer
+        // only for formats that need custom click/fill logic; simple text-fill
+        // (single input, textarea) falls back to the default autoSelectAnswer.
+
+        // Parse "A0=value; A1=value2" into a Map { 'A0' -> 'value', 'A1' -> 'value2' }
+        function parseKeyedAnswer(answerText) {
+            const out = new Map();
+            if (!answerText) return out;
+            const parts = answerText.split(/[;\n]/).map(s => s.trim()).filter(Boolean);
+            for (const part of parts) {
+                const m = part.match(/^([A-Za-z]\d+)\s*[=:\-\u2013\u2014]\s*(.+)$/);
+                if (m) {
+                    out.set(m[1].toUpperCase(), m[2].trim());
+                }
+            }
+            return out;
+        }
+
+        // Set a text value using the native setter (so Vue/React pick up the change).
+        function setNativeValue(el, value) {
+            const proto = el instanceof HTMLTextAreaElement
+                ? window.HTMLTextAreaElement.prototype
+                : (el instanceof HTMLSelectElement ? window.HTMLSelectElement.prototype : window.HTMLInputElement.prototype);
+            const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+            if (setter) setter.call(el, value);
+            else el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        function applyTrueFalse(meta, answerText) {
+            const norm = normalize(answerText).toLowerCase();
+            // Map Ukrainian/English true-false synonyms to the button classes.
+            const truthy = /(^|\s)(правда|так|вірно|істина|true|yes)(\s|$)/;
+            const falsy = /(^|\s)(неправда|ні|невірно|хибно|хиба|хибне|false|no)(\s|$)/;
+            let target = null;
+            if (truthy.test(norm)) target = meta.buttons.find(b => b.element.classList.contains('green'))?.element;
+            else if (falsy.test(norm)) target = meta.buttons.find(b => b.element.classList.contains('red'))?.element;
+            // Fallback: fuzzy text match
+            if (!target) {
+                const best = meta.buttons.find(b => normalize(b.text).toLowerCase() === norm);
+                target = best?.element;
+            }
+            if (target) {
+                target.click();
+                target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+            }
+        }
+
+        function applyTextInputSingle(meta, answerText) {
+            const input = meta.inputs[0]?.element;
+            if (input) setNativeValue(input, answerText);
+        }
+
+        function applyTextInputMulti(meta, answerText) {
+            // Expect "answer1; answer2; answer3" in provider-order.
+            const parts = answerText.split(/;\s*|\n/).map(s => s.trim()).filter(Boolean);
+            meta.inputs.forEach((field, idx) => {
+                const val = parts[idx];
+                if (val != null && field.element) setNativeValue(field.element, val);
+            });
+        }
+
+        function applyFillBlanks(meta, answerText) {
+            const map = parseKeyedAnswer(answerText);
+            meta.blanks.forEach(blank => {
+                const val = map.get(blank.key.toUpperCase());
+                if (val == null) return;
+                try {
+                    // At runtime vseosvita injects an <input type="text"> inside
+                    // the .vr-fill-the-gap span (same data-key). Prefer that.
+                    // Fallback to contenteditable span (which is what static
+                    // preview dumps ship before runtime hydration).
+                    const input = blank.element.querySelector('input[type="text"]');
+                    if (input) {
+                        setNativeValue(input, val);
+                        input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                    } else {
+                        blank.element.setAttribute('contenteditable', 'true');
+                        blank.element.textContent = val;
+                        blank.element.dispatchEvent(new Event('input', { bubbles: true }));
+                        blank.element.dispatchEvent(new Event('change', { bubbles: true }));
+                        blank.element.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+                    }
+                } catch (e) {
+                    console.warn('[xdAnswers/vseosvita] fill_blank apply failed:', e);
+                }
+            });
+        }
+
+        function applySelectInText(meta, answerText) {
+            // Runtime DOM for type 7 is not fully known from static dumps; best-effort:
+            // - Set textContent on the span (visual);
+            // - Click the span to open a dropdown (if vseosvita attaches one);
+            // - Dispatch input events in case it's contenteditable-backed.
+            // NOTE: may need refinement once observed on live vseosvita runtime.
+            const map = parseKeyedAnswer(answerText);
+            meta.blanks.forEach(blank => {
+                const val = map.get(blank.key.toUpperCase());
+                if (val == null) return;
+                try {
+                    blank.element.setAttribute('contenteditable', 'true');
+                    blank.element.textContent = val;
+                    blank.element.dispatchEvent(new Event('input', { bubbles: true }));
+                    blank.element.dispatchEvent(new Event('change', { bubbles: true }));
+                } catch (e) {
+                    console.warn('[xdAnswers/vseosvita] select_in_text apply failed:', e);
+                }
+            });
+        }
+
+        function applyOrderWords(meta, answerText) {
+            // AI returns words separated by "; " in the desired order.
+            // Click tokens sequentially; vseosvita moves each clicked token to the answer area.
+            const wanted = answerText.split(/;\s*|\n/).map(s => normalize(s).toLowerCase()).filter(Boolean);
+            const remaining = meta.tokens.slice();
+            for (const w of wanted) {
+                // Find closest matching token (Levenshtein-like: prefer exact, then substring).
+                let hitIdx = remaining.findIndex(t => normalize(t.text).toLowerCase() === w);
+                if (hitIdx < 0) {
+                    hitIdx = remaining.findIndex(t => normalize(t.text).toLowerCase().includes(w) || w.includes(normalize(t.text).toLowerCase()));
+                }
+                if (hitIdx < 0) continue;
+                const token = remaining.splice(hitIdx, 1)[0];
+                if (token?.element) {
+                    token.element.click();
+                    token.element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                    token.element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                }
+            }
+        }
+
+        function applyFreeResponse(meta, answerText) {
+            // Use the element captured at detection time if present, otherwise
+            // search the latest DOM (vseosvita renders the textarea lazily for type 18).
+            let target = meta.element;
+            if (!target && meta.vrQuest) {
+                target = meta.vrQuest.querySelector('textarea') || meta.vrQuest.querySelector('[contenteditable="true"]');
+            }
+            if (!target) return;
+            if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+                setNativeValue(target, answerText);
+            } else {
+                // contenteditable
+                target.textContent = answerText;
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+                target.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+
+        function applyOrderingSelect(meta, answerText) {
+            // AI returns items separated by "; " in correct order.
+            // For each listed item, find matching block and set its <select> to the
+            // position number (1-based).
+            const wanted = answerText.split(/;\s*|\n/).map(s => normalize(s).toLowerCase()).filter(Boolean);
+            wanted.forEach((want, positionIdx) => {
+                const hit = meta.items.find(it => {
+                    const t = normalize(it.text).toLowerCase();
+                    return t === want || t.includes(want) || want.includes(t);
+                });
+                if (hit && hit.element && hit.element.tagName === 'SELECT') {
+                    setNativeValue(hit.element, String(positionIdx + 1));
+                }
+            });
+        }
+
+        // Central applier dispatcher used as window.xdAnswers._customAutoAnswer.
+        function makeCustomApplier(meta) {
+            return function(answerText /*, parsed */) {
+                if (!answerText || !meta) return;
+                try {
+                    switch (meta.formatType) {
+                        case 'true_false':       applyTrueFalse(meta, answerText); break;
+                        case 'text_input_single':applyTextInputSingle(meta, answerText); break;
+                        case 'text_input_multi': applyTextInputMulti(meta, answerText); break;
+                        case 'fill_blank':       applyFillBlanks(meta, answerText); break;
+                        case 'select_in_text':   applySelectInText(meta, answerText); break;
+                        case 'order_words':      applyOrderWords(meta, answerText); break;
+                        case 'ordering_select':  applyOrderingSelect(meta, answerText); break;
+                        case 'free_response':    applyFreeResponse(meta, answerText); break;
+                    }
+                } catch (e) {
+                    console.warn('[xdAnswers/vseosvita] customApplier error:', e);
+                }
+            };
+        }
+
+        // Formats that need a CUSTOM applier (anything other than simple click-a-label
+        // or fill-single-textbox, which the default autoSelectAnswer already covers).
+        const CUSTOM_APPLIER_FORMATS = new Set([
+            'true_false',           // button click (green/red classes) - custom for class-based TRUE/FALSE mapping
+            'text_input_multi',     // multiple fields, parse "; "-separated
+            'fill_blank',           // contenteditable spans OR inner input[type=text], parse "A0=val"
+            'select_in_text',       // contenteditable + runtime dropdown (best-effort)
+            'ordering_select'       // set <select> values by position
+        ]);
+        // order_words relies on default autoSelectAnswer (the "; "-split + fuzzy
+        // match naturally clicks tokens in answer order).
+        // text_input_single and free_response rely on default autoSelectAnswer
+        // fallback (it already handles `input[type="text"]` and `textarea`).
+        // true_false COULD fall back to default click since both buttons are now
+        // data-xd-option tagged, but we keep a custom applier so TRUE/FALSE map
+        // unambiguously to the .green/.red button class regardless of button text.
+
 
         function detectQuestionData() {
             const questionRoot = document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .test-question-text, .vseosvita-test-content');
@@ -243,16 +658,59 @@
                 questionType = 'quiz';
             }
 
+            // NEW: premium format detection via data-quest_type attribute.
+            // Only runs when legacy CSS heuristics didn't recognise the format —
+            // so existing working types (quiz/multiquiz/matching/ordering/short_text)
+            // are not affected.
+            let vseosvitaMeta = null;
+            if (questionType === 'unknown') {
+                vseosvitaMeta = detectPremiumFormat(questionRoot);
+                if (vseosvitaMeta) {
+                    questionType = premiumQuestionType(vseosvitaMeta.formatType);
+                }
+            } else if (questionType === 'short_text') {
+                // Upgrade path: legacy branch classifies type 5 (multi-input) as
+                // short_text because it sees `a-test-lab-inp` + input[type=text].
+                // If data-quest_type="5" we override to text_input_multi so the
+                // multi-field applier runs. Does NOT affect genuine type 3 /
+                // short_text — those stay on the legacy path.
+                const vq = findVrQuest(questionRoot);
+                if (vq && vq.getAttribute('data-quest_type') === '5') {
+                    const meta = collectTextInputs(vq);
+                    if (meta && meta.formatType === 'text_input_multi') {
+                        vseosvitaMeta = meta;
+                        vseosvitaMeta.vrQuest = vq;
+                        vseosvitaMeta.dataQuestType = '5';
+                        questionType = 'text_input_multi';
+                    }
+                }
+            }
+
+            // Merge premium optionsText into the options list when no legacy options were found.
+            let premiumOpts;
+            if (vseosvitaMeta && !options.length) {
+                premiumOpts = premiumOptionsText(vseosvitaMeta);
+            }
+
             return {
                 root: questionRoot,
                 text,
                 options,
-                optionsText: options.join('\n') || undefined,
+                optionsText: options.join('\n') || premiumOpts || undefined,
                 base64ImageSources: imgs,
                 questionType,
                 isMultiQuiz,
-                isMulti: isMultiQuiz
+                isMulti: isMultiQuiz,
+                vseosvitaMeta
             };
+        }
+
+        // Wire a custom applier for premium formats that need it.
+        // Runs right before processQuestion() / oneclick-handler-triggered processQuestion.
+        function installCustomApplier(meta) {
+            if (meta && CUSTOM_APPLIER_FORMATS.has(meta.formatType)) {
+                window.xdAnswers._customAutoAnswer = makeCustomApplier(meta);
+            }
         }
 
         function checkQuestion(force = false) {
@@ -268,7 +726,12 @@
                 text: questionData.text,
                 options: keyOptions,
                 type: questionData.questionType,
-                images: questionData.base64ImageSources
+                images: questionData.base64ImageSources,
+                // Include premium format signature so question-change detection fires
+                // when the same wrapper hosts a different premium question.
+                premium: questionData.vseosvitaMeta
+                    ? questionData.vseosvitaMeta.formatType + ':' + (questionData.vseosvitaMeta.dataQuestType || '')
+                    : null
             });
 
             if (!force && currentKey === lastProcessedKey) return;
@@ -290,9 +753,13 @@
                     const savedQuestionType = questionData.questionType;
                     const savedIsMultiQuiz = questionData.isMultiQuiz;
                     const savedIsMulti = questionData.isMulti;
+                    const savedMeta = questionData.vseosvitaMeta;
                     window.xdAnswers.setupOneClickHandler(container, async () => {
                         // Re-mark options in case DOM changed since last detection
                         markOptionElements(container);
+                        // Install custom applier ONLY at click time so it's fresh
+                        // and doesn't leak across questions.
+                        installCustomApplier(savedMeta);
                         const images = await Promise.all(savedImageUrls.map(src => window.xdAnswers.imageToBase64(src)));
                         return {
                             text: savedText,
@@ -309,6 +776,8 @@
                 window.xdAnswers.attachAndPositionHelper();
             } else {
                 // Normal: auto-process
+                // Install custom applier right before processQuestion consumes it.
+                installCustomApplier(questionData.vseosvitaMeta);
                 const imgPromises = questionData.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src));
                 Promise.all(imgPromises).then(images => {
                     window.xdAnswers.processQuestion({
