@@ -38,7 +38,7 @@
         "*://naurok.com.ua/test/realtime-client/*",
         "*://naurok.ua/test/realtime-client/*"
       ],
-      "js": ["version.js", "utils.js", "providers/naurok.js"],
+      "js": ["version.js", "src/core/constants.js", "src/core/settings-defaults.js", "src/core/state.js", "src/core/version.js", "src/core/settings.js", "src/core/http.js", "src/core/markdown.js", "src/ai/search.js", "src/ai/request.js", "src/ai/stream.js", "src/ai/parse.js", "src/ai/answer.js", "src/ai/stream-answer.js", "src/dom/match.js", "src/dom/select.js", "src/dom/silent.js", "src/dom/oneclick.js", "src/ai/process.js", "src/ui/draggable.js", "src/ui/styles.js", "src/ui/helper.js", "providers/naurok.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -47,7 +47,7 @@
         "*://vseosvita.ua/test/go-olp*",
         "*://vseosvita.ua/test/start/*"
       ],
-      "js": ["version.js", "utils.js", "providers/vseosvita.js"],
+      "js": ["version.js", "src/core/constants.js", "src/core/settings-defaults.js", "src/core/state.js", "src/core/version.js", "src/core/settings.js", "src/core/http.js", "src/core/markdown.js", "src/ai/search.js", "src/ai/request.js", "src/ai/stream.js", "src/ai/parse.js", "src/ai/answer.js", "src/ai/stream-answer.js", "src/dom/match.js", "src/dom/select.js", "src/dom/silent.js", "src/dom/oneclick.js", "src/ai/process.js", "src/ui/draggable.js", "src/ui/styles.js", "src/ui/helper.js", "providers/vseosvita.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -58,7 +58,7 @@
         "*://docs.google.com/forms/d/e/*/viewform*",
         "*://docs.google.com/forms/d/e/*/formResponse*"
       ],
-      "js": ["version.js", "utils.js", "providers/gforms.js"],
+      "js": ["version.js", "src/core/constants.js", "src/core/settings-defaults.js", "src/core/state.js", "src/core/version.js", "src/core/settings.js", "src/core/http.js", "src/core/markdown.js", "src/ai/search.js", "src/ai/request.js", "src/ai/stream.js", "src/ai/parse.js", "src/ai/answer.js", "src/ai/stream-answer.js", "src/dom/match.js", "src/dom/select.js", "src/dom/silent.js", "src/dom/oneclick.js", "src/ai/process.js", "src/ui/draggable.js", "src/ui/styles.js", "src/ui/helper.js", "providers/gforms.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -66,7 +66,7 @@
       "matches": [
         "*://justclass.com.ua/hw/*"
       ],
-      "js": ["version.js", "utils.js", "providers/justclass.js"],
+      "js": ["version.js", "src/core/constants.js", "src/core/settings-defaults.js", "src/core/state.js", "src/core/version.js", "src/core/settings.js", "src/core/http.js", "src/core/markdown.js", "src/ai/search.js", "src/ai/request.js", "src/ai/stream.js", "src/ai/parse.js", "src/ai/answer.js", "src/ai/stream-answer.js", "src/dom/match.js", "src/dom/select.js", "src/dom/silent.js", "src/dom/oneclick.js", "src/ai/process.js", "src/ui/draggable.js", "src/ui/styles.js", "src/ui/helper.js", "providers/justclass.js"],
       "run_at": "document_end",
       "all_frames": true
     },
@@ -76,7 +76,7 @@
         "*://forms.office.com/pages/responsepage.aspx*",
         "*://forms.office.com/r/*"
       ],
-      "js": ["version.js", "utils.js", "providers/msforms.js"],
+      "js": ["version.js", "src/core/constants.js", "src/core/settings-defaults.js", "src/core/state.js", "src/core/version.js", "src/core/settings.js", "src/core/http.js", "src/core/markdown.js", "src/ai/search.js", "src/ai/request.js", "src/ai/stream.js", "src/ai/parse.js", "src/ai/answer.js", "src/ai/stream-answer.js", "src/dom/match.js", "src/dom/select.js", "src/dom/silent.js", "src/dom/oneclick.js", "src/ai/process.js", "src/ui/draggable.js", "src/ui/styles.js", "src/ui/helper.js", "providers/msforms.js"],
       "run_at": "document_end",
       "all_frames": true
     }
