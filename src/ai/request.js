@@ -4,14 +4,14 @@
     window.xdAnswers = window.xdAnswers || {};
     window.xdAnswers._internal = window.xdAnswers._internal || {};
 
-    function buildMessages(questionData) {
+    function buildMessages(questionData, showAnswerOnlyOverride) {
         const I = window.xdAnswers._internal;
         const ANSWER_ONLY_SYSTEM_PROMPT = I.ANSWER_ONLY_SYSTEM_PROMPT;
         const getActiveSearchProvider = I.getActiveSearchProvider;
 
         const settings = window.xdAnswers.settings;
         let systemPrompt = questionData.customPromptPrefix || settings.promptPrefix;
-        if (settings.showAnswerOnly || settings.silentMode === 'oneclick') {
+        if (showAnswerOnlyOverride !== undefined ? showAnswerOnlyOverride : (settings.showAnswerOnly || settings.silentMode === 'oneclick')) {
             systemPrompt = ANSWER_ONLY_SYSTEM_PROMPT;
         }
 
@@ -110,8 +110,7 @@
             const userContent = [{ type: 'text', text: userMsg }];
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
-            const body = { model: s.model, messages, max_tokens: 4096 };
-            if (stream) body.stream = true;
+            const body = { model: s.model, messages, max_tokens: 4096, stream: !!stream };
             if (includeTools) body.tools = buildWebSearchTool('openai');
             return body;
         }
@@ -119,9 +118,8 @@
         if (s.apiFormat === 'anthropic') {
             const userContent = [{ type: 'text', text: userMsg }];
             images.forEach(img => userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } }));
-            const body = { model: s.model, messages: [{ role: 'user', content: userContent }], max_tokens: 4096 };
+            const body = { model: s.model, messages: [{ role: 'user', content: userContent }], max_tokens: 4096, stream: !!stream };
             if (systemPrompt) body.system = systemPrompt;
-            if (stream) body.stream = true;
             if (includeTools) body.tools = buildWebSearchTool('anthropic');
             return body;
         }
