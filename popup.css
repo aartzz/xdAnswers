@@ -479,6 +479,25 @@ textarea {
     max-height: 300px;
     overflow-y: auto;
     overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.model-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.model-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.model-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.model-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .model-provider-group {
@@ -1341,5 +1360,157 @@ input.invalid {
 .hotkey-clear:hover {
     opacity: 1;
     border-color: rgba(255, 255, 255, 0.25);
+}
+
+.consensus-separator {
+    margin-top: 12px;
+    margin-bottom: 12px;
+}
+
+/* Consensus mode */
+.consensus-runs-container {
+    display: none;
+    margin-top: 8px;
+}
+
+.consensus-run-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+}
+
+.consensus-run-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.consensus-run-provider {
+    flex: 1;
+    min-width: 0;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--popup-text);
+    font-size: 13px;
+    padding: 5px 8px;
+}
+
+.consensus-run-provider:focus {
+    outline: none;
+    border-color: var(--popup-border);
+}
+
+.consensus-run-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.consensus-answeronly-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    opacity: 0.9;
+    white-space: nowrap;
+}
+
+.consensus-run-remove {
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: var(--popup-text);
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0.45;
+    width: 28px;
+    height: 28px;
+    line-height: 1;
+    transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.consensus-run-remove:hover {
+    opacity: 1;
+    border-color: #f87171;
+    color: #f87171;
+}
+
+.consensus-run-model-panel {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.consensus-run-model-search {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.consensus-run-model-search-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: var(--popup-text);
+    font-size: 12px;
+    padding: 6px 8px;
+}
+
+.consensus-run-model-search-input:focus {
+    outline: none;
+    border-color: var(--popup-border);
+}
+
+.consensus-run-model-list {
+    max-height: 150px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.consensus-run-model-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.consensus-run-model-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.consensus-run-model-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.consensus-run-model-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.add-consensus-run-btn {
+    display: none;
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: var(--popup-text);
+    font-size: 13px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s, border-color 0.15s;
+}
+
+.add-consensus-run-btn:hover {
+    opacity: 1;
+    border-color: var(--popup-border);
 }
 

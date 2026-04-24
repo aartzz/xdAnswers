@@ -95,6 +95,14 @@ const TRANSLATIONS = {
         // Web Search + Hotkey
         webSearchLabel: 'Веб-пошук',
         webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup або SearchAPI) з API-ключем у вкладці Провайдери.',
+        consensusLabel: 'Режим консенсусу',
+        consensusHint: 'Запускати основну + додаткові моделі паралельно і показувати відповідь консенсусу. Додайте хоча б 1 додаткову модель.',
+        consensusAddRun: '+ Додати модель',
+        consensusProviderLabel: 'Провайдер:',
+        consensusModelLabel: 'Модель:',
+        consensusAnswerOnly: 'Лише відповідь',
+        consensusRemoveRun: 'Видалити',
+        consensusNoProviders: 'Немає провайдерів',
         hotkeyLabel: 'Гаряча клавіша',
         hotkeyHint: 'Натисніть на комбінацію клавіш вище, щоб перепризначити.',
         hotkeyRecording: 'Натисніть комбінацію клавіш…',
@@ -176,6 +184,14 @@ const TRANSLATIONS = {
         ctxMillion: 'млн',
         webSearchLabel: 'Веб-поиск',
         webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup или SearchAPI) с API-ключом во вкладке Провайдеры.',
+        consensusLabel: 'Режим консенсуса',
+        consensusHint: 'Запускать основную + дополнительные модели параллельно и показывать ответ консенсуса. Добавьте хотя бы 1 дополнительную модель.',
+        consensusAddRun: '+ Добавить модель',
+        consensusProviderLabel: 'Провайдер:',
+        consensusModelLabel: 'Модель:',
+        consensusAnswerOnly: 'Только ответ',
+        consensusRemoveRun: 'Удалить',
+        consensusNoProviders: 'Нет провайдеров',
         hotkeyLabel: 'Горячая клавиша',
         hotkeyHint: 'Нажмите на комбинацию клавиш выше, чтобы переназначить.',
         hotkeyRecording: 'Нажмите комбинацию клавиш…',
@@ -257,6 +273,14 @@ const TRANSLATIONS = {
         ctxMillion: 'M',
         webSearchLabel: 'Web Search',
         webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup or SearchAPI) with API key in the Providers tab.',
+        consensusLabel: 'Consensus mode',
+        consensusHint: 'Run main + extra AI models in parallel and show the consensus answer. Add at least 1 extra model.',
+        consensusAddRun: '+ Add model',
+        consensusProviderLabel: 'Provider:',
+        consensusModelLabel: 'Model:',
+        consensusAnswerOnly: 'Answer only',
+        consensusRemoveRun: 'Remove',
+        consensusNoProviders: 'No providers',
         hotkeyLabel: 'Hotkey',
         hotkeyHint: 'Click the key combination above to rebind.',
         hotkeyRecording: 'Press a key combination…',
@@ -281,8 +305,8 @@ function applyLanguage() {
     // AI tab
     const providerLabel = document.querySelector('label[for="active-provider-trigger"]');
     if (providerLabel) providerLabel.textContent = t('providerLabel');
-    const modelsLabel = document.querySelector('.model-select-group > label');
-    if (modelsLabel) modelsLabel.innerHTML = `${t('modelsLabel')} <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span>`;
+    const modelsLabelText = document.getElementById('models-label-text');
+    if (modelsLabelText) modelsLabelText.textContent = t('modelsLabel');
     const modelInput = document.getElementById('model-name');
     if (modelInput) modelInput.placeholder = t('searchModel');
 
@@ -329,6 +353,8 @@ function applyLanguage() {
     if (webSearchSpan) webSearchSpan.textContent = t('webSearchLabel');
     const webSearchHintEl = document.getElementById('web-search-hint');
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
+    const addConsensusBtn = document.getElementById('add-consensus-run-btn');
+    if (addConsensusBtn) addConsensusBtn.textContent = t('consensusAddRun');
     // Hotkey
     const hotkeyLabel = document.getElementById('hotkey-label');
     if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
@@ -437,6 +463,7 @@ const NON_CHAT_TYPES = new Set(['embedding', 'rerank', 'audio', 'image', 'video'
 
 let allModels = [];
 let modelsDevCache = null; // { modelId: { n, f, a, r, c, l, m, p } }
+const providerModelsCache = {}; // providerId → [model objects] from API fetch
 
 function getApiProviderMeta(id) {
     return API_PROVIDERS.find(p => p.id === id) || API_PROVIDERS[0];
@@ -645,7 +672,11 @@ const DEFAULT_SETTINGS = {
         glowEffect: false,
         ...PREDEFINED_THEMES['Dark']
     },
-    customThemes: []
+    customThemes: [],
+    consensus: {
+        enabled: false,
+        runs: []
+    }
 };
 
 let settings;
@@ -696,7 +727,8 @@ async function loadSettings() {
                 ...loaded,
                 ...parsed,
                 providers: parsed.providers || [],
-                customization: { ...loaded.customization, ...(parsed.customization || {}) }
+                customization: { ...loaded.customization, ...(parsed.customization || {}) },
+                consensus: { ...loaded.consensus, ...(parsed.consensus || {}) }
             };
 
             // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
@@ -713,6 +745,13 @@ async function loadSettings() {
             }
             if (!Array.isArray(loaded.customThemes)) {
                 loaded.customThemes = [];
+            }
+            // Migration: add consensus defaults if missing
+            if (!loaded.consensus || typeof loaded.consensus !== 'object') {
+                loaded.consensus = { enabled: false, runs: [] };
+            }
+            if (!Array.isArray(loaded.consensus.runs)) {
+                loaded.consensus.runs = [];
             }
         } catch (e) {
             console.error('Failed to parse settings', e);
@@ -769,6 +808,9 @@ function populateUI() {
 
     // Web search toggle
     if (el.webSearchToggle) el.webSearchToggle.checked = !!settings.webSearchEnabled;
+
+    // Consensus mode run cards
+    renderConsensusRuns();
 
     el.glowEffectToggle.checked = settings.customization.glowEffect;
 
@@ -1288,6 +1330,46 @@ function makeRequest(options) {
     });
 }
 
+async function fetchModelsForProvider(provider) {
+    const format = API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
+    const base = provider.baseUrl.replace(/\/+$/, '');
+    const key = provider.apiKey;
+    let url, headers = {};
+
+    if (format === 'openai') {
+        url = `${base}/models`;
+        if (key) headers['Authorization'] = `Bearer ${key}`;
+    } else if (format === 'anthropic') {
+        url = `${base}/models`;
+        if (key) {
+            headers['x-api-key'] = key;
+            headers['anthropic-version'] = '2023-06-01';
+        }
+    } else if (format === 'google') {
+        url = `${base}/models${key ? '?key=' + key : ''}`;
+    } else {
+        return [];
+    }
+
+    const fullText = await new Promise((resolve, reject) => {
+        const port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
+        let data = '';
+        port.onMessage.addListener((msg) => {
+            if (msg.type === 'chunk') data += msg.data;
+            else if (msg.type === 'done') { resolve(data); port.disconnect(); }
+            else if (msg.type === 'error') { reject(new Error(msg.error + (msg.details ? ': ' + msg.details : ''))); port.disconnect(); }
+        });
+        port.onDisconnect.addListener(() => {
+            if (data) resolve(data);
+            else reject(new Error('Port disconnected'));
+        });
+        port.postMessage({ type: 'fetch_stream', payload: { url, method: 'GET', headers } });
+    });
+
+    const parsed = JSON.parse(fullText);
+    return processModels(parsed, format);
+}
+
 async function fetchModels() {
     const btn = uiElements.fetchModelsBtn;
     if (!btn) return;
@@ -1295,42 +1377,8 @@ async function fetchModels() {
     try {
         const active = getActiveProvider(settings);
         if (!active) { btn.classList.remove('spinning'); return; }
-        const format = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
-        const base = active.baseUrl.replace(/\/+$/, '');
-        const key = active.apiKey;
-        let url, headers = {};
-
-        if (format === 'openai') {
-            url = `${base}/models`;
-            if (key) headers['Authorization'] = `Bearer ${key}`;
-        } else if (format === 'anthropic') {
-            url = `${base}/models`;
-            if (key) {
-                headers['x-api-key'] = key;
-                headers['anthropic-version'] = '2023-06-01';
-            }
-        } else if (format === 'google') {
-            url = `${base}/models${key ? '?key=' + key : ''}`;
-        }
-
-        const fullText = await new Promise((resolve, reject) => {
-            const port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
-            let data = '';
-            port.onMessage.addListener((msg) => {
-                if (msg.type === 'chunk') data += msg.data;
-                else if (msg.type === 'done') { resolve(data); port.disconnect(); }
-                else if (msg.type === 'error') { reject(new Error(msg.error + (msg.details ? ': ' + msg.details : ''))); port.disconnect(); }
-            });
-            port.onDisconnect.addListener(() => {
-                if (data) resolve(data);
-                else reject(new Error('Port disconnected'));
-            });
-            port.postMessage({ type: 'fetch_stream', payload: { url, method: 'GET', headers } });
-        });
-
-        const parsed = JSON.parse(fullText);
-        allModels = processModels(parsed, format);
-        // Don't reset the input — keep selected model visible
+        allModels = await fetchModelsForProvider(active);
+        providerModelsCache[active.id] = allModels;
         renderModelList();
     } catch (e) {
         console.error('Failed to fetch models:', e);
@@ -1480,6 +1528,165 @@ function renderModelList() {
     });
 }
 
+const consensusModelSaveTimers = {};
+
+function getConsensusProviderDevKey(providerType) {
+    const provKeyLookup = {
+        openai: 'openai', anthropic: 'anthropic', google: 'google',
+        deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
+        cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral'
+    };
+    return provKeyLookup[providerType] || providerType || '';
+}
+
+function renderConsensusModelList(runIdx) {
+    const container = uiElements.consensusRunsContainer;
+    if (!container) return;
+
+    const card = container.querySelector(`.consensus-run-card[data-run-index="${runIdx}"]`);
+    if (!card) return;
+
+    const run = settings.consensus?.runs?.[runIdx];
+    if (!run) return;
+
+    const list = card.querySelector('.consensus-run-model-list');
+    const input = card.querySelector('.consensus-run-model-search-input');
+    if (!list || !input) return;
+
+    const currentValue = run.model || '';
+    const query = input.value.toLowerCase().trim();
+
+    const provider = (settings.providers || []).find(p => p.id === run.providerId);
+    const devProvId = getConsensusProviderDevKey(provider?.type || '');
+
+    // Use cached API models first, fallback to modelsDevCache
+    const cachedModels = providerModelsCache[run.providerId];
+    let providerModels = cachedModels ? [...cachedModels] : [];
+
+    if (!providerModels.length && devProvId && modelsDevCache) {
+        for (const [key, info] of Object.entries(modelsDevCache)) {
+            if (key.includes('/')) continue;
+            if (info.p === devProvId) {
+                providerModels.push({
+                    id: key,
+                    ownedBy: info.p || 'other',
+                    root: key,
+                    contextLength: info.l?.c || null
+                });
+            }
+        }
+    }
+
+    const hasModels = providerModels.length > 0;
+    let filtered = providerModels;
+    if (query) {
+        filtered = providerModels.filter(m =>
+            m.id.toLowerCase().includes(query) ||
+            formatModelName(m.id).toLowerCase().includes(query) ||
+            (m.ownedBy || '').toLowerCase().includes(query)
+        );
+    }
+
+    const groups = {};
+    for (const m of filtered) {
+        const providerKey = m.ownedBy || 'other';
+        if (!groups[providerKey]) groups[providerKey] = [];
+        groups[providerKey].push(m);
+    }
+
+    const sortedProviders = Object.keys(groups).sort();
+    const MAX_VISIBLE = 60;
+    let count = 0;
+    let html = '';
+
+    if (!provider || !hasModels) {
+        html = '<div class="model-empty">No models available</div>';
+        list.innerHTML = html;
+        return;
+    }
+
+    const exactMatch = providerModels.some(m => m.id.toLowerCase() === input.value.trim().toLowerCase());
+    if (input.value.trim() && !exactMatch) {
+        html += `<div class="model-item custom" data-model-id="${escapeHTML(input.value.trim())}">
+            <span class="model-item-main"><span class="provider-icon-fallback">✎</span><span class="model-item-subtext"><span class="model-item-name">${escapeHTML(input.value.trim())}</span><span class="model-item-provider">${t('customModel')}</span></span></span>
+        </div>`;
+        count++;
+    }
+
+    for (const providerKey of sortedProviders) {
+        if (count >= MAX_VISIBLE) break;
+        const icon = getProviderIcon(providerKey);
+        const iconHtml = icon
+            ? `<img class="provider-icon" src="https://models.dev/logos/${icon}.svg" alt="" loading="lazy">`
+            : `<span class="provider-icon-fallback">${(providerKey[0] || '?').toUpperCase()}</span>`;
+        html += `<div class="model-provider-group">
+            <div class="model-provider-header">${iconHtml}<span>${providerKey}</span>
+            <span class="model-provider-count">${groups[providerKey].length}</span></div>`;
+
+        for (const m of groups[providerKey]) {
+            if (count >= MAX_VISIBLE) break;
+            const ctxHtml = m.contextLength ? `<span class="model-ctx">${formatContextLength(m.contextLength)}</span>` : '';
+            const familyIcon = getModelFamilyIcon(m.id);
+            const modelIcon = familyIcon
+                ? `<img class="model-icon" src="https://models.dev/logos/${familyIcon}.svg" alt="" loading="lazy">`
+                : `<span class="provider-icon-fallback">${(formatModelName(m.root || m.id)[0] || '?').toUpperCase()}</span>`;
+            const providerLabel = escapeHTML(m.ownedBy || 'other');
+            const isSelected = m.id === currentValue;
+
+            const devInfo = getModelDevInfo(m.id);
+            const badges = [];
+            if (devInfo) {
+                if (devInfo.a) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+                if (devInfo.r) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
+                if (devInfo.c) {
+                    const inp = devInfo.c.i, out = devInfo.c.o;
+                    if (inp !== undefined && out !== undefined) {
+                        const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
+                        const costStr = fmtCost(inp);
+                        badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
+                    }
+                }
+                if (devInfo.l && devInfo.l.c && !m.contextLength) {
+                    badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
+                }
+            } else if (m.capabilities?.vision) {
+                badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+            }
+            const badgesHtml = badges.join('');
+            const selectedClass = isSelected ? ' selected' : '';
+
+            html += `<div class="model-item${selectedClass}" data-model-id="${m.id}">
+                <span class="model-item-main">${modelIcon}<span class="model-item-subtext"><span class="model-item-name">${escapeHTML(formatModelName(m.root || m.id))}</span><span class="model-item-provider">${providerLabel}</span></span></span><span class="model-badges">${badgesHtml}${ctxHtml}</span>
+            </div>`;
+            count++;
+        }
+        html += '</div>';
+    }
+
+    if (filtered.length > MAX_VISIBLE) {
+        html += `<div class="model-more">+${filtered.length - MAX_VISIBLE} more — type to filter</div>`;
+    }
+    if (count === 0 && !input.value.trim()) {
+        html = '<div class="model-empty">No models available</div>';
+    } else if (count === 0) {
+        html = '<div class="model-empty">No models found</div>';
+    }
+
+    list.innerHTML = html;
+
+    const selectedEl = list.querySelector('.model-item.selected');
+    if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+
+    list.querySelectorAll('.model-item').forEach(el => {
+        el.addEventListener('click', async () => {
+            input.value = el.dataset.modelId;
+            settings.consensus.runs[runIdx].model = el.dataset.modelId;
+            await autoSave();
+            renderConsensusModelList(runIdx);
+        });
+    });
+}
+
 function normaliseHex(val) {
     if (!val) return null;
     const m = val.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
@@ -1522,6 +1729,97 @@ function setupColorInput(input, settingKey, cssVar, picker) {
     };
     picker.addEventListener('input', applyFromPicker);
     picker.addEventListener('change', applyFromPicker);
+}
+
+function renderConsensusRuns() {
+    const container = uiElements.consensusRunsContainer;
+    if (!container) return;
+
+    // Always visible — no toggle needed
+    container.style.display = 'block';
+    if (uiElements.addConsensusRunBtn) {
+        uiElements.addConsensusRunBtn.style.display = 'inline-block';
+    }
+
+    const nonSearchProviders = (settings.providers || []).filter(p => p.kind !== 'search');
+    const runs = (settings.consensus && settings.consensus.runs) || [];
+
+    container.innerHTML = runs.map((run, idx) => {
+        const providerOptions = nonSearchProviders.map(p =>
+            '<option value="' + escapeHTML(p.id) + '"' + (p.id === run.providerId ? ' selected' : '') + '>' + escapeHTML(p.name) + '</option>'
+        ).join('');
+        const hasProviders = nonSearchProviders.length > 0;
+        const selectedProviderId = run.providerId || '';
+        const hasSelectedProvider = selectedProviderId && nonSearchProviders.some(p => p.id === selectedProviderId);
+
+        return '<div class="consensus-run-card" data-run-index="' + idx + '">' +
+            '<div class="consensus-run-header">' +
+                '<select class="consensus-run-provider">' +
+                    (hasProviders ? '<option value=""' + (!hasSelectedProvider ? ' selected' : '') + '>&mdash;</option>' + providerOptions : '<option value="">' + t('consensusNoProviders') + '</option>') +
+                '</select>' +
+                '<div class="consensus-run-actions">' +
+                    '<label class="consensus-answeronly-label"><input type="checkbox" class="consensus-run-answeronly"' + (run.showAnswerOnly ? ' checked' : '') + '> ' + t('consensusAnswerOnly') + '</label>' +
+                    '<button type="button" class="consensus-run-remove" title="' + t('consensusRemoveRun') + '">✕</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="consensus-run-model-panel">' +
+                '<div class="consensus-run-model-search"><input type="text" class="consensus-run-model-search-input" value="' + escapeHTML(run.model || '') + '" placeholder="' + escapeHTML(t('searchModel')) + '" autocomplete="off"></div>' +
+                '<div class="consensus-run-model-list"></div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    // Wire events for run cards
+    container.querySelectorAll('.consensus-run-card').forEach((card, idx) => {
+        const providerSelect = card.querySelector('.consensus-run-provider');
+        const modelInput = card.querySelector('.consensus-run-model-search-input');
+        const answerOnlyCheckbox = card.querySelector('.consensus-run-answeronly');
+        const removeBtn = card.querySelector('.consensus-run-remove');
+
+        if (providerSelect) providerSelect.onchange = async () => {
+            settings.consensus.runs[idx].providerId = providerSelect.value;
+            settings.consensus.runs[idx].model = '';
+            modelInput.value = '';
+            const provider = settings.providers.find(p => p.id === providerSelect.value);
+            if (provider && !providerModelsCache[provider.id]) {
+                try {
+                    providerModelsCache[provider.id] = await fetchModelsForProvider(provider);
+                } catch (e) {
+                    console.error('Failed to fetch models for consensus provider:', e);
+                }
+            }
+            renderConsensusModelList(idx);
+            autoSave();
+        };
+        if (modelInput) modelInput.oninput = () => {
+            settings.consensus.runs[idx].model = modelInput.value.trim();
+            renderConsensusModelList(idx);
+            clearTimeout(consensusModelSaveTimers[idx]);
+            consensusModelSaveTimers[idx] = setTimeout(() => autoSave(), 300);
+        };
+        if (modelInput) modelInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                settings.consensus.runs[idx].model = modelInput.value.trim();
+                clearTimeout(consensusModelSaveTimers[idx]);
+                autoSave();
+                renderConsensusModelList(idx);
+            }
+        };
+        if (answerOnlyCheckbox) answerOnlyCheckbox.onchange = () => {
+            settings.consensus.runs[idx].showAnswerOnly = answerOnlyCheckbox.checked;
+            autoSave();
+        };
+        if (removeBtn) removeBtn.onclick = () => {
+            settings.consensus.runs.splice(idx, 1);
+            // Auto-enable consensus when 1+ extra runs exist (main model auto-included)
+            settings.consensus.enabled = settings.consensus.runs.length >= 1;
+            renderConsensusRuns();
+            autoSave();
+        };
+
+        renderConsensusModelList(idx);
+    });
 }
 
 function attachEventListeners() {
@@ -1572,6 +1870,25 @@ function attachEventListeners() {
         };
     }
 
+    // Add consensus run
+    if (el.addConsensusRunBtn) {
+        el.addConsensusRunBtn.onclick = () => {
+            if (!settings.consensus) settings.consensus = { enabled: false, runs: [] };
+            const nonSearchProviders = (settings.providers || []).filter(p => p.kind !== 'search');
+            const defaultProviderId = nonSearchProviders.length > 0 ? nonSearchProviders[0].id : '';
+            settings.consensus.runs.push({
+                id: generateId(),
+                providerId: defaultProviderId,
+                model: '',
+                showAnswerOnly: false
+            });
+            // Auto-enable consensus when 1+ extra runs exist (main model auto-included)
+            settings.consensus.enabled = settings.consensus.runs.length >= 1;
+            renderConsensusRuns();
+            autoSave();
+        };
+    }
+
     // Position grid: click cell → set defaultPosition, highlight active
     if (el.positionGrid) {
         el.positionGrid.addEventListener('click', (ev) => {
@@ -1596,6 +1913,7 @@ function attachEventListeners() {
         populateThemesGrid();
         renderProvidersTab();
         renderModelList();
+        renderConsensusRuns();
         autoSave();
     };
 
@@ -1749,6 +2067,8 @@ async function autoSave(overrides) {
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
+    // consensus.enabled is auto-computed from runs.length >= 1 (main model auto-included)
+    settings.consensus.enabled = (settings.consensus?.runs?.length || 0) >= 1;
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
     if (overrides) {
@@ -1806,6 +2126,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
         webSearchToggle: document.getElementById('web-search-toggle'),
+        consensusRunsContainer: document.getElementById('consensus-runs-container'),
+        addConsensusRunBtn: document.getElementById('add-consensus-run-btn'),
         positionGrid: document.getElementById('position-grid'),
         rememberDragToggle: document.getElementById('remember-drag-toggle'),
         themesGrid: document.getElementById('themes-grid'),
@@ -1844,5 +2166,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Auto-fetch models from provider API
     if (!allModels.length) {
         fetchModels().then(() => renderModelList());
+    }
+    // Pre-fetch models for existing consensus run providers
+    if (settings.consensus?.runs?.length) {
+        const providerIds = [...new Set(settings.consensus.runs.map(r => r.providerId).filter(Boolean))];
+        for (const pid of providerIds) {
+            const prov = settings.providers.find(p => p.id === pid);
+            if (prov && !providerModelsCache[pid]) {
+                fetchModelsForProvider(prov).then(models => {
+                    providerModelsCache[pid] = models;
+                    renderConsensusRuns();
+                }).catch(() => {});
+            }
+        }
     }
 });
