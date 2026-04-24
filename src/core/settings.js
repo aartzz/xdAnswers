@@ -32,6 +32,26 @@
         };
     }
 
+    function getEffectiveSettingsForRun(s, run) {
+        const I = window.xdAnswers._internal;
+        const DEFAULT_BASE_URLS = I.DEFAULT_BASE_URLS;
+        const API_FORMAT_MAP = I.API_FORMAT_MAP;
+
+        const provider = (s.providers || []).find(p => p.id === run.providerId);
+        if (!provider) return getEffectiveSettings(s);
+
+        const apiFormat = API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
+        const baseUrl = provider.baseUrl || DEFAULT_BASE_URLS[provider.type] || DEFAULT_BASE_URLS.openai;
+        return {
+            apiFormat: apiFormat,
+            baseUrl: baseUrl,
+            apiKey: provider.apiKey,
+            model: run.model || s.model,
+            promptPrefix: s.promptPrefix,
+            webSearchEnabled: false
+        };
+    }
+
     window.xdAnswers.loadSettings = async function() {
         const I = window.xdAnswers._internal;
         const DEFAULT_SETTINGS = I.DEFAULT_SETTINGS;
@@ -79,6 +99,10 @@
                 if (typeof s.silentMode === 'boolean') {
                     s.silentMode = s.silentMode ? 'ghost' : '';
                 }
+                // Migrate: add consensus defaults if missing
+                if (!s.consensus) {
+                    s.consensus = { enabled: false, runs: [] };
+                }
             } catch (e) {
                 console.error('xdAnswers: Failed to parse settings.', e);
             }
@@ -92,4 +116,5 @@
 
     window.xdAnswers._internal.getActiveProvider = getActiveProvider;
     window.xdAnswers._internal.getEffectiveSettings = getEffectiveSettings;
+    window.xdAnswers._internal.getEffectiveSettingsForRun = getEffectiveSettingsForRun;
 })();
