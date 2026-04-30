@@ -355,6 +355,8 @@ function applyLanguage() {
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
     const addConsensusBtn = document.getElementById('add-consensus-run-btn');
     if (addConsensusBtn) addConsensusBtn.textContent = t('consensusAddRun');
+    const consensusHintEl = document.getElementById('consensus-hint');
+    if (consensusHintEl) consensusHintEl.textContent = t('consensusHint');
     // Hotkey
     const hotkeyLabel = document.getElementById('hotkey-label');
     if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
@@ -1550,13 +1552,14 @@ function renderConsensusModelList(runIdx) {
     if (!run) return;
 
     const list = card.querySelector('.consensus-run-model-list');
-    const input = card.querySelector('.consensus-run-model-search-input');
+    const input = card.querySelector('.consensus-run-model-input');
     if (!list || !input) return;
 
     const currentValue = run.model || '';
     const query = input.value.toLowerCase().trim();
 
-    const provider = (settings.providers || []).find(p => p.id === run.providerId);
+    const effectiveProviderId = run.providerId || settings.activeProviderId || '';
+    const provider = (settings.providers || []).find(p => p.id === effectiveProviderId);
     const devProvId = getConsensusProviderDevKey(provider?.type || '');
 
     // Use cached API models first, fallback to modelsDevCache
@@ -1745,54 +1748,60 @@ function renderConsensusRuns() {
     const runs = (settings.consensus && settings.consensus.runs) || [];
 
     container.innerHTML = runs.map((run, idx) => {
-        const providerOptions = nonSearchProviders.map(p =>
-            '<option value="' + escapeHTML(p.id) + '"' + (p.id === run.providerId ? ' selected' : '') + '>' + escapeHTML(p.name) + '</option>'
-        ).join('');
-        const hasProviders = nonSearchProviders.length > 0;
-        const selectedProviderId = run.providerId || '';
-        const hasSelectedProvider = selectedProviderId && nonSearchProviders.some(p => p.id === selectedProviderId);
+        const effectiveProviderId = run.providerId || settings.activeProviderId || '';
+        const selectedProvider = (settings.providers || []).find(p => p.id === effectiveProviderId);
+        const providerInitial = selectedProvider ? selectedProvider.name.charAt(0).toUpperCase() : '🤖';
+        const displayModel = run.model || t('customModel');
 
         return '<div class="consensus-run-card" data-run-index="' + idx + '">' +
-            '<div class="consensus-run-header">' +
-                '<select class="consensus-run-provider">' +
-                    (hasProviders ? '<option value=""' + (!hasSelectedProvider ? ' selected' : '') + '>&mdash;</option>' + providerOptions : '<option value="">' + t('consensusNoProviders') + '</option>') +
-                '</select>' +
+            '<div class="consensus-run-model-panel">' +
+                '<div class="consensus-run-model-search">' +
+                    '<input type="text" class="consensus-run-model-input" value="' + escapeHTML(run.model || '') + '" placeholder="' + escapeHTML(t('searchModel')) + '" autocomplete="off">' +
+                '</div>' +
+                '<div class="consensus-run-model-list"></div>' +
+            '</div>' +
+            '<div class="consensus-run-bottom">' +
+                '<div class="consensus-run-info">' +
+                    '<span class="consensus-run-icon">' + escapeHTML(providerInitial) + '</span>' +
+                    '<div class="consensus-run-meta">' +
+                        '<span class="consensus-run-model-name">' + escapeHTML(displayModel) + '</span>' +
+                        '<span class="consensus-run-subtitle">' + t('customModel') + '</span>' +
+                    '</div>' +
+                '</div>' +
                 '<div class="consensus-run-actions">' +
-                    '<label class="consensus-answeronly-label"><input type="checkbox" class="consensus-run-answeronly"' + (run.showAnswerOnly ? ' checked' : '') + '> ' + t('consensusAnswerOnly') + '</label>' +
+                    '<label class="consensus-answeronly-toggle"><input type="checkbox" class="consensus-run-answeronly"' + (run.showAnswerOnly ? ' checked' : '') + '><span class="toggle-slider"></span></label>' +
                     '<button type="button" class="consensus-run-remove" title="' + t('consensusRemoveRun') + '">✕</button>' +
                 '</div>' +
-            '</div>' +
-            '<div class="consensus-run-model-panel">' +
-                '<div class="consensus-run-model-search"><input type="text" class="consensus-run-model-search-input" value="' + escapeHTML(run.model || '') + '" placeholder="' + escapeHTML(t('searchModel')) + '" autocomplete="off"></div>' +
-                '<div class="consensus-run-model-list"></div>' +
             '</div>' +
         '</div>';
     }).join('');
 
     // Wire events for run cards
     container.querySelectorAll('.consensus-run-card').forEach((card, idx) => {
-        const providerSelect = card.querySelector('.consensus-run-provider');
-        const modelInput = card.querySelector('.consensus-run-model-search-input');
+        const modelInput = card.querySelector('.consensus-run-model-input');
         const answerOnlyCheckbox = card.querySelector('.consensus-run-answeronly');
         const removeBtn = card.querySelector('.consensus-run-remove');
+        const modelNameEl = card.querySelector('.consensus-run-model-name');
 
-        if (providerSelect) providerSelect.onchange = async () => {
-            settings.consensus.runs[idx].providerId = providerSelect.value;
-            settings.consensus.runs[idx].model = '';
-            modelInput.value = '';
-            const provider = settings.providers.find(p => p.id === providerSelect.value);
-            if (provider && !providerModelsCache[provider.id]) {
-                try {
-                    providerModelsCache[provider.id] = await fetchModelsForProvider(provider);
-                } catch (e) {
-                    console.error('Failed to fetch models for consensus provider:', e);
-                }
-            }
-            renderConsensusModelList(idx);
-            autoSave();
-        };
+        // Ensure providerId is set (fallback to active provider)
+        const run = settings.consensus.runs[idx];
+        if (run && !run.providerId) {
+            run.providerId = settings.activeProviderId || '';
+        }
+
+        // Pre-fetch models for this run's provider if needed
+        const effectiveProviderId = run.providerId || settings.activeProviderId || '';
+        const provider = (settings.providers || []).find(p => p.id === effectiveProviderId);
+        if (provider && !providerModelsCache[provider.id]) {
+            fetchModelsForProvider(provider).then(models => {
+                providerModelsCache[provider.id] = models;
+                renderConsensusModelList(idx);
+            }).catch(() => {});
+        }
+
         if (modelInput) modelInput.oninput = () => {
             settings.consensus.runs[idx].model = modelInput.value.trim();
+            if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || t('customModel');
             renderConsensusModelList(idx);
             clearTimeout(consensusModelSaveTimers[idx]);
             consensusModelSaveTimers[idx] = setTimeout(() => autoSave(), 300);
@@ -1801,6 +1810,7 @@ function renderConsensusRuns() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 settings.consensus.runs[idx].model = modelInput.value.trim();
+                if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || t('customModel');
                 clearTimeout(consensusModelSaveTimers[idx]);
                 autoSave();
                 renderConsensusModelList(idx);
@@ -1812,7 +1822,6 @@ function renderConsensusRuns() {
         };
         if (removeBtn) removeBtn.onclick = () => {
             settings.consensus.runs.splice(idx, 1);
-            // Auto-enable consensus when 1+ extra runs exist (main model auto-included)
             settings.consensus.enabled = settings.consensus.runs.length >= 1;
             renderConsensusRuns();
             autoSave();
