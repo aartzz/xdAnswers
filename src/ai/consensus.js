@@ -85,7 +85,7 @@
         const consensus = settings && settings.consensus;
         const extraRuns = consensus && consensus.runs;
 
-        if (!consensus || !Array.isArray(extraRuns) || extraRuns.length < 1) {
+        if (!consensus || !consensus.enabled || !Array.isArray(extraRuns) || extraRuns.length < 1) {
             return null;
         }
 

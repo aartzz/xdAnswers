@@ -59,7 +59,7 @@
             let result;
             const _cs = window.xdAnswers.settings.consensus;
             console.log('[xdAnswers] consensus check:', JSON.stringify(_cs));
-            const consensusEnabled = _cs && _cs.runs && _cs.runs.length >= 1;
+            const consensusEnabled = _cs && _cs.enabled && _cs.runs && _cs.runs.length >= 1;
             if (consensusEnabled) {
                 const I = window.xdAnswers._internal;
                 const consensusSettings = window.xdAnswers.settings.consensus;
