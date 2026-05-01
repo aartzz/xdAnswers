@@ -86,6 +86,7 @@ const TRANSLATIONS = {
         // Model badges
         badgeVision: 'Підтримує зображення',
         badgeReasoning: 'Модель з мисленням',
+        badgeToolCalling: 'Підтримує інструменти',
         badgeCostInput: 'Ввід',
         badgeCostOutput: 'Вивід',
         customModel: 'користувацька модель',
@@ -177,6 +178,7 @@ const TRANSLATIONS = {
         addProviderType: 'Добавить тип',
         badgeVision: 'Поддерживает изображения',
         badgeReasoning: 'Модель с мышлением',
+        badgeToolCalling: 'Поддерживает инструменты',
         badgeCostInput: 'Ввод',
         badgeCostOutput: 'Вывод',
         customModel: 'пользовательская модель',
@@ -266,6 +268,7 @@ const TRANSLATIONS = {
         addProviderType: 'Add type',
         badgeVision: 'Supports image input',
         badgeReasoning: 'Reasoning/thinking model',
+        badgeToolCalling: 'Supports tool calling',
         badgeCostInput: 'Input',
         badgeCostOutput: 'Output',
         customModel: 'custom model',
@@ -1480,22 +1483,22 @@ function renderModelList() {
             // Enrich with models.dev data
             const devInfo = getModelDevInfo(m.id);
             const badges = [];
-            if (devInfo) {
-                if (devInfo.a) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
-                if (devInfo.r) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
-                if (devInfo.c) {
-                    const inp = devInfo.c.i, out = devInfo.c.o;
-                    if (inp !== undefined && out !== undefined) {
-                        const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
-                        const costStr = fmtCost(inp);
-                        badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
-                    }
+            const hasVision = devInfo?.a || m.capabilities?.vision;
+            const hasReasoning = devInfo?.r || m.capabilities?.reasoning;
+            const hasToolCalling = m.capabilities?.tool_calling;
+            if (hasVision) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+            if (hasReasoning) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
+            if (hasToolCalling) badges.push(`<span class="model-badge tool-calling" title="${t('badgeToolCalling')}">🔧</span>`);
+            if (devInfo?.c) {
+                const inp = devInfo.c.i, out = devInfo.c.o;
+                if (inp !== undefined && out !== undefined) {
+                    const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
+                    const costStr = fmtCost(inp);
+                    badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
                 }
-                if (devInfo.l && devInfo.l.c && !m.contextLength) {
-                    badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
-                }
-            } else if (m.capabilities?.vision) {
-                badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+            }
+            if (devInfo?.l?.c && !m.contextLength) {
+                badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
             }
             const badgesHtml = badges.join('');
             const selectedClass = isSelected ? ' selected' : '';
@@ -1640,22 +1643,22 @@ function renderConsensusModelList(runIdx) {
 
             const devInfo = getModelDevInfo(m.id);
             const badges = [];
-            if (devInfo) {
-                if (devInfo.a) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
-                if (devInfo.r) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
-                if (devInfo.c) {
-                    const inp = devInfo.c.i, out = devInfo.c.o;
-                    if (inp !== undefined && out !== undefined) {
-                        const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
-                        const costStr = fmtCost(inp);
-                        badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
-                    }
+            const hasVision = devInfo?.a || m.capabilities?.vision;
+            const hasReasoning = devInfo?.r || m.capabilities?.reasoning;
+            const hasToolCalling = m.capabilities?.tool_calling;
+            if (hasVision) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+            if (hasReasoning) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
+            if (hasToolCalling) badges.push(`<span class="model-badge tool-calling" title="${t('badgeToolCalling')}">🔧</span>`);
+            if (devInfo?.c) {
+                const inp = devInfo.c.i, out = devInfo.c.o;
+                if (inp !== undefined && out !== undefined) {
+                    const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
+                    const costStr = fmtCost(inp);
+                    badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
                 }
-                if (devInfo.l && devInfo.l.c && !m.contextLength) {
-                    badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
-                }
-            } else if (m.capabilities?.vision) {
-                badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
+            }
+            if (devInfo?.l?.c && !m.contextLength) {
+                badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
             }
             const badgesHtml = badges.join('');
             const selectedClass = isSelected ? ' selected' : '';
