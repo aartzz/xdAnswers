@@ -27,7 +27,7 @@
             </div>
         </div>
         <div class="form-group model-select-group">
-            <label>Models: <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
+            <label><span id="models-label-text">Models:</span> <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
             <div class="model-panel">
                 <div class="model-panel-search">
                     <input type="text" id="model-name" placeholder="Search or type custom model..." autocomplete="off">
@@ -35,6 +35,15 @@
                 <div id="model-list" class="model-list"></div>
             </div>
         </div>
+        <div class="form-group toggle-group">
+            <label>
+                <input type="checkbox" id="consensus-toggle">
+                <span id="consensus-label-text">Consensus mode</span>
+            </label>
+        </div>
+        <hr class="separator consensus-separator">
+        <div id="consensus-runs-container" class="consensus-runs-container"></div>
+        <button type="button" id="add-consensus-run-btn" class="add-consensus-run-btn">+ Add model</button>
     </div>
 
     <div id="providers-tab" class="tab-content">

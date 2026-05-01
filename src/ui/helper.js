@@ -162,8 +162,17 @@
 
         refreshBtn.onclick = () => {
             if (window.xdAnswers.onRefresh) {
-                // Show loading UI immediately to avoid perceived delay before debounce+setTimeout
-                if (window.xdAnswers.answerContentDiv && !window.xdAnswers.isProcessingAI) {
+                if (window.xdAnswers.isProcessingAI) {
+                    if (window.xdAnswers._cancelStream) {
+                        try { window.xdAnswers._cancelStream(); } catch (e) {}
+                    }
+                    if (window.xdAnswers._statusInterval) {
+                        clearInterval(window.xdAnswers._statusInterval);
+                        window.xdAnswers._statusInterval = null;
+                    }
+                    window.xdAnswers.isProcessingAI = false;
+                }
+                if (window.xdAnswers.answerContentDiv) {
                     window.xdAnswers.answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
                 }
                 window.xdAnswers.onRefresh();

@@ -51,6 +51,10 @@
             contentColor: '#1c1c1c',
             headerColor: '#333333',
             textColor: '#e0e0e0'
+        },
+        consensus: {
+            enabled: false,
+            runs: []
         }
     };
 

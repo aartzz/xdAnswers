@@ -46,7 +46,10 @@
     function normalizeText(t) {
         return (t || '').replace(/\s+/g, ' ').trim().toLowerCase()
             .replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, '')  // zero-width / nbsp
-            .replace(/[.,;:!?()\-–—]/g, '')                     // strip punctuation for matching
+            .replace(/(\d),(\d)/g, '$1.$2')                    // decimal comma → dot (1,5 → 1.5)
+            .replace(/(\d)\.(\d)/g, '$1_DOT_$2')               // protect decimal dots temporarily
+            .replace(/[.,;:!?()\-–—]/g, '')                     // strip remaining punctuation
+            .replace(/_DOT_/g, '.')                              // restore decimal dots
             .trim();
     }
 

@@ -4,7 +4,7 @@
     window.xdAnswers = window.xdAnswers || {};
     window.xdAnswers._internal = window.xdAnswers._internal || {};
 
-    window.xdAnswers.getAnswer = async function(questionData) {
+    window.xdAnswers.getAnswer = async function(questionData, effectiveSettingsOverride, showAnswerOnlyOverride) {
         const I = window.xdAnswers._internal;
         const getEffectiveSettings = I.getEffectiveSettings;
         const buildMessages = I.buildMessages;
@@ -14,8 +14,8 @@
         const buildHeaders = I.buildHeaders;
         const executeSearch = I.executeSearch;
 
-        const s = getEffectiveSettings(window.xdAnswers.settings);
-        const { systemPrompt, userMsg } = buildMessages(questionData);
+        const s = effectiveSettingsOverride || getEffectiveSettings(window.xdAnswers.settings);
+        const { systemPrompt, userMsg } = buildMessages(questionData, showAnswerOnlyOverride);
         const images = questionData.base64Images || [];
 
         // Build initial messages for multi-turn tool support

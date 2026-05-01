@@ -5,7 +5,7 @@
     window.xdAnswers = window.xdAnswers || {};
     window.xdAnswers._internal = window.xdAnswers._internal || {};
 
-    window.xdAnswers.streamAnswer = function(questionData, outerStartTime) {
+    window.xdAnswers.streamAnswer = function(questionData, outerStartTime, overrides) {
         return new Promise((resolve, reject) => {
             const I = window.xdAnswers._internal;
             const getEffectiveSettings = I.getEffectiveSettings;
@@ -22,8 +22,8 @@
             const renderPartial = I.renderPartial;
             const toggleThinkingContent = I.toggleThinkingContent;
 
-            const s = getEffectiveSettings(window.xdAnswers.settings);
-            const { systemPrompt, userMsg } = buildMessages(questionData);
+            const s = (overrides && overrides.effectiveSettings) || getEffectiveSettings(window.xdAnswers.settings);
+            const { systemPrompt, userMsg } = buildMessages(questionData, overrides && overrides.showAnswerOnly);
             const images = questionData.base64Images || [];
 
             // Build initial messages array for multi-turn tool-call support
@@ -39,7 +39,7 @@
             let fullContent = '';
             let fullThinking = '';
             const startTime = outerStartTime || Date.now();
-            const contentDiv = window.xdAnswers.answerContentDiv;
+            const contentDiv = (overrides && overrides.contentDiv) || window.xdAnswers.answerContentDiv;
             let thinkingStarted = false;
             let thinkingDone = false;
             let streamTimerInterval = null;
