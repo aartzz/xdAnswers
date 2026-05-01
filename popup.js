@@ -96,7 +96,7 @@ const TRANSLATIONS = {
         webSearchLabel: 'Веб-пошук',
         webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup або SearchAPI) з API-ключем у вкладці Провайдери.',
         consensusLabel: 'Режим консенсусу',
-        consensusHint: 'Запускати основну + додаткові моделі паралельно і показувати відповідь консенсусу. Додайте хоча б 1 додаткову модель.',
+        consensusHint: '',
         consensusAddRun: '+ Додати модель',
         consensusProviderLabel: 'Провайдер:',
         consensusModelLabel: 'Модель:',
@@ -185,7 +185,7 @@ const TRANSLATIONS = {
         webSearchLabel: 'Веб-поиск',
         webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup или SearchAPI) с API-ключом во вкладке Провайдеры.',
         consensusLabel: 'Режим консенсуса',
-        consensusHint: 'Запускать основную + дополнительные модели параллельно и показывать ответ консенсуса. Добавьте хотя бы 1 дополнительную модель.',
+        consensusHint: '',
         consensusAddRun: '+ Добавить модель',
         consensusProviderLabel: 'Провайдер:',
         consensusModelLabel: 'Модель:',
@@ -274,7 +274,7 @@ const TRANSLATIONS = {
         webSearchLabel: 'Web Search',
         webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup or SearchAPI) with API key in the Providers tab.',
         consensusLabel: 'Consensus mode',
-        consensusHint: 'Run main + extra AI models in parallel and show the consensus answer. Add at least 1 extra model.',
+        consensusHint: '',
         consensusAddRun: '+ Add model',
         consensusProviderLabel: 'Provider:',
         consensusModelLabel: 'Model:',
@@ -355,8 +355,7 @@ function applyLanguage() {
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
     const addConsensusBtn = document.getElementById('add-consensus-run-btn');
     if (addConsensusBtn) addConsensusBtn.textContent = t('consensusAddRun');
-    const consensusHintEl = document.getElementById('consensus-hint');
-    if (consensusHintEl) consensusHintEl.textContent = t('consensusHint');
+    document.querySelector('#consensus-toggle + span').textContent = t('consensusLabel');
     // Hotkey
     const hotkeyLabel = document.getElementById('hotkey-label');
     if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
@@ -810,6 +809,9 @@ function populateUI() {
 
     // Web search toggle
     if (el.webSearchToggle) el.webSearchToggle.checked = !!settings.webSearchEnabled;
+
+    // Consensus toggle
+    if (el.consensusToggle) el.consensusToggle.checked = !!(settings.consensus && settings.consensus.enabled);
 
     // Consensus mode run cards
     renderConsensusRuns();
@@ -1738,23 +1740,31 @@ function renderConsensusRuns() {
     const container = uiElements.consensusRunsContainer;
     if (!container) return;
 
-    // Always visible — no toggle needed
-    container.style.display = 'block';
+    const enabled = !!(settings.consensus && settings.consensus.enabled);
+    container.style.display = enabled ? 'block' : 'none';
     if (uiElements.addConsensusRunBtn) {
-        uiElements.addConsensusRunBtn.style.display = 'inline-block';
+        uiElements.addConsensusRunBtn.style.display = enabled ? 'inline-block' : 'none';
+    }
+    if (!enabled) {
+        container.innerHTML = '';
+        return;
     }
 
     const nonSearchProviders = (settings.providers || []).filter(p => p.kind !== 'search');
     const runs = (settings.consensus && settings.consensus.runs) || [];
 
     container.innerHTML = runs.map((run, idx) => {
-        const effectiveProviderId = run.providerId || settings.activeProviderId || '';
+        const effectiveProviderId = run.providerId || '';
         const selectedProvider = (settings.providers || []).find(p => p.id === effectiveProviderId);
-        const providerInitial = selectedProvider ? selectedProvider.name.charAt(0).toUpperCase() : '🤖';
-        const displayModel = run.model || t('customModel');
+        const providerOptions = nonSearchProviders.map(p => 
+            '<option value="' + escapeHTML(p.id) + '" ' + (p.id === effectiveProviderId ? 'selected' : '') + '>' + escapeHTML(p.name) + '</option>'
+        ).join('') || '<option value="">' + escapeHTML(t('consensusNoProviders')) + '</option>';
 
         return '<div class="consensus-run-card" data-run-index="' + idx + '">' +
             '<div class="consensus-run-model-panel">' +
+                '<div class="consensus-run-provider-row">' +
+                    '<select class="consensus-run-provider-select">' + providerOptions + '</select>' +
+                '</div>' +
                 '<div class="consensus-run-model-search">' +
                     '<input type="text" class="consensus-run-model-input" value="' + escapeHTML(run.model || '') + '" placeholder="' + escapeHTML(t('searchModel')) + '" autocomplete="off">' +
                 '</div>' +
@@ -1762,14 +1772,16 @@ function renderConsensusRuns() {
             '</div>' +
             '<div class="consensus-run-bottom">' +
                 '<div class="consensus-run-info">' +
-                    '<span class="consensus-run-icon">' + escapeHTML(providerInitial) + '</span>' +
+                    '<span class="consensus-run-icon">' + escapeHTML(selectedProvider ? selectedProvider.name.charAt(0).toUpperCase() : '🤖') + '</span>' +
                     '<div class="consensus-run-meta">' +
-                        '<span class="consensus-run-model-name">' + escapeHTML(displayModel) + '</span>' +
-                        '<span class="consensus-run-subtitle">' + t('customModel') + '</span>' +
+                        '<span class="consensus-run-model-name">' + escapeHTML(run.model || '') + '</span>' +
                     '</div>' +
                 '</div>' +
                 '<div class="consensus-run-actions">' +
-                    '<label class="consensus-answeronly-toggle"><input type="checkbox" class="consensus-run-answeronly"' + (run.showAnswerOnly ? ' checked' : '') + '><span class="toggle-slider"></span></label>' +
+                    '<div class="consensus-answeronly-wrap">' +
+                        '<label class="consensus-answeronly-toggle"><input type="checkbox" class="consensus-run-answeronly"' + (run.showAnswerOnly ? ' checked' : '') + '><span class="toggle-slider"></span></label>' +
+                        '<span class="consensus-answeronly-label">' + escapeHTML(t('consensusAnswerOnly')) + '</span>' +
+                    '</div>' +
                     '<button type="button" class="consensus-run-remove" title="' + t('consensusRemoveRun') + '">✕</button>' +
                 '</div>' +
             '</div>' +
@@ -1783,14 +1795,10 @@ function renderConsensusRuns() {
         const removeBtn = card.querySelector('.consensus-run-remove');
         const modelNameEl = card.querySelector('.consensus-run-model-name');
 
-        // Ensure providerId is set (fallback to active provider)
         const run = settings.consensus.runs[idx];
-        if (run && !run.providerId) {
-            run.providerId = settings.activeProviderId || '';
-        }
 
         // Pre-fetch models for this run's provider if needed
-        const effectiveProviderId = run.providerId || settings.activeProviderId || '';
+        const effectiveProviderId = run.providerId || '';
         const provider = (settings.providers || []).find(p => p.id === effectiveProviderId);
         if (provider && !providerModelsCache[provider.id]) {
             fetchModelsForProvider(provider).then(models => {
@@ -1799,9 +1807,25 @@ function renderConsensusRuns() {
             }).catch(() => {});
         }
 
+        const providerSelect = card.querySelector('.consensus-run-provider-select');
+        if (providerSelect) providerSelect.onchange = async () => {
+            settings.consensus.runs[idx].providerId = providerSelect.value;
+            const newProvider = (settings.providers || []).find(p => p.id === providerSelect.value);
+            const iconSpan = card.querySelector('.consensus-run-icon');
+            if (iconSpan) iconSpan.textContent = newProvider ? newProvider.name.charAt(0).toUpperCase() : '🤖';
+            if (newProvider && !providerModelsCache[newProvider.id]) {
+                try {
+                    const models = await fetchModelsForProvider(newProvider);
+                    providerModelsCache[newProvider.id] = models;
+                } catch (e) {}
+            }
+            renderConsensusModelList(idx);
+            autoSave();
+        };
+
         if (modelInput) modelInput.oninput = () => {
             settings.consensus.runs[idx].model = modelInput.value.trim();
-            if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || t('customModel');
+            if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || '';
             renderConsensusModelList(idx);
             clearTimeout(consensusModelSaveTimers[idx]);
             consensusModelSaveTimers[idx] = setTimeout(() => autoSave(), 300);
@@ -1810,7 +1834,7 @@ function renderConsensusRuns() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 settings.consensus.runs[idx].model = modelInput.value.trim();
-                if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || t('customModel');
+                if (modelNameEl) modelNameEl.textContent = modelInput.value.trim() || '';
                 clearTimeout(consensusModelSaveTimers[idx]);
                 autoSave();
                 renderConsensusModelList(idx);
@@ -1822,7 +1846,6 @@ function renderConsensusRuns() {
         };
         if (removeBtn) removeBtn.onclick = () => {
             settings.consensus.runs.splice(idx, 1);
-            settings.consensus.enabled = settings.consensus.runs.length >= 1;
             renderConsensusRuns();
             autoSave();
         };
@@ -1879,20 +1902,29 @@ function attachEventListeners() {
         };
     }
 
+    // Consensus toggle
+    if (el.consensusToggle) {
+        el.consensusToggle.onchange = () => {
+            if (!settings.consensus) settings.consensus = { enabled: false, runs: [] };
+            settings.consensus.enabled = el.consensusToggle.checked;
+            renderConsensusRuns();
+            autoSave();
+        };
+    }
+
     // Add consensus run
     if (el.addConsensusRunBtn) {
         el.addConsensusRunBtn.onclick = () => {
             if (!settings.consensus) settings.consensus = { enabled: false, runs: [] };
             const nonSearchProviders = (settings.providers || []).filter(p => p.kind !== 'search');
-            const defaultProviderId = nonSearchProviders.length > 0 ? nonSearchProviders[0].id : '';
+            const isActiveNonSearch = nonSearchProviders.some(p => p.id === settings.activeProviderId);
+            const defaultProviderId = isActiveNonSearch ? settings.activeProviderId : (nonSearchProviders[0]?.id || '');
             settings.consensus.runs.push({
                 id: generateId(),
                 providerId: defaultProviderId,
                 model: '',
                 showAnswerOnly: false
             });
-            // Auto-enable consensus when 1+ extra runs exist (main model auto-included)
-            settings.consensus.enabled = settings.consensus.runs.length >= 1;
             renderConsensusRuns();
             autoSave();
         };
@@ -2076,8 +2108,7 @@ async function autoSave(overrides) {
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
-    // consensus.enabled is auto-computed from runs.length >= 1 (main model auto-included)
-    settings.consensus.enabled = (settings.consensus?.runs?.length || 0) >= 1;
+    settings.consensus.enabled = el.consensusToggle?.checked ?? !!(settings.consensus && settings.consensus.enabled);
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
     if (overrides) {
@@ -2135,6 +2166,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
         webSearchToggle: document.getElementById('web-search-toggle'),
+        consensusToggle: document.getElementById('consensus-toggle'),
         consensusRunsContainer: document.getElementById('consensus-runs-container'),
         addConsensusRunBtn: document.getElementById('add-consensus-run-btn'),
         positionGrid: document.getElementById('position-grid'),
