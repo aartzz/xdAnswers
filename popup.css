@@ -1384,6 +1384,29 @@ input.invalid {
     border-radius: 10px;
 }
 
+.consensus-run-provider-row {
+    padding: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.consensus-run-provider-select {
+    width: 100%;
+    padding: 5px 8px;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    color: var(--popup-text);
+    outline: none;
+    box-sizing: border-box;
+    cursor: pointer;
+}
+
+.consensus-run-provider-select:focus {
+    border-color: var(--popup-primary);
+}
+
 .consensus-run-model-panel {
     display: flex;
     flex-direction: column;
@@ -1476,12 +1499,26 @@ input.invalid {
     flex-shrink: 0;
 }
 
+.consensus-answeronly-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.consensus-answeronly-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    user-select: none;
+}
+
 .consensus-answeronly-toggle {
     position: relative;
     display: inline-block;
     width: 32px;
     height: 18px;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .consensus-answeronly-toggle input {
