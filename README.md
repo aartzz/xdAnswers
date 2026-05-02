@@ -35,7 +35,7 @@
 
 ### Мобільний (Kiwi Browser)
 
-1. Встановіть [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) з Play Store
+1. Встановіть [Kiwi Browser](https://github.com/kiwibrowser/src.next/releases/tag/14310011181) з GitHub
 2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
 3. Відкрийте `kiwi://extensions`, увімкніть **Режим розробника**
 4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку

@@ -33,7 +33,7 @@ Works out of the box — ships with free providers, no API key needed.
 
 ### Mobile (Kiwi Browser)
 
-1. Install [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser) from Play Store
+1. Install [Kiwi Browser](https://github.com/kiwibrowser/src.next/releases/tag/14310011181) from GitHub
 2. Go to [Releases](https://github.com/aartzz/xdAnswers/releases), download the latest `xdAnswers-chrome-*.zip`
 3. Open `kiwi://extensions`, enable **Developer mode**
 4. Click **Load unpacked**, select the unzipped folder
