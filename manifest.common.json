@@ -39,6 +39,15 @@
   "content_scripts": [
     {
       "matches": [
+        "*://vseosvita.ua/test/go-olp*",
+        "*://vseosvita.ua/test/start/*"
+      ],
+      "js": ["src/core/disabler.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
         "*://naurok.com.ua/test/testing/*",
         "*://naurok.ua/test/testing/*",
         "*://naurok.com.ua/test/realtime-client/*",

@@ -45,6 +45,7 @@
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,
         savedPosition: null,
+        disablerEnabled: false,
         customization: {
             glowEffect: false,
             borderColor: '#cccccc',

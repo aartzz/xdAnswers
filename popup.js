@@ -108,7 +108,9 @@ const TRANSLATIONS = {
         hotkeyHint: 'Натисніть на комбінацію клавіш вище, щоб перепризначити.',
         hotkeyRecording: 'Натисніть комбінацію клавіш…',
         hotkeyClear: 'Скинути',
-        searchProviderBadge: 'ПОШУК'
+        searchProviderBadge: 'ПОШУК',
+        disablerLabel: 'Disabler',
+        disablerHint: 'Відключає перевірки сайту, щоб дозволити легше списування.'
     },
     ru: {
         tabAI: 'ИИ',
@@ -198,7 +200,9 @@ const TRANSLATIONS = {
         hotkeyHint: 'Нажмите на комбинацию клавиш выше, чтобы переназначить.',
         hotkeyRecording: 'Нажмите комбинацию клавиш…',
         hotkeyClear: 'Сбросить',
-        searchProviderBadge: 'ПОИСК'
+        searchProviderBadge: 'ПОИСК',
+        disablerLabel: 'Disabler',
+        disablerHint: 'Отключает проверки сайта, чтобы позволить легче списывать.'
     },
     en: {
         tabAI: 'AI',
@@ -288,7 +292,9 @@ const TRANSLATIONS = {
         hotkeyHint: 'Click the key combination above to rebind.',
         hotkeyRecording: 'Press a key combination…',
         hotkeyClear: 'Reset',
-        searchProviderBadge: 'SEARCH'
+        searchProviderBadge: 'SEARCH',
+        disablerLabel: 'Disabler',
+        disablerHint: 'Disables site checks to make cheating easier.'
     }
 };
 
@@ -356,6 +362,10 @@ function applyLanguage() {
     if (webSearchSpan) webSearchSpan.textContent = t('webSearchLabel');
     const webSearchHintEl = document.getElementById('web-search-hint');
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
+    const disablerSpan = document.querySelector('#disabler-toggle + span');
+    if (disablerSpan) disablerSpan.textContent = t('disablerLabel');
+    const disablerHintEl = document.getElementById('disabler-hint');
+    if (disablerHintEl) disablerHintEl.textContent = t('disablerHint');
     const addConsensusBtn = document.getElementById('add-consensus-run-btn');
     if (addConsensusBtn) addConsensusBtn.textContent = t('consensusAddRun');
     document.querySelector('#consensus-toggle + span').textContent = t('consensusLabel');
@@ -668,8 +678,9 @@ const DEFAULT_SETTINGS = {
     silentMode: '',
     _silentModePreselect: 'indicators',
     hotkey: 'Ctrl+Shift+X',
-    webSearchEnabled: false,
-    defaultPosition: 'bottom-right',
+        webSearchEnabled: false,
+        disablerEnabled: false,
+        defaultPosition: 'bottom-right',
     rememberDragPosition: false,
     savedPosition: null,
     customization: {
@@ -812,6 +823,9 @@ function populateUI() {
 
     // Web search toggle
     if (el.webSearchToggle) el.webSearchToggle.checked = !!settings.webSearchEnabled;
+
+    // Disabler toggle
+    if (el.disablerToggle) el.disablerToggle.checked = !!settings.disablerEnabled;
 
     // Consensus toggle
     if (el.consensusToggle) el.consensusToggle.checked = !!(settings.consensus && settings.consensus.enabled);
@@ -1895,7 +1909,8 @@ function attachEventListeners() {
         { el: el.showAnswerOnlyToggle, key: 'showAnswerOnly' },
         { el: el.glowEffectToggle, key: 'customization.glowEffect' },
         { el: el.rememberDragToggle, key: 'rememberDragPosition' },
-        { el: el.webSearchToggle, key: 'webSearchEnabled' }
+        { el: el.webSearchToggle, key: 'webSearchEnabled' },
+        { el: el.disablerToggle, key: 'disablerEnabled' }
     ];
     for (const { el: toggle, key } of autoToggles) {
         if (!toggle) continue;
@@ -2111,6 +2126,7 @@ async function autoSave(overrides) {
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
+    settings.disablerEnabled = el.disablerToggle?.checked ?? settings.disablerEnabled;
     settings.consensus.enabled = el.consensusToggle?.checked ?? !!(settings.consensus && settings.consensus.enabled);
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
@@ -2191,7 +2207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         editorTextPicker: document.getElementById('editor-text-picker'),
         hotkeyRecorder: document.getElementById('hotkey-recorder'),
         hotkeyRecorderKbd: document.getElementById('hotkey-recorder-kbd'),
-        hotkeyClear: document.getElementById('hotkey-clear')
+        hotkeyClear: document.getElementById('hotkey-clear'),
+        disablerToggle: document.getElementById('disabler-toggle')
     };
 
     settings = await loadSettings();
