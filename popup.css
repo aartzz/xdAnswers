@@ -637,6 +637,7 @@ textarea {
 }
 .model-badge.vision { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
 .model-badge.reasoning { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.model-badge.tool-calling { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
 .model-badge.cost { background: rgba(234, 179, 8, 0.15); color: #ca8a04; font-family: monospace; }
 
 .model-more {
