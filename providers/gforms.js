@@ -15,7 +15,11 @@
         });
 
         function scanAndInjectButtons() {
-            const questionContainers = document.querySelectorAll('.geS5n');
+            let questionContainers = document.querySelectorAll('.geS5n');
+            if (questionContainers.length === 0) {
+                questionContainers = Array.from(document.querySelectorAll('div[role="listitem"]'))
+                    .filter(el => el.querySelector('[role="radio"], [role="checkbox"], [role="heading"]'));
+            }
             const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
 
             questionContainers.forEach((container, index) => {
@@ -43,7 +47,11 @@
                         const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
                         const imgPromises = [];
                         container.querySelectorAll('img').forEach(img => {
-                            if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
+                            const src = img.src || img.getAttribute('data-src');
+                            if (src && !src.startsWith('data:image/gif')) {
+                                const absoluteSrc = new URL(src, window.location.href).href;
+                                imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
+                            }
                         });
                         const images = await Promise.all(imgPromises);
                         return {
@@ -71,7 +79,11 @@
                         const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
                         const imgPromises = [];
                         container.querySelectorAll('img').forEach(img => {
-                             if (img.width > 50 && img.height > 50) imgPromises.push(window.xdAnswers.imageToBase64(img.src));
+                            const src = img.src || img.getAttribute('data-src');
+                            if (src && !src.startsWith('data:image/gif')) {
+                                const absoluteSrc = new URL(src, window.location.href).href;
+                                imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
+                            }
                         });
                         Promise.all(imgPromises).then(images => {
                              window.xdAnswers.processQuestion({
