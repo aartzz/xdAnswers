@@ -422,6 +422,10 @@ const DEFAULT_BASE_URLS = {
     'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
     'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
     'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
+    'opencode-zen': 'https://opencode.ai/zen/v1',
+    'opencode-go': 'https://opencode.ai/zen/go/v1',
+    'ollama-cloud': 'https://ollama.com/v1',
+    nvidia: 'https://integrate.api.nvidia.com/v1',
     langsearch: 'https://api.langsearch.com/v1',
     serper: 'https://google.serper.dev'
 };
@@ -430,7 +434,8 @@ const API_FORMAT_MAP = {
     openai: 'openai', anthropic: 'anthropic', google: 'google',
     deepseek: 'openai', groq: 'openai', openrouter: 'openai',
     cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
-    'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai'
+    'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai',
+    'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai'
 };
 
 const API_PROVIDERS = [
@@ -447,6 +452,10 @@ const API_PROVIDERS = [
     { id: 'unturf-hermes', name: 'Unturf Hermes', hint: 'Free — Hermes 3 Llama 3.1 8B', logo: 'unturf' },
     { id: 'unturf-qwen', name: 'Unturf Qwen', hint: 'Free — Qwen3 Coder + Gemma 4', logo: 'unturf' },
     { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' },
+    { id: 'opencode-zen', name: 'OpenCode Zen', hint: 'OpenCode Zen — -free models need no key', logo: 'opencode' },
+    { id: 'opencode-go', name: 'OpenCode Go', hint: 'OpenCode Go — API key required', logo: 'opencode' },
+    { id: 'ollama-cloud', name: 'Ollama Cloud', hint: 'Ollama Cloud — API key required', logo: 'ollama-cloud' },
+    { id: 'nvidia', name: 'NVIDIA NIM', hint: 'NVIDIA NIM — API key required', logo: 'nvidia' },
     // Web Search providers (kind: 'search' — not LLM, used for tool-calling)
     { id: 'langsearch', name: 'LangSearch', hint: 'Web Search — Free API', logo: 'openai', kind: 'search' },
     { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' },
@@ -459,8 +468,8 @@ const API_PROVIDERS = [
 
 const PROVIDER_ICON_MAP = {
     'openai': 'openai', 'anthropic': 'anthropic', 'google': 'google',
-    'nvidia': 'nvidia', 'ollama-cloud': 'ollama', 'ollamacloud': 'ollama',
-    'opencode-zen': 'openai', 'venice': 'venice', 'pollinations': 'pollinations',
+    'nvidia': 'nvidia', 'ollama-cloud': 'ollama-cloud', 'ollamacloud': 'ollama-cloud',
+    'opencode-zen': 'opencode', 'opencode-go': 'opencode', 'venice': 'venice', 'pollinations': 'pollinations',
     'publicai': 'openai', 'unturf': 'unturf', 'unturf-hermes': 'unturf',
     'unturf-qwen': 'unturf', 'unturf-vl': 'unturf', 'g4f': 'openai',
     'deepseek-ai': 'deepseek', 'deepseek': 'deepseek',
@@ -650,24 +659,31 @@ const DEFAULT_SETTINGS = {
             type: 'unturf-hermes',
             name: 'Unturf Hermes',
             baseUrl: 'https://hermes.ai.unturf.com/v1',
-            apiKey: 'free'
+            apiKey: ''
         },
         {
             id: 'unturf-qwen-default',
             type: 'unturf-qwen',
             name: 'Unturf Qwen',
             baseUrl: 'https://qwen.ai.unturf.com/v1',
-            apiKey: 'free'
+            apiKey: ''
         },
         {
             id: 'unturf-vl-default',
             type: 'unturf-vl',
             name: 'Unturf Vision',
             baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
-            apiKey: 'free'
+            apiKey: ''
+        },
+        {
+            id: 'opencode-zen-default',
+            type: 'opencode-zen',
+            name: 'OpenCode Zen',
+            baseUrl: 'https://opencode.ai/zen/v1',
+            apiKey: ''
         }
     ],
-    activeProviderId: 'unturf-vl-default',
+    activeProviderId: 'opencode-zen-default',
     model: '',
     promptPrefix: DEFAULT_PROMPT,
     language: 'uk',
@@ -1355,19 +1371,20 @@ async function fetchModelsForProvider(provider) {
     const format = API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
     const base = provider.baseUrl.replace(/\/+$/, '');
     const key = provider.apiKey;
+    const hasRealKey = key && key !== 'free';
     let url, headers = {};
 
     if (format === 'openai') {
         url = `${base}/models`;
-        if (key) headers['Authorization'] = `Bearer ${key}`;
+        if (hasRealKey) headers['Authorization'] = `Bearer ${key}`;
     } else if (format === 'anthropic') {
         url = `${base}/models`;
-        if (key) {
+        if (hasRealKey) {
             headers['x-api-key'] = key;
             headers['anthropic-version'] = '2023-06-01';
         }
     } else if (format === 'google') {
-        url = `${base}/models${key ? '?key=' + key : ''}`;
+        url = `${base}/models${hasRealKey ? '?key=' + key : ''}`;
     } else {
         return [];
     }
@@ -1388,7 +1405,14 @@ async function fetchModelsForProvider(provider) {
     });
 
     const parsed = JSON.parse(fullText);
-    return processModels(parsed, format);
+    let models = processModels(parsed, format);
+
+    const isOpenCodeZenWithoutKey = provider.type === 'opencode-zen' && !hasRealKey;
+    if (isOpenCodeZenWithoutKey) {
+        models = models.filter(m => m.id.toLowerCase().endsWith('-free'));
+    }
+
+    return models;
 }
 
 async function fetchModels() {
@@ -1426,7 +1450,8 @@ function renderModelList() {
         const provKeyLookup = {
             openai: 'openai', anthropic: 'anthropic', google: 'google',
             deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
-            cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral'
+            cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral',
+            'opencode-zen': 'opencode-zen', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama', nvidia: 'nvidia'
         };
         const devProvId = provKeyLookup[provId] || provId;
         for (const [key, info] of Object.entries(modelsDevCache)) {
@@ -1555,7 +1580,8 @@ function getConsensusProviderDevKey(providerType) {
     const provKeyLookup = {
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
-        cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral'
+        cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral',
+        'opencode-zen': 'opencode-zen', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama', nvidia: 'nvidia'
     };
     return provKeyLookup[providerType] || providerType || '';
 }
