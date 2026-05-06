@@ -38,6 +38,7 @@
 
             let fullContent = '';
             let fullThinking = '';
+            let lastHighlightedAnswer = '';
             const startTime = outerStartTime || Date.now();
             const contentDiv = (overrides && overrides.contentDiv) || window.xdAnswers.answerContentDiv;
             let thinkingStarted = false;
@@ -137,6 +138,11 @@
                 }
 
                 const parsed = parsePartialLabeled(fullContent) || salvagePartialJSON(fullContent);
+
+                if (parsed && parsed.answer && parsed.answer !== lastHighlightedAnswer) {
+                    lastHighlightedAnswer = parsed.answer;
+                    I.highlightCorrectAnswer(parsed.answer);
+                }
 
                 if (parsed) {
                     html += renderPartial(parsed);
