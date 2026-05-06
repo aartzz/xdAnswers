@@ -63,7 +63,8 @@
         consensus: {
             enabled: false,
             runs: []
-        }
+        },
+        customThemes: []
     };
 
     const defaultHelperState = {
