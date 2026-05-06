@@ -8,298 +8,10 @@ const PREDEFINED_THEMES = {
     'Amber': { borderColor: '#f59e0b', contentColor: '#140f00', headerColor: '#2a1f00', textColor: '#fef3c7' }
 };
 
-const TRANSLATIONS = {
-    uk: {
-        // Tab names
-        tabAI: 'ШІ',
-        tabProviders: 'Провайдери',
-        tabFeatures: 'Функції',
-        tabThemes: 'Теми',
-        // AI tab
-        providerLabel: 'Провайдер:',
-        modelsLabel: 'Моделі:',
-        searchModel: 'Пошук або введіть модель...',
-        // Features tab
-        languageLabel: 'Мова:',
-        autoAnswer: 'Автовідповідь',
-        autoAnswerHint: 'Автоматично обирати правильну відповідь на сторінці.',
-        cooldownLabel: 'Затримка (мс):',
-        highlightCorrect: 'Підсвітити правильну відповідь',
-        highlightCorrectHint: 'Підсвітити правильний варіант зеленою рамкою, коли UI видимий.',
-        showAnswerOnly: 'Лише відповідь',
-        showAnswerOnlyHint: 'Просити ШІ повертати лише відповідь — без пояснень. Економить токени.',
-        silentMode: 'Тихий режим',
-        silentModeLabel: 'Режим:',
-        silentIndicators: 'Індикатори',
-        silentGhost: 'Заголовок сторінки',
-        silentStealth: 'Стелс',
-        silentOneclick: 'Один клік',
-        silentIndicatorsHint: 'Маркер поруч з правильною відповіддю.',
-        silentGhostHint: 'Сховати вікно. Відповідь лише в заголовку вкладки.',
-        silentStealthHint: 'Повністю невидимо. Відповідь автоматично копіюється.',
-        silentOneclickHint: 'Натисніть на питання — правильна відповідь обереться автоматично.',
-        // Position
-        defaultPositionLabel: 'Позиція за замовчуванням',
-        defaultPositionHint: 'Де зявляється картка відповіді при відкритті.',
-        rememberDrag: 'Запамятати перетягнуту позицію',
-        rememberDragHint: 'Якщо ви перетягнете картку, зберегти те місце. Інакше скидатиметься до позиції вище.',
-        // Themes tab
-        themesDesc: 'Оберіть готову тему або натисніть <strong>+</strong> щоб створити свою.',
-        newTheme: 'Нова тема',
-        themeNameLabel: 'Назва:',
-        themeNamePlaceholder: 'Моя тема',
-        accentLabel: 'Акцент:',
-        headerLabel: 'Шапка:',
-        backgroundLabel: 'Фон:',
-        textLabel: 'Текст:',
-        cancelBtn: 'Скасувати',
-        saveThemeBtn: 'Зберегти тему',
-        glowEffect: 'Ефект світіння',
-        glowEffectHint: 'Мяке світіння акцентного кольору навколо картки відповіді.',
-        // Theme dynamic
-        addThemeLabel: 'Нова тема',
-        deleteTheme: 'Видалити тему',
-        createTheme: 'Створити свою тему',
-        untitled: 'Без назви',
-        customPrefix: 'Користувацька',
-        // Donate tab
-        donateText: 'Якщо вам подобається розширення, підтримайте розробника.',
-        donateBtn: 'Підписатись в Telegram',
-        // Providers tab
-        providersHeader: 'Провайдери',
-        otherHeader: 'Інші',
-        otherHint: 'Користувацькі OpenAI-сумісні ендпоінти',
-        addProvider: '+ Додати провайдер',
-        addCustomProvider: '+ Додати свій провайдер',
-        noProviders: 'Провайдерів ще немає',
-        // Provider form
-        providerTypeLabel: 'Тип:',
-        providerNameLabel: 'Назва:',
-        providerNamePlaceholder: 'Мій провайдер',
-        providerBaseUrlLabel: 'Base URL:',
-        providerApiKeyLabel: 'API Key:',
-        providerApiKeyPlaceholder: 'sk-...',
-        providerCustomName: 'Користувацький провайдер',
-        removeProvider: 'Видалити',
-        saveProvider: 'Зберегти',
-        addProviderType: 'Додати тип',
-        // Model badges
-        badgeVision: 'Підтримує зображення',
-        badgeReasoning: 'Модель з мисленням',
-        badgeToolCalling: 'Підтримує інструменти',
-        badgeCostInput: 'Ввід',
-        badgeCostOutput: 'Вивід',
-        customModel: 'користувацька модель',
-        // Context length
-        ctxThousand: 'тис.',
-        ctxMillion: 'млн',
-        // Web Search + Hotkey
-        webSearchLabel: 'Веб-пошук',
-        webSearchHint: 'Дозволити ШІ шукати в інтернеті актуальну інформацію. Потрібен пошуковий провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup або SearchAPI) з API-ключем у вкладці Провайдери.',
-        consensusLabel: 'Режим консенсусу',
-        consensusHint: '',
-        consensusAddRun: '+ Додати модель',
-        consensusProviderLabel: 'Провайдер:',
-        consensusModelLabel: 'Модель:',
-        consensusAnswerOnly: 'Лише відповідь',
-        consensusRemoveRun: 'Видалити',
-        consensusNoProviders: 'Немає провайдерів',
-        hotkeyLabel: 'Гаряча клавіша',
-        hotkeyHint: 'Натисніть на комбінацію клавіш вище, щоб перепризначити.',
-        hotkeyRecording: 'Натисніть комбінацію клавіш…',
-        hotkeyClear: 'Скинути',
-        searchProviderBadge: 'ПОШУК',
-        disablerLabel: 'Disabler',
-        disablerHint: 'Відключає перевірки сайту, щоб дозволити легше списування.'
-    },
-    ru: {
-        tabAI: 'ИИ',
-        tabProviders: 'Провайдеры',
-        tabFeatures: 'Функции',
-        tabThemes: 'Темы',
-        providerLabel: 'Провайдер:',
-        modelsLabel: 'Модели:',
-        searchModel: 'Поиск или введите модель...',
-        languageLabel: 'Язык:',
-        autoAnswer: 'Автоответ',
-        autoAnswerHint: 'Автоматически выбирать правильный ответ на странице.',
-        cooldownLabel: 'Задержка (мс):',
-        highlightCorrect: 'Подсветить правильный ответ',
-        highlightCorrectHint: 'Подсветить правильный вариант зелёной рамкой, когда UI видим.',
-        showAnswerOnly: 'Только ответ',
-        showAnswerOnlyHint: 'Просить ИИ возвращать только ответ — без объяснений. Экономит токены.',
-        silentMode: 'Тихий режим',
-        silentModeLabel: 'Режим:',
-        silentIndicators: 'Индикаторы',
-        silentGhost: 'Заголовок страницы',
-        silentStealth: 'Стелс',
-        silentOneclick: 'Один клик',
-        silentIndicatorsHint: 'Маркер рядом с правильным ответом.',
-        silentGhostHint: 'Скрыть окно. Ответ только в заголовке вкладки.',
-        silentStealthHint: 'Полностью невидимо. Ответ автоматически копируется.',
-        silentOneclickHint: 'Нажмите на вопрос — правильный ответ выберется автоматически.',
-        // Position
-        defaultPositionLabel: 'Позиция по умолчанию',
-        defaultPositionHint: 'Где появляется карточка ответа при открытии.',
-        rememberDrag: 'Запомнить перетянутую позицию',
-        rememberDragHint: 'Если вы перетащите карточку, сохранить то место. Иначе сбрасывается к позиции выше.',
-        themesDesc: 'Выберите готовую тему или нажмите <strong>+</strong> чтобы создать свою.',
-        newTheme: 'Новая тема',
-        themeNameLabel: 'Название:',
-        themeNamePlaceholder: 'Моя тема',
-        accentLabel: 'Акцент:',
-        headerLabel: 'Шапка:',
-        backgroundLabel: 'Фон:',
-        textLabel: 'Текст:',
-        cancelBtn: 'Отмена',
-        saveThemeBtn: 'Сохранить тему',
-        glowEffect: 'Эффект свечения',
-        glowEffectHint: 'Мягкое свечение акцентного цвета вокруг карточки ответа.',
-        addThemeLabel: 'Новая тема',
-        deleteTheme: 'Удалить тему',
-        createTheme: 'Создать свою тему',
-        untitled: 'Без названия',
-        customPrefix: 'Пользовательская',
-        donateText: 'Если вам нравится расширение, поддержите разработчика.',
-        donateBtn: 'Подписаться в Telegram',
-        providersHeader: 'Провайдеры',
-        otherHeader: 'Другие',
-        otherHint: 'Пользовательские OpenAI-совместимые эндпоинты',
-        addProvider: '+ Добавить провайдер',
-        addCustomProvider: '+ Добавить свой провайдер',
-        noProviders: 'Провайдеров пока нет',
-        providerTypeLabel: 'Тип:',
-        providerNameLabel: 'Название:',
-        providerNamePlaceholder: 'Мой провайдер',
-        providerBaseUrlLabel: 'Base URL:',
-        providerApiKeyLabel: 'API Key:',
-        providerApiKeyPlaceholder: 'sk-...',
-        providerCustomName: 'Пользовательский провайдер',
-        removeProvider: 'Удалить',
-        saveProvider: 'Сохранить',
-        addProviderType: 'Добавить тип',
-        badgeVision: 'Поддерживает изображения',
-        badgeReasoning: 'Модель с мышлением',
-        badgeToolCalling: 'Поддерживает инструменты',
-        badgeCostInput: 'Ввод',
-        badgeCostOutput: 'Вывод',
-        customModel: 'пользовательская модель',
-        ctxThousand: 'тыс.',
-        ctxMillion: 'млн',
-        webSearchLabel: 'Веб-поиск',
-        webSearchHint: 'Разрешить ИИ искать в интернете актуальную информацию. Нужен поисковый провайдер (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup или SearchAPI) с API-ключом во вкладке Провайдеры.',
-        consensusLabel: 'Режим консенсуса',
-        consensusHint: '',
-        consensusAddRun: '+ Добавить модель',
-        consensusProviderLabel: 'Провайдер:',
-        consensusModelLabel: 'Модель:',
-        consensusAnswerOnly: 'Только ответ',
-        consensusRemoveRun: 'Удалить',
-        consensusNoProviders: 'Нет провайдеров',
-        hotkeyLabel: 'Горячая клавиша',
-        hotkeyHint: 'Нажмите на комбинацию клавиш выше, чтобы переназначить.',
-        hotkeyRecording: 'Нажмите комбинацию клавиш…',
-        hotkeyClear: 'Сбросить',
-        searchProviderBadge: 'ПОИСК',
-        disablerLabel: 'Disabler',
-        disablerHint: 'Отключает проверки сайта, чтобы позволить легче списывать.'
-    },
-    en: {
-        tabAI: 'AI',
-        tabProviders: 'Providers',
-        tabFeatures: 'Features',
-        tabThemes: 'Themes',
-        providerLabel: 'Provider:',
-        modelsLabel: 'Models:',
-        searchModel: 'Search or type custom model...',
-        languageLabel: 'Language:',
-        autoAnswer: 'Auto-answer',
-        autoAnswerHint: 'Automatically select the correct answer on the page.',
-        cooldownLabel: 'Cooldown (ms):',
-        highlightCorrect: 'Highlight correct answer',
-        highlightCorrectHint: 'Highlight the correct option with a green border when UI is visible.',
-        showAnswerOnly: 'Show answer only',
-        showAnswerOnlyHint: 'Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.',
-        silentMode: 'Silent mode',
-        silentModeLabel: 'Mode:',
-        silentIndicators: 'Indicators',
-        silentGhost: 'Page title',
-        silentStealth: 'Stealth',
-        silentOneclick: 'One-click',
-        silentIndicatorsHint: 'Overlay dot next to the correct answer.',
-        silentGhostHint: 'Hide window. Answer shown only in browser tab title.',
-        silentStealthHint: 'Completely invisible. Answer auto-copied to clipboard.',
-        silentOneclickHint: 'Click on a question to instantly select the correct answer.',
-        // Position
-        defaultPositionLabel: 'Default position',
-        defaultPositionHint: 'Where the answer card appears when it opens.',
-        rememberDrag: 'Remember dragged position',
-        rememberDragHint: 'If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.',
-        themesDesc: 'Choose a preset or click <strong>+</strong> to build your own.',
-        newTheme: 'New theme',
-        themeNameLabel: 'Name:',
-        themeNamePlaceholder: 'My theme',
-        accentLabel: 'Accent:',
-        headerLabel: 'Header:',
-        backgroundLabel: 'Background:',
-        textLabel: 'Text:',
-        cancelBtn: 'Cancel',
-        saveThemeBtn: 'Save theme',
-        glowEffect: 'Glow effect',
-        glowEffectHint: 'Soft accent-colored glow around the on-page answer card.',
-        addThemeLabel: 'New theme',
-        deleteTheme: 'Delete theme',
-        createTheme: 'Create custom theme',
-        untitled: 'Untitled',
-        customPrefix: 'Custom',
-        donateText: 'If you like this extension, consider supporting the developer.',
-        donateBtn: 'Subscribe on Telegram',
-        providersHeader: 'Providers',
-        otherHeader: 'Other',
-        otherHint: 'Custom OpenAI-compatible endpoints',
-        addProvider: '+ Add Provider',
-        addCustomProvider: '+ Add Custom Provider',
-        noProviders: 'No providers added yet',
-        providerTypeLabel: 'Type:',
-        providerNameLabel: 'Name:',
-        providerNamePlaceholder: 'My Custom Provider',
-        providerBaseUrlLabel: 'Base URL:',
-        providerApiKeyLabel: 'API Key:',
-        providerApiKeyPlaceholder: 'sk-...',
-        providerCustomName: 'Custom Provider',
-        removeProvider: 'Remove',
-        saveProvider: 'Save',
-        addProviderType: 'Add type',
-        badgeVision: 'Supports image input',
-        badgeReasoning: 'Reasoning/thinking model',
-        badgeToolCalling: 'Supports tool calling',
-        badgeCostInput: 'Input',
-        badgeCostOutput: 'Output',
-        customModel: 'custom model',
-        ctxThousand: 'K',
-        ctxMillion: 'M',
-        webSearchLabel: 'Web Search',
-        webSearchHint: 'Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch, Serper, Perplexity, Exa, Tavily, Linkup or SearchAPI) with API key in the Providers tab.',
-        consensusLabel: 'Consensus mode',
-        consensusHint: '',
-        consensusAddRun: '+ Add model',
-        consensusProviderLabel: 'Provider:',
-        consensusModelLabel: 'Model:',
-        consensusAnswerOnly: 'Answer only',
-        consensusRemoveRun: 'Remove',
-        consensusNoProviders: 'No providers',
-        hotkeyLabel: 'Hotkey',
-        hotkeyHint: 'Click the key combination above to rebind.',
-        hotkeyRecording: 'Press a key combination…',
-        hotkeyClear: 'Reset',
-        searchProviderBadge: 'SEARCH',
-        disablerLabel: 'Disabler',
-        disablerHint: 'Disables site checks to make cheating easier.'
-    }
-};
-
 function t(key) {
-    return (TRANSLATIONS[settings.language || 'uk'] || TRANSLATIONS.uk)[key] || key;
+    const I = window.xdAnswers._internal;
+    const tr = I.TRANSLATIONS || {};
+    return (tr[settings.language || 'uk'] || tr.uk || {})[key] || key;
 }
 
 function applyLanguage() {
@@ -408,35 +120,7 @@ function applyLanguage() {
     if (donateBtnSpan) donateBtnSpan.textContent = t('donateBtn');
 }
 
-const DEFAULT_BASE_URLS = {
-    openai: 'https://api.openai.com/v1',
-    anthropic: 'https://api.anthropic.com/v1',
-    google: 'https://generativelanguage.googleapis.com/v1beta',
-    deepseek: 'https://api.deepseek.com/v1',
-    groq: 'https://api.groq.com/openai/v1',
-    openrouter: 'https://openrouter.ai/api/v1',
-    cerebras: 'https://api.cerebras.ai/v1',
-    together: 'https://api.together.xyz/v1',
-    fireworks: 'https://api.fireworks.ai/inference/v1',
-    mistral: 'https://api.mistral.ai/v1',
-    'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
-    'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
-    'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
-    'opencode-zen': 'https://opencode.ai/zen/v1',
-    'opencode-go': 'https://opencode.ai/zen/go/v1',
-    'ollama-cloud': 'https://ollama.com/v1',
-    nvidia: 'https://integrate.api.nvidia.com/v1',
-    langsearch: 'https://api.langsearch.com/v1',
-    serper: 'https://google.serper.dev'
-};
 
-const API_FORMAT_MAP = {
-    openai: 'openai', anthropic: 'anthropic', google: 'google',
-    deepseek: 'openai', groq: 'openai', openrouter: 'openai',
-    cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
-    'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai',
-    'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai'
-};
 
 const API_PROVIDERS = [
     { id: 'openai', name: 'OpenAI', hint: 'OpenAI API', logo: 'openai' },
@@ -646,69 +330,9 @@ function processModels(rawModels, format) {
     return result;
 }
 
-const DEFAULT_PROMPT = 'Відповідай на тестові питання. Відповідь — ТІЛЬКИ валідний JSON об\'єкт, без markdown, без ```json, без зайвого тексту.\n\nФормат:\n{"answer": "правильна відповідь", "explanation": "коротке пояснення (1-3 речення)", "solution": "Дано: ... Розв\'язок: ...", "confidence": "0-100%"}\n\nПравила:\n- answer: точний текст правильного варіанту, якщо є варіанти відповідей\n- Для кількох правильних відповідей розділяй "; "\n- Відповідай мовою питання\n- solution пиши тільки для задач з розрахунками (фізика, хімія, математика)\n- confidence необов\'язкове\n- Виводь ТІЛЬКИ JSON об\'єкт, нічого більше';
-
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
-
-const DEFAULT_SETTINGS = {
-    providers: [
-        {
-            id: 'unturf-hermes-default',
-            type: 'unturf-hermes',
-            name: 'Unturf Hermes',
-            baseUrl: 'https://hermes.ai.unturf.com/v1',
-            apiKey: ''
-        },
-        {
-            id: 'unturf-qwen-default',
-            type: 'unturf-qwen',
-            name: 'Unturf Qwen',
-            baseUrl: 'https://qwen.ai.unturf.com/v1',
-            apiKey: ''
-        },
-        {
-            id: 'unturf-vl-default',
-            type: 'unturf-vl',
-            name: 'Unturf Vision',
-            baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
-            apiKey: ''
-        },
-        {
-            id: 'opencode-zen-default',
-            type: 'opencode-zen',
-            name: 'OpenCode Zen',
-            baseUrl: 'https://opencode.ai/zen/v1',
-            apiKey: ''
-        }
-    ],
-    activeProviderId: 'opencode-zen-default',
-    model: '',
-    promptPrefix: DEFAULT_PROMPT,
-    language: 'uk',
-    autoAnswer: false,
-    autoAnswerCooldown: 2000,
-    highlightCorrect: true,
-    showAnswerOnly: false,
-    silentMode: '',
-    _silentModePreselect: 'indicators',
-    hotkey: 'Ctrl+Shift+X',
-        webSearchEnabled: false,
-        disablerEnabled: false,
-        defaultPosition: 'bottom-right',
-    rememberDragPosition: false,
-    savedPosition: null,
-    customization: {
-        glowEffect: false,
-        ...PREDEFINED_THEMES['Dark']
-    },
-    customThemes: [],
-    consensus: {
-        enabled: false,
-        runs: []
-    }
-};
 
 let settings;
 let uiElements = {};
@@ -722,7 +346,7 @@ function getActiveProvider(s) {
 
 async function loadSettings() {
     const data = await chrome.storage.local.get('xdAnswers_settings');
-    let loaded = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    let loaded = JSON.parse(JSON.stringify(window.xdAnswers._internal.DEFAULT_SETTINGS));
     if (data.xdAnswers_settings) {
         try {
             const parsed = JSON.parse(data.xdAnswers_settings);
@@ -734,9 +358,9 @@ async function loadSettings() {
                     anthropic: 'https://api.anthropic.com',
                     google: 'https://generativelanguage.googleapis.com'
                 };
-                let baseUrl = parsed.baseUrl || DEFAULT_BASE_URLS[parsed.apiFormat] || '';
+                let baseUrl = parsed.baseUrl || window.xdAnswers._internal.DEFAULT_BASE_URLS[parsed.apiFormat] || '';
                 if (oldDefaults[parsed.apiFormat] === baseUrl) {
-                    baseUrl = DEFAULT_BASE_URLS[parsed.apiFormat];
+                    baseUrl = window.xdAnswers._internal.DEFAULT_BASE_URLS[parsed.apiFormat];
                 }
                 const meta = getApiProviderMeta(parsed.apiFormat);
                 const migratedProvider = {
@@ -764,11 +388,11 @@ async function loadSettings() {
 
             // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
             if (!loaded.providers || loaded.providers.length === 0) {
-                loaded.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
-                loaded.activeProviderId = DEFAULT_SETTINGS.activeProviderId;
+                loaded.providers = JSON.parse(JSON.stringify(window.xdAnswers._internal.DEFAULT_SETTINGS.providers));
+                loaded.activeProviderId = window.xdAnswers._internal.DEFAULT_SETTINGS.activeProviderId;
             }
             if (typeof loaded.promptPrefix !== 'string' || !loaded.promptPrefix.trim()) {
-                loaded.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
+                loaded.promptPrefix = window.xdAnswers._internal.DEFAULT_SETTINGS.promptPrefix;
             }
             // Migrate silentMode: true/false → string
             if (typeof loaded.silentMode === 'boolean') {
@@ -1050,7 +674,7 @@ function showProviderForm(existing, isOther, isSearch) {
     const isEdit = !!existing;
     const initialType = existing?.type || (isSearch ? 'langsearch' : (isOther ? 'other' : 'openai'));
     const isOtherType = initialType === 'other';
-    const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (DEFAULT_BASE_URLS[initialType] || ''));
+    const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (window.xdAnswers._internal.DEFAULT_BASE_URLS[initialType] || ''));
     const urlDisplay = isOtherType ? '' : ' style="display:none"';
 
     // For search providers, only show search-type providers in the dropdown
@@ -1149,7 +773,7 @@ function showProviderForm(existing, isOther, isSearch) {
                 pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 pfTypeDropdown.classList.add('hidden');
-                pfUrl.value = DEFAULT_BASE_URLS[newType] || '';
+                pfUrl.value = window.xdAnswers._internal.DEFAULT_BASE_URLS[newType] || '';
                 const nameInput = formWrapper.querySelector('#pf-name');
                 if (!nameInput.value.trim()) nameInput.placeholder = meta?.name || 'Provider';
             });
@@ -1179,7 +803,7 @@ function showProviderForm(existing, isOther, isSearch) {
         const finalName = name || (isOtherSave ? t('providerCustomName') : (meta?.name || selectedType));
         const finalUrl = isOtherSave
             ? (pfUrl.value.trim() || 'https://api.openai.com/v1')
-            : (DEFAULT_BASE_URLS[selectedType] || '');
+            : (window.xdAnswers._internal.DEFAULT_BASE_URLS[selectedType] || '');
 
         if (isEdit) {
             existing.type = selectedType;
@@ -1368,7 +992,7 @@ function makeRequest(options) {
 }
 
 async function fetchModelsForProvider(provider) {
-    const format = API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
+    const format = window.xdAnswers._internal.API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
     const base = provider.baseUrl.replace(/\/+$/, '');
     const key = provider.apiKey;
     const hasRealKey = key && key !== 'free';
