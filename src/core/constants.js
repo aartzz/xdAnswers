@@ -43,6 +43,10 @@ answer: правильна відповідь
         'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
         'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
         'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
+        'opencode-zen': 'https://opencode.ai/zen/v1',
+        'opencode-go': 'https://opencode.ai/zen/go/v1',
+        'ollama-cloud': 'https://ollama.com/v1',
+        nvidia: 'https://integrate.api.nvidia.com/v1',
         langsearch: 'https://api.langsearch.com/v1',
         serper: 'https://google.serper.dev',
         perplexity: 'https://api.perplexity.ai',
@@ -56,7 +60,8 @@ answer: правильна відповідь
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'openai', groq: 'openai', openrouter: 'openai',
         cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
-        'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai'
+        'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai',
+        'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai'
     };
 
     window.xdAnswers._internal.DEFAULT_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT;

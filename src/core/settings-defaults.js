@@ -13,24 +13,31 @@
                 type: 'unturf-hermes',
                 name: 'Unturf Hermes',
                 baseUrl: 'https://hermes.ai.unturf.com/v1',
-                apiKey: 'free'
+                apiKey: ''
             },
             {
                 id: 'unturf-qwen-default',
                 type: 'unturf-qwen',
                 name: 'Unturf Qwen',
                 baseUrl: 'https://qwen.ai.unturf.com/v1',
-                apiKey: 'free'
+                apiKey: ''
             },
             {
                 id: 'unturf-vl-default',
                 type: 'unturf-vl',
                 name: 'Unturf Vision',
                 baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
-                apiKey: 'free'
+                apiKey: ''
+            },
+            {
+                id: 'opencode-zen-default',
+                type: 'opencode-zen',
+                name: 'OpenCode Zen',
+                baseUrl: 'https://opencode.ai/zen/v1',
+                apiKey: ''
             }
         ],
-        activeProviderId: 'unturf-vl-default',
+        activeProviderId: 'opencode-zen-default',
         model: '',
         promptPrefix: I.DEFAULT_SYSTEM_PROMPT,
         language: 'uk',
