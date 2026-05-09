@@ -276,12 +276,22 @@ function processModels(rawModels, format) {
     } else {
         models = (rawModels.data || []).map(m => ({
             id: m.id,
+            title: m.title || m.display_name || null,
+            description: m.description || null,
             ownedBy: m.owned_by || '',
             root: m.root || m.id,
             parent: m.parent || null,
-            contextLength: m.context_length || null,
+            contextLength: m.context_length || m.context_size || null,
+            maxOutputTokens: m.max_output_tokens || null,
             capabilities: m.capabilities || null,
-            type: m.type || null
+            tags: Array.isArray(m.tags) ? m.tags : [],
+            features: Array.isArray(m.features) ? m.features : [],
+            pricing: (m.input_token_price_per_m !== undefined && m.output_token_price_per_m !== undefined) ? {
+                input: m.input_token_price_per_m / 100,
+                output: m.output_token_price_per_m / 100
+            } : null,
+            status: m.status,
+            type: m.type || m.model_type || null
         }));
     }
 
@@ -1146,13 +1156,29 @@ function renderModelList() {
             // Enrich with models.dev data
             const devInfo = getModelDevInfo(m.id);
             const badges = [];
-            const hasVision = devInfo?.a || m.capabilities?.vision;
-            const hasReasoning = devInfo?.r || m.capabilities?.reasoning;
-            const hasToolCalling = m.capabilities?.tool_calling;
+            const hasVision = devInfo?.a || m.capabilities?.vision || m.features?.includes('vision') || m.tags?.includes('native-multimodal');
+            const hasReasoning = devInfo?.r || m.capabilities?.reasoning || m.tags?.includes('reasoning') || m.features?.includes('reasoning');
+            const hasToolCalling = m.capabilities?.tool_calling || m.features?.includes('function-calling') || m.features?.includes('tools');
             if (hasVision) badges.push(`<span class="model-badge vision" title="${t('badgeVision')}">🖼️</span>`);
             if (hasReasoning) badges.push(`<span class="model-badge reasoning" title="${t('badgeReasoning')}">🧠</span>`);
             if (hasToolCalling) badges.push(`<span class="model-badge tool-calling" title="${t('badgeToolCalling')}">🔧</span>`);
-            if (devInfo?.c) {
+            // Tags from API (skip if already covered above)
+            if (m.tags?.includes('native-multimodal') && !hasVision) badges.push(`<span class="model-badge tag-multimodal" title="${t('badgeMultimodal')}">🎨</span>`);
+            if (m.tags?.includes('ultra-long-context')) badges.push(`<span class="model-badge tag-longctx" title="${t('badgeLongContext')}">📏</span>`);
+            if ((m.tags?.includes('coding') || m.tags?.includes('agentic')) && !hasReasoning) badges.push(`<span class="model-badge tag-agentic" title="${t('badgeAgentic')}">🤖</span>`);
+            // Features from API (skip if already covered above)
+            if (m.features?.includes('audio-input')) badges.push(`<span class="model-badge tag-audio" title="${t('badgeAudio')}">🎤</span>`);
+            if (m.features?.includes('structured-outputs')) badges.push(`<span class="model-badge tag-structured" title="${t('badgeStructured')}">📋</span>`);
+            if (m.features?.includes('web-search')) badges.push(`<span class="model-badge tag-websearch" title="${t('badgeWebSearch')}">🔍</span>`);
+            // Pricing: prefer API data, fallback to models.dev
+            if (m.pricing) {
+                const inp = m.pricing.input, out = m.pricing.output;
+                if (inp !== undefined && out !== undefined) {
+                    const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
+                    const costStr = fmtCost(inp);
+                    badges.push(`<span class="model-badge cost" title="${t('badgeCostInput')}: ${fmtCost(inp)}/M  ${t('badgeCostOutput')}: ${fmtCost(out)}/M">${costStr}/M</span>`);
+                }
+            } else if (devInfo?.c) {
                 const inp = devInfo.c.i, out = devInfo.c.o;
                 if (inp !== undefined && out !== undefined) {
                     const fmtCost = v => v === 0 ? '$0' : (v < 0.01 ? `$${v.toFixed(3)}` : `$${v}`);
@@ -1163,11 +1189,21 @@ function renderModelList() {
             if (devInfo?.l?.c && !m.contextLength) {
                 badges.push(`<span class="model-ctx">${formatContextLength(devInfo.l.c)}</span>`);
             }
+            // Max output tokens from API (only if different from context length)
+            if (m.maxOutputTokens && m.maxOutputTokens !== m.contextLength) {
+                badges.push(`<span class="model-badge tag-maxtokens" title="${t('badgeMaxTokens')}">${formatContextLength(m.maxOutputTokens)} out</span>`);
+            }
             const badgesHtml = badges.join('');
             const selectedClass = isSelected ? ' selected' : '';
+            // Use title/display_name from API if available, fallback to formatted id
+            const displayName = m.title || formatModelName(m.root || m.id);
+            // Show description from API instead of ownedBy, fallback to ownedBy
+            const subLabel = escapeHTML(m.description || m.ownedBy || 'other');
+            // Truncate description to ~50 chars for the sub-label
+            const truncatedSubLabel = subLabel.length > 55 ? subLabel.slice(0, 52) + '...' : subLabel;
 
             html += `<div class="model-item${selectedClass}" data-model-id="${m.id}">
-                <span class="model-item-main">${modelIcon}<span class="model-item-subtext"><span class="model-item-name">${escapeHTML(formatModelName(m.root || m.id))}</span><span class="model-item-provider">${providerLabel}</span></span></span><span class="model-badges">${badgesHtml}${ctxHtml}</span>
+                <span class="model-item-main">${modelIcon}<span class="model-item-subtext"><span class="model-item-name">${escapeHTML(displayName)}</span><span class="model-item-provider">${truncatedSubLabel}</span></span></span><span class="model-badges">${badgesHtml}${ctxHtml}</span>
             </div>`;
             count++;
         }
