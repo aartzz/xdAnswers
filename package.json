@@ -1,6 +1,6 @@
 {
   "name": "xdanswers-extension",
-  "version": "5.4.2",
+  "version": "5.4.3",
   "private": true,
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
