@@ -205,6 +205,10 @@
             questionRoot.querySelectorAll('.word-queue-test_question_sentence-item').forEach(token => {
                 token.setAttribute('data-xd-option', 'true');
             });
+            // Grid / Matrix / Scale / Dropdown (Google Forms-style CSS)
+            questionRoot.querySelectorAll('.mxSrOe .uVccjd, .lLfZXe .Od2TWd, .N9Qcwe .T5pZmf, .MocG8c[role="option"]').forEach(el => {
+                el.setAttribute('data-xd-option', 'true');
+            });
         }
 
         // ── Premium format support (dispatched by data-quest_type attribute) ──
@@ -223,6 +227,44 @@
         // Format normalisation: vseosvita uses a mix of non-breaking spaces and odd whitespace.
         function normalize(text) {
             return (text || '').replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        // Extract mathematical content from elements (MathML, KaTeX, LaTeX).
+        function extractMathContent(el) {
+            if (!el) return '';
+            let mathText = '';
+            // MathML
+            el.querySelectorAll('math, .mathml').forEach(m => {
+                mathText += ' ' + (m.textContent || '').trim();
+            });
+            // KaTeX
+            el.querySelectorAll('.katex, .katex-display, .katex-mathml').forEach(k => {
+                mathText += ' ' + (k.textContent || '').trim();
+            });
+            // data-math attribute
+            el.querySelectorAll('[data-math]').forEach(dm => {
+                mathText += ' ' + (dm.getAttribute('data-math') || '').trim();
+            });
+            // Inline LaTeX $...$
+            const text = el.textContent || '';
+            const latexMatches = text.match(/\$[^$]+\$/g);
+            if (latexMatches) {
+                mathText += ' ' + latexMatches.join(' ');
+            }
+            return mathText.trim();
+        }
+
+        // Wait for images to actually load (ensures naturalWidth > 0).
+        async function waitForImageLoad(img) {
+            if (!img || img.naturalWidth > 0) return true;
+            return new Promise(resolve => {
+                const onLoad = () => { resolve(true); };
+                const onError = () => { resolve(false); };
+                img.addEventListener('load', onLoad, { once: true });
+                img.addEventListener('error', onError, { once: true });
+                // Timeout fallback
+                setTimeout(() => resolve(img.naturalWidth > 0), 2000);
+            });
         }
 
         // ── Type 12: true/false ────────────────────────────────────────────
@@ -337,6 +379,75 @@
             return { formatType: 'free_response', element: textarea || null };
         }
 
+        // ── Grid / Matrix formats (Google Forms-style CSS heuristics) ──────
+        // checkboxGrid: multiple choice matrix (.mxSrOe rows, .uVccjd checkboxes)
+        function collectCheckboxGrid(questionRoot) {
+            const rows = Array.from(questionRoot.querySelectorAll('.mxSrOe'));
+            if (rows.length === 0) return null;
+            const items = rows.map((row, idx) => {
+                const label = normalize(row.querySelector('.Wtw8H, .RHiBW')?.textContent) || `Рядок ${idx + 1}`;
+                const checks = Array.from(row.querySelectorAll('.uVccjd')).map(cb => ({
+                    text: normalize(cb.querySelector('.aDTYNe, .docssharedWizToggleLabeledLabelText')?.textContent) || '',
+                    element: cb.querySelector('input[type="checkbox"]') || cb
+                })).filter(c => c.text);
+                return { label, checks };
+            }).filter(r => r.checks.length > 0);
+            if (items.length === 0) return null;
+            return { formatType: 'checkbox_grid', rows: items };
+        }
+
+        // likert: radio button matrix / grid (.lLfZXe radiogroups, .Od2TWd radios)
+        function collectLikert(questionRoot) {
+            const groups = Array.from(questionRoot.querySelectorAll('.lLfZXe'));
+            if (groups.length === 0) return null;
+            const items = groups.map((group, idx) => {
+                const label = normalize(group.querySelector('.Wtw8H, .RHiBW')?.textContent) || `Рядок ${idx + 1}`;
+                const radios = Array.from(group.querySelectorAll('.Od2TWd')).map(r => ({
+                    text: normalize(r.querySelector('.aDTYNe, .docssharedWizToggleLabeledLabelText')?.textContent) || '',
+                    element: r.querySelector('input[type="radio"]') || r
+                })).filter(r => r.text);
+                return { label, radios };
+            }).filter(r => r.radios.length > 0);
+            if (items.length === 0) return null;
+            return { formatType: 'likert', rows: items };
+        }
+
+        // scale: linear scale 1-10 (.N9Qcwe container, .T5pZmf items)
+        function collectScale(questionRoot) {
+            const container = questionRoot.querySelector('.N9Qcwe');
+            if (!container) return null;
+            const items = Array.from(container.querySelectorAll('.T5pZmf')).map(el => ({
+                text: normalize(el.textContent) || '',
+                element: el.querySelector('input[type="radio"]') || el
+            })).filter(i => i.text);
+            if (items.length === 0) return null;
+            return { formatType: 'scale', items };
+        }
+
+        // generic dropdown (.jgvuAb[role="listbox"] with .MocG8c[role="option"] options)
+        function collectGenericDropdown(questionRoot) {
+            const listbox = questionRoot.querySelector('.jgvuAb[role="listbox"]');
+            if (!listbox) return null;
+            const options = Array.from(questionRoot.querySelectorAll('.MocG8c[role="option"]')).map(opt => ({
+                text: normalize(opt.textContent) || '',
+                element: opt
+            })).filter(o => o.text);
+            if (options.length === 0) return null;
+            return { formatType: 'dropdown', element: listbox, options };
+        }
+
+        // date / time inputs
+        function collectDateTime(questionRoot) {
+            const dateInput = questionRoot.querySelector('input[type="date"]');
+            const timeInputs = questionRoot.querySelectorAll('input[jsname="MKaSrf"], input[jsname="QbtXXe"]');
+            if (!dateInput && timeInputs.length === 0) return null;
+            return {
+                formatType: 'date_time',
+                dateElement: dateInput || null,
+                timeElements: Array.from(timeInputs)
+            };
+        }
+
         // Dispatch by data-quest_type; returns { formatType, ...meta } or null.
         function detectPremiumFormat(questionRoot) {
             const vrQuest = findVrQuest(questionRoot);
@@ -386,6 +497,21 @@
             if (meta.formatType === 'ordering_select') {
                 return meta.items.map(i => `- ${i.text}`).join('\n');
             }
+            if (meta.formatType === 'checkbox_grid') {
+                return meta.rows.map(r => `- ${r.label}:\n  ${r.checks.map(c => `[ ] ${c.text}`).join('\n  ')}`).join('\n');
+            }
+            if (meta.formatType === 'likert') {
+                return meta.rows.map(r => `- ${r.label}:\n  ${r.radios.map(radio => `( ) ${radio.text}`).join('  ')}`).join('\n');
+            }
+            if (meta.formatType === 'scale') {
+                return meta.items.map((it, i) => `${i + 1}: ${it.text}`).join('  ');
+            }
+            if (meta.formatType === 'dropdown') {
+                return meta.options.map((o, i) => `${String.fromCharCode(65 + i)}: ${o.text}`).join('\n');
+            }
+            if (meta.formatType === 'date_time') {
+                return 'Формат: дата/час';
+            }
             return undefined;
         }
 
@@ -401,6 +527,11 @@
                 case 'order_words':      return 'order_words';
                 case 'ordering_select':  return 'ordering';
                 case 'free_response':    return 'paragraph';
+                case 'checkbox_grid':    return 'checkbox_grid';
+                case 'likert':           return 'likert';
+                case 'scale':            return 'scale';
+                case 'dropdown':         return 'dropdown';
+                case 'date_time':        return 'date_time';
                 default:                 return 'unknown';
             }
         }
@@ -614,12 +745,18 @@
 
 
         function detectQuestionData() {
-            const questionRoot = document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .test-question-text, .vseosvita-test-content');
+            const questionRoot = document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .v-test-go-body, .Qr7Oae, .geS5n, .test-question-text, .vseosvita-test-content');
             if (!questionRoot) return null;
 
-            const titleNode = questionRoot.querySelector('.v-test-questions-title .content-box, .v-test-questions-title, .test-question-text, .question-text');
-            const text = getText(titleNode || questionRoot);
+            const titleNode = questionRoot.querySelector('.v-test-questions-title .content-box, .v-test-questions-title p, .v-test-questions-title, .M7eMe, .test-question-text, .question-text');
+            let text = getText(titleNode || questionRoot);
             if (!text) return null;
+
+            // Append mathematical content (MathML, KaTeX, LaTeX) if present
+            const mathText = extractMathContent(titleNode || questionRoot);
+            if (mathText) {
+                text += '\n[Math]: ' + mathText;
+            }
 
             // Mark option elements for auto-answer/indicators
             markOptionElements(questionRoot);
@@ -682,6 +819,28 @@
                         vseosvitaMeta.vrQuest = vq;
                         vseosvitaMeta.dataQuestType = '5';
                         questionType = 'text_input_multi';
+                    }
+                }
+            }
+
+            // NEW: fallback CSS-heuristic detection for Google Forms-style layouts
+            // that don't carry data-quest_type. Runs only when both legacy and
+            // premium (data-quest_type) branches returned unknown.
+            if (questionType === 'unknown') {
+                const fallbackDetectors = [
+                    collectCheckboxGrid,
+                    collectLikert,
+                    collectScale,
+                    collectGenericDropdown,
+                    collectDateTime
+                ];
+                for (const detector of fallbackDetectors) {
+                    const meta = detector(questionRoot);
+                    if (meta) {
+                        vseosvitaMeta = meta;
+                        vseosvitaMeta.vrQuest = findVrQuest(questionRoot);
+                        questionType = premiumQuestionType(meta.formatType);
+                        break;
                     }
                 }
             }
