@@ -13,6 +13,12 @@
   "host_permissions": [
     "<all_urls>"
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/core/disabler-page.js"],
+      "matches": ["*://vseosvita.ua/*"]
+    }
+  ],
   "commands": {
     "xd-trigger-answer": {
       "suggested_key": {
