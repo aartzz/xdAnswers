@@ -106,5 +106,9 @@ npx web-ext run -t chromium
 | НаУрок | [naurok.com.ua](https://naurok.com.ua) | стабільний |
 | Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | бета |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | бета |
+| Kahoot! | [kahoot.it](https://kahoot.it) | бета |
+| Classtime | [classtime.com](https://classtime.com) | бета |
+| МійКлас | [miyklas.com.ua](https://miyklas.com.ua) | бета |
+| LCloud | [lcloud.in.ua](https://lcloud.in.ua) | бета |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета |
 | Microsoft Forms | [forms.office.com](https://forms.office.com) | бета |

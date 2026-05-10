@@ -104,5 +104,9 @@ When you're done, remove the generated `manifest.json` with `npm run clean`.
 | NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable |
 | Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | beta |
+| Kahoot! | [kahoot.it](https://kahoot.it) | beta |
+| Classtime | [classtime.com](https://classtime.com) | beta |
+| MiyKlas | [miyklas.com.ua](https://miyklas.com.ua) | beta |
+| LCloud | [lcloud.in.ua](https://lcloud.in.ua) | beta |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta |
 | Microsoft Forms | [forms.office.com](https://forms.office.com) | beta |
