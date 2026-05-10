@@ -242,8 +242,31 @@
             // Якщо немає жодних варіантів — питання ще не завантажилось або перехід між сценами
             if (optionsArr.length === 0) return;
 
-            // Визначаємо тип питання (quiz / multiquiz)
-            const isMultiQuiz = !!document.querySelector('.question-option-inner[ng-click*="multiquiz"], [ng-if="test.question.type == \'multiquiz\'"]:not(.ng-hide)');
+            // Визначаємо тип питання
+            let questionType = 'quiz';
+            let isMultiQuiz = false;
+
+            // 1a. Перевіряємо T/F (Правда/Неправда) — дві кнопки/варіанти
+            const tfButtons = document.querySelectorAll('.answer-true-false, .btn-true-false, [data-testid="true-false-option"]');
+            const hasExplicitTF = tfButtons.length >= 2;
+            // Або варіанти містять "Правда" / "Неправда"
+            const hasTFOptions = optionsArr.some(o => /правда|неправда|так|ні/i.test(o));
+            const isTrueFalse = hasExplicitTF || hasTFOptions;
+
+            // 1b. Перевіряємо text input
+            const textInputs = document.querySelectorAll('.test-question-options input[type="text"], .test-question-options textarea, .answer-text-input');
+            const hasTextInput = textInputs.length > 0;
+
+            // 1c. Перевіряємо multi-quiz (кілька правильних)
+            isMultiQuiz = !!document.querySelector('.question-option-inner[ng-click*="multiquiz"], [ng-if="test.question.type == \'multiquiz\'"]:not(.ng-hide)');
+
+            if (isTrueFalse) {
+                questionType = 'true_false';
+            } else if (hasTextInput) {
+                questionType = 'text_input';
+            } else if (isMultiQuiz) {
+                questionType = 'multiquiz';
+            }
 
             // 3. Збираємо картинку запитання (з <img> та background-image)
             const validImages = [];
@@ -354,7 +377,14 @@
                             }
                             currentImageUrls.forEach(url => { if (!currentValidImages.includes(url)) currentValidImages.push(url); });
 
+                            const currentIsTrueFalse = currentOptions.some(o => /правда|неправда|так|ні/i.test(o));
+                            const currentHasTextInput = document.querySelectorAll('.test-question-options input[type="text"], .test-question-options textarea, .answer-text-input').length > 0;
                             const currentIsMultiQuiz = !!document.querySelector('.question-option-inner[ng-click*="multiquiz"], [ng-if="test.question.type == \'multiquiz\'"]:not(.ng-hide)');
+                            
+                            let currentQuestionType = 'quiz';
+                            if (currentIsTrueFalse) currentQuestionType = 'true_false';
+                            else if (currentHasTextInput) currentQuestionType = 'text_input';
+                            else if (currentIsMultiQuiz) currentQuestionType = 'multiquiz';
 
                             const images = await Promise.all(currentValidImages.map(src => window.xdAnswers.imageToBase64(src)));
                             if (!_naurokTopic) { try { await fetchNaurokTopic(); } catch (e) {} }
@@ -362,7 +392,7 @@
                                 text: currentText,
                                 optionsText: currentOptions.join('\n'),
                                 base64Images: images.filter(img => img !== null),
-                                questionType: currentIsMultiQuiz ? 'multiquiz' : 'quiz',
+                                questionType: currentQuestionType,
                                 isMultiQuiz: currentIsMultiQuiz,
                                 topic: _naurokTopic || undefined
                             };
@@ -377,7 +407,7 @@
                             text: questionText,
                             optionsText: optionsText,
                             base64Images: [],
-                            questionType: isMultiQuiz ? 'multiquiz' : 'quiz',
+                            questionType: questionType,
                             isMultiQuiz: isMultiQuiz,
                             topic: _naurokTopic || undefined
                         };
