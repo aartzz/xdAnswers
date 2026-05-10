@@ -16,7 +16,15 @@
   "web_accessible_resources": [
     {
       "resources": ["src/core/disabler-page.js"],
-      "matches": ["*://vseosvita.ua/*"]
+      "matches": [
+        "*://vseosvita.ua/*",
+        "*://kahoot.it/*",
+        "*://classtime.com/*",
+        "*://justclass.com.ua/*",
+        "*://justclass.me/*",
+        "*://miyklas.com.ua/*",
+        "*://lcloud.in.ua/*"
+      ]
     }
   ],
   "commands": {
@@ -46,7 +54,15 @@
     {
       "matches": [
         "*://vseosvita.ua/test/go-olp*",
-        "*://vseosvita.ua/test/start/*"
+        "*://vseosvita.ua/test/start/*",
+        "*://kahoot.it/*",
+        "*://classtime.com/*",
+        "*://justclass.com.ua/*",
+        "*://justclass.me/*",
+        "*://miyklas.com.ua/*",
+        "*://lcloud.in.ua/*",
+        "*://naurok.com.ua/*",
+        "*://naurok.ua/*"
       ],
       "js": ["src/core/disabler.js"],
       "run_at": "document_start",
@@ -222,6 +238,138 @@
         "src/ui/styles.js",
         "src/ui/helper.js",
         "providers/msforms.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://kahoot.it/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/kahoot.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://classtime.com/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/classtime.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://miyklas.com.ua/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/miyklas.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://lcloud.in.ua/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/lcloud.js"
       ],
       "run_at": "document_end",
       "all_frames": true
