@@ -448,7 +448,28 @@
             };
         }
 
-        // Dispatch by data-quest_type; returns { formatType, ...meta } or null.
+        // ── Type 10 / Categorization: drag-and-drop items into categories ───
+        // Heuristic: container with category titles and draggable items that
+        // must be distributed among the categories.
+        function collectCategorization(vrQuest) {
+            // Look for category headers and draggable items
+            const catHeaders = Array.from(vrQuest.querySelectorAll('.vr-category-title, .category-title, .vr-cat-header, [data-testid="category-header"]'));
+            const items = Array.from(vrQuest.querySelectorAll('.vr-categorization-item, .categorization-item, .draggable-item, [draggable="true"], [data-testid="categorizer-item"]'));
+
+            if (catHeaders.length < 2 || items.length < 2) return null;
+
+            const categories = catHeaders.map(h => normalize(h.textContent)).filter(Boolean);
+            const itemTexts = items.map(it => normalize(it.textContent)).filter(Boolean);
+
+            if (categories.length < 2 || itemTexts.length < 2) return null;
+
+            return {
+                formatType: 'categorization',
+                categories,
+                items: items.map((el, idx) => ({ text: itemTexts[idx] || '', element: el })).filter(i => i.text),
+                categoryElements: catHeaders.map(el => ({ text: normalize(el.textContent), element: el }))
+            };
+        }
         function detectPremiumFormat(questionRoot) {
             const vrQuest = findVrQuest(questionRoot);
             if (!vrQuest) return null;
@@ -462,11 +483,15 @@
                 case '6':  meta = collectFillBlanks(vrQuest); break;
                 case '7':  meta = collectSelectInText(vrQuest); break;
                 case '8':  meta = collectOrderingSelect(vrQuest); break; // fallback only - legacy branch usually catches this
+                case '10': meta = collectCategorization(vrQuest); break; // categorization / drag-drop
                 case '12': meta = collectTrueFalse(vrQuest); break;
                 case '13': meta = collectOrderWords(vrQuest); break;
                 case '18': meta = collectFreeResponse(vrQuest); break;
                 default:
-                    return null; // unsupported premium type (drag/canvas/slider/image-hotspot)
+                    // Fallback heuristic for categorization when data-quest_type is absent/unknown
+                    meta = collectCategorization(vrQuest);
+                    if (!meta) return null;
+                    break;
             }
             if (!meta) return null;
             meta.vrQuest = vrQuest;
@@ -509,8 +534,9 @@
             if (meta.formatType === 'dropdown') {
                 return meta.options.map((o, i) => `${String.fromCharCode(65 + i)}: ${o.text}`).join('\n');
             }
-            if (meta.formatType === 'date_time') {
-                return 'Формат: дата/час';
+            if (meta.formatType === 'categorization') {
+                return 'Категорії:\n' + meta.categories.map(c => `- ${c}`).join('\n') +
+                       '\n\nЕлементи для розподілу:\n' + meta.items.map(it => `- ${it.text}`).join('\n');
             }
             return undefined;
         }
@@ -526,6 +552,7 @@
                 case 'select_in_text':   return 'select_in_text';
                 case 'order_words':      return 'order_words';
                 case 'ordering_select':  return 'ordering';
+                case 'categorization':   return 'categorization';
                 case 'free_response':    return 'paragraph';
                 case 'checkbox_grid':    return 'checkbox_grid';
                 case 'likert':           return 'likert';
@@ -705,6 +732,50 @@
             });
         }
 
+        function applyCategorization(meta, answerText) {
+            // Expected answer format: "Категорія1: елемент1, елемент2; Категорія2: елемент3"
+            // Parse the AI response into category -> items mapping
+            const categoryMap = new Map();
+            const segments = answerText.split(/;\s*(?=[А-ЯІЇЄҐA-Z][^:]*:)/);
+            for (const seg of segments) {
+                const colonIdx = seg.indexOf(':');
+                if (colonIdx < 0) continue;
+                const catName = normalize(seg.slice(0, colonIdx)).toLowerCase();
+                const itemsPart = seg.slice(colonIdx + 1);
+                const items = itemsPart.split(/,\s*|\n/).map(s => normalize(s).toLowerCase()).filter(Boolean);
+                categoryMap.set(catName, items);
+            }
+
+            // For each item, find which category it belongs to and simulate drag-and-drop
+            meta.items.forEach(item => {
+                const itemTextNorm = normalize(item.text).toLowerCase();
+                let targetCategoryEl = null;
+
+                // Find the category that contains this item
+                for (const [catName, catItems] of categoryMap) {
+                    if (catItems.some(ci => ci === itemTextNorm || itemTextNorm.includes(ci) || ci.includes(itemTextNorm))) {
+                        targetCategoryEl = meta.categoryElements.find(c => normalize(c.text).toLowerCase() === catName || normalize(c.text).toLowerCase().includes(catName))?.element;
+                        break;
+                    }
+                }
+
+                if (targetCategoryEl && item.element) {
+                    // Simulate drag-and-drop events
+                    const itemEl = item.element;
+                    itemEl.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                    itemEl.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() }));
+                    targetCategoryEl.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() }));
+                    targetCategoryEl.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() }));
+                    itemEl.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true }));
+                    itemEl.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+
+                    // Fallback: click the item then click the category (some UIs use click-based DnD)
+                    itemEl.click();
+                    targetCategoryEl.click();
+                }
+            });
+        }
+
         // Central applier dispatcher used as window.xdAnswers._customAutoAnswer.
         function makeCustomApplier(meta) {
             return function(answerText /*, parsed */) {
@@ -718,6 +789,7 @@
                         case 'select_in_text':   applySelectInText(meta, answerText); break;
                         case 'order_words':      applyOrderWords(meta, answerText); break;
                         case 'ordering_select':  applyOrderingSelect(meta, answerText); break;
+                        case 'categorization':   applyCategorization(meta, answerText); break;
                         case 'free_response':    applyFreeResponse(meta, answerText); break;
                     }
                 } catch (e) {
@@ -733,7 +805,12 @@
             'text_input_multi',     // multiple fields, parse "; "-separated
             'fill_blank',           // contenteditable spans OR inner input[type=text], parse "A0=val"
             'select_in_text',       // contenteditable + runtime dropdown (best-effort)
-            'ordering_select'       // set <select> values by position
+            'categorization',       // drag-and-drop items into categories
+            'ordering_select',      // <select> elements set to position numbers
+            'checkbox_grid',        // matrix of checkboxes
+            'likert',               // matrix of radio buttons
+            'scale',                // linear scale radio buttons
+            'dropdown'              // listbox role option clicks
         ]);
         // order_words relies on default autoSelectAnswer (the "; "-split + fuzzy
         // match naturally clicks tokens in answer order).
