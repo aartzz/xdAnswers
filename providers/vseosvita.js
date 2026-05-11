@@ -1016,6 +1016,11 @@
                 installCustomApplier(questionData.vseosvitaMeta);
                 const imgPromises = questionData.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src));
                 Promise.all(imgPromises).then(images => {
+                    // Guard against race: isProcessingAI may have flipped since checkQuestion started
+                    if (window.xdAnswers.isProcessingAI) {
+                        console.log('[xdAnswers vseosvita] Skipping duplicate processQuestion — already processing');
+                        return;
+                    }
                     window.xdAnswers.processQuestion({
                         text: questionData.text,
                         optionsText: questionData.optionsText,
