@@ -64,69 +64,86 @@ chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === 'modelsDevSync') syncModelsDev();
 });
 
-// Handle model info requests from popup
+// Handle messages from popup/content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'getModelInfo') {
         chrome.storage.local.get([MODELS_CACHE_KEY, MODELS_CACHE_KEY + '_ts'], (data) => {
-            if (!data[MODELS_CACHE_KEY]) { sendResponse({ found: false }); return; }
+            if (!data[MODELS_CACHE_KEY]) {
+                try { sendResponse({ found: false }); } catch (e) {}
+                return;
+            }
             try {
                 const index = JSON.parse(data[MODELS_CACHE_KEY]);
                 const modelId = request.modelId;
                 const info = index[modelId] || index['openai/' + modelId] || null;
                 sendResponse({ found: !!info, info });
-            } catch { sendResponse({ found: false }); }
+            } catch (e) {
+                try { sendResponse({ found: false }); } catch (e2) {}
+            }
         });
         return true;
     }
     if (request.type === 'forceModelSync') {
-        syncModelsDev().then(() => sendResponse({ done: true }));
+        syncModelsDev().then(() => {
+            try { sendResponse({ done: true }); } catch (e) {}
+        });
         return true;
     }
-});
-
-// ── Existing fetch proxy ──
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'fetch') {
-        const { url, method, headers, data, responseType, timeout } = request.payload;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort('Timeout'), timeout || 60000);
+        try {
+            const { url, method, headers, data, responseType, timeout } = request.payload;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort('Timeout'), timeout || 60000);
 
-        fetch(url, { method, headers, body: data, signal: controller.signal })
-            .then(response => {
-                clearTimeout(timeoutId);
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(JSON.stringify({ status: response.status, statusText: response.statusText, responseText: text }));
-                    });
-                }
-                if (responseType === 'blob') return response.blob();
-                return response.text();
-            })
-            .then(responseData => {
-                if (responseData instanceof Blob) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => sendResponse({ success: true, data: reader.result });
-                    reader.onerror = (e) => sendResponse({ success: false, error: 'FileReader error', details: e.toString() });
-                    reader.readAsDataURL(responseData);
-                } else {
-                    sendResponse({ success: true, data: responseData });
-                }
-            })
-            .catch(error => {
-                clearTimeout(timeoutId);
-                if (error.name === 'AbortError') {
-                    sendResponse({ success: false, error: 'Timeout', details: `Request to ${url} timed out.` });
-                } else {
-                    try {
-                        const d = JSON.parse(error.message);
-                        sendResponse({ success: false, error: `API Error: ${d.status}`, details: d.responseText || error.message });
-                    } catch (e) {
-                        sendResponse({ success: false, error: 'Fetch Error', details: error.message });
+            fetch(url, { method, headers, body: data, signal: controller.signal })
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(JSON.stringify({ status: response.status, statusText: response.statusText, responseText: text }));
+                        });
                     }
-                }
-            });
+                    if (responseType === 'blob') return response.blob();
+                    return response.text();
+                })
+                .then(responseData => {
+                    if (responseData instanceof Blob) {
+                        const reader = new FileReader();
+                        let sent = false;
+                        reader.onloadend = () => {
+                            if (sent) return;
+                            sent = true;
+                            try { sendResponse({ success: true, data: reader.result }); } catch (e) {}
+                        };
+                        reader.onerror = (e) => {
+                            if (sent) return;
+                            sent = true;
+                            try { sendResponse({ success: false, error: 'FileReader error', details: e.toString() }); } catch (e2) {}
+                        };
+                        reader.readAsDataURL(responseData);
+                    } else {
+                        try { sendResponse({ success: true, data: responseData }); } catch (e) {}
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    if (error.name === 'AbortError') {
+                        try { sendResponse({ success: false, error: 'Timeout', details: `Request to ${url} timed out.` }); } catch (e) {}
+                    } else {
+                        try {
+                            const d = JSON.parse(error.message);
+                            sendResponse({ success: false, error: `API Error: ${d.status}`, details: d.responseText || error.message });
+                        } catch (e) {
+                            try { sendResponse({ success: false, error: 'Fetch Error', details: error.message }); } catch (e2) {}
+                        }
+                    }
+                });
+        } catch (error) {
+            try { sendResponse({ success: false, error: 'Invalid request', details: error.message }); } catch (e) {}
+        }
         return true;
     }
+    return false; // Not handled here
 });
 
 // Streaming fetch via persistent port

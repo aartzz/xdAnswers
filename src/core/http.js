@@ -6,7 +6,19 @@
 
     window.xdAnswers.makeRequest = function(options) {
         return new Promise((resolve, reject) => {
+            let settled = false;
+            const timeoutMs = options.timeout || 25000;
+            const timeoutId = setTimeout(() => {
+                if (!settled) {
+                    settled = true;
+                    reject(new Error('Request timeout: background script did not respond within ' + timeoutMs + 'ms'));
+                }
+            }, timeoutMs);
+
             chrome.runtime.sendMessage({ type: 'fetch', payload: options }, (response) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
                 if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
                 else if (response && response.success) resolve(response);
                 else {
@@ -19,13 +31,37 @@
 
     window.xdAnswers.streamRequest = function(options, onChunk, onDone, onError) {
         const port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
-        port.postMessage({ type: 'fetch_stream', payload: options });
+        let finished = false;
+
         port.onMessage.addListener((msg) => {
+            if (finished) return;
             if (msg.type === 'chunk') onChunk(msg.data);
-            else if (msg.type === 'done') { onDone(); port.disconnect(); }
-            else if (msg.type === 'error') { onError(msg.error, msg.details); port.disconnect(); }
+            else if (msg.type === 'done') {
+                finished = true;
+                onDone();
+                try { port.disconnect(); } catch(e) {}
+            }
+            else if (msg.type === 'error') {
+                finished = true;
+                onError(msg.error, msg.details);
+                try { port.disconnect(); } catch(e) {}
+            }
         });
-        return () => { try { port.disconnect(); } catch(e) {} };
+
+        port.onDisconnect.addListener(() => {
+            if (!finished) {
+                finished = true;
+                onError('Connection lost', 'Background stream disconnected unexpectedly');
+            }
+        });
+
+        port.postMessage({ type: 'fetch_stream', payload: options });
+        return () => {
+            if (!finished) {
+                finished = true;
+                try { port.disconnect(); } catch(e) {}
+            }
+        };
     };
 
     window.xdAnswers.addStyle = function(css) {

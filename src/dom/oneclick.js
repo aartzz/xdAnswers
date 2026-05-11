@@ -112,6 +112,7 @@
             if (message && message.type === 'xd_hotkey' && message.command === 'xd-trigger-answer') {
                 window.xdAnswers.triggerHotkey();
             }
+            return true; // keep channel open for async responses
         });
     }
 
