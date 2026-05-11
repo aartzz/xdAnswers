@@ -182,13 +182,20 @@
                     return;
                 }
 
+                // Cancel the previous stream before starting a new one to avoid port leaks and
+                // "Promised response went out of scope" errors in Firefox/Zen.
+                if (window.xdAnswers._cancelStream) {
+                    try { window.xdAnswers._cancelStream(); } catch (e) {}
+                    window.xdAnswers._cancelStream = null;
+                }
+
                 // Build assistant message with tool_calls (OpenAI format) or content blocks (Anthropic)
                 if (s.apiFormat === 'openai') {
                     const assistantMsg = {
                         role: 'assistant',
-                        content: null,
+                        content: '',
                         tool_calls: toolCalls.map(tc => ({
-                            id: tc.id,
+                            id: tc.id || ('call_' + Date.now()),
                             type: 'function',
                             function: { name: tc.name, arguments: tc.args }
                         }))
@@ -214,9 +221,12 @@
                             searchCalls[searchCalls.length - 1].resultCount = count;
                             updateStreamUI();
 
-                            messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
+                            messages.push({ role: 'tool', tool_call_id: assistantMsg.tool_calls.find(t => t.function.name === tc.name)?.id || tc.id, content: resultJson });
                         } catch (err) {
-                            messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }), is_error: true });
+                            searchCalls[searchCalls.length - 1].status = 'done';
+                            searchCalls[searchCalls.length - 1].resultCount = 0;
+                            updateStreamUI();
+                            messages.push({ role: 'tool', tool_call_id: assistantMsg.tool_calls.find(t => t.function.name === tc.name)?.id || tc.id, content: JSON.stringify({ error: err.message }) });
                         }
                     }
                 } else if (s.apiFormat === 'anthropic') {
@@ -256,7 +266,10 @@
 
                             toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
                         } catch (err) {
-                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }), is_error: true });
+                            searchCalls[searchCalls.length - 1].status = 'done';
+                            searchCalls[searchCalls.length - 1].resultCount = 0;
+                            updateStreamUI();
+                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
                         }
                     }
                     messages.push({ role: 'user', content: toolResultBlocks });
@@ -282,7 +295,11 @@
                 // Build the request body from the current message history
                 const body = Object.assign({}, initialBody);
                 body.messages = currentMessages;
-                if (s.webSearchEnabled && s.apiFormat !== 'google') {
+                // Remove any stale tools from initialBody copy before conditionally adding fresh ones.
+                // Some gateways reject follow-up requests that still include the tools array.
+                delete body.tools;
+                // Only include tools on the first stream round; omit after tool calls to avoid 400 errors on some gateways
+                if (s.webSearchEnabled && s.apiFormat !== 'google' && toolLoopDepth === 0) {
                     body.tools = buildWebSearchTool(s.apiFormat);
                 }
                 window.xdAnswers.lastRequestBody = body;
