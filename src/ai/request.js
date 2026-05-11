@@ -54,7 +54,12 @@
             userMsg += 'Це питання з кількома полями для відповідей (перелічені у варіантах). '
                 + 'У полі answer дай відповіді у тому ж порядку через крапку з комою: відповідь1; відповідь2; відповідь3.\n\n';
         } else if (questionData.isMultiQuiz || questionData.isMulti) {
-            userMsg += 'Це питання може мати КІЛЬКА правильних відповідей.\n\n';
+            const isMatchingLike = /відповідність|з'єднай|сполуч|поєднай|matching/i.test(questionData.text || '');
+            if (isMatchingLike) {
+                userMsg += 'Це питання типу multiquiz (кілька правильних відповідей), хоча виглядає як завдання на відповідність. У полі answer перерахуй ТІЛЬКИ текст правильних варіантів ЗІ СПИСКУ, а не пари чи зіставлення. Кожен правильний варіант — окремий елемент зі списку.\n\n';
+            } else {
+                userMsg += 'Це питання може мати КІЛЬКА правильних відповідей.\n\n';
+            }
         } else if (['short_text', 'paragraph', 'open_ended'].includes(questionData.questionType)) {
             userMsg += 'Це відкрите питання. Дай розгорнуту відповідь.\n\n';
         }
@@ -65,6 +70,10 @@
             // Якщо є варіанти-зображення, підкажемо AI що вони серед прикріплених картинок
             if (questionData.optionsText.includes('[зображення]') && (questionData.base64Images || []).length > 0) {
                 userMsg += '\nУВАГА: Варіанти позначені [зображення] — це картинки серед прикріплених зображень. Спочатку йде картинка запитання, потім картинки варіантів у порядку A, B, C...';
+            }
+            // Додаткова інструкція для quiz-питань, щоб AI не відповідав Правда/Неправда замість вибору варіанту
+            if (questionData.questionType !== 'true_false') {
+                userMsg += '\nУ полі answer вкажи ТІЛЬКИ текст правильного варіанту зі списку вище. Не відповідай "Правда" чи "Неправда", якщо цих слів немає серед варіантів.';
             }
         }
 
@@ -129,11 +138,10 @@
         }
 
         if (s.apiFormat === 'google') {
-            const userParts = [];
-            if (systemPrompt) userParts.push({ text: systemPrompt + '\n\n' + userMsg });
-            else userParts.push({ text: userMsg });
+            const userParts = [{ text: userMsg }];
             images.forEach(img => userParts.push({ inline_data: { mime_type: 'image/jpeg', data: img } }));
             const body = { contents: [{ parts: userParts }] };
+            if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
             // Google: include tools in non-stream path only (streaming tool calls unreliable)
             if (s.webSearchEnabled) body.tools = buildWebSearchTool('google');
             return body;
