@@ -12,6 +12,7 @@
         window.xdAnswers.onRefresh = () => console.log("Refreshed");
         chrome.runtime.onMessage.addListener((message) => {
             if (message.type === "gform_url_changed") setTimeout(scanAndInjectButtons, 1500);
+            return true; // keep channel open for async responses
         });
 
         function scanAndInjectButtons() {

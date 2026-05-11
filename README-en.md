@@ -15,12 +15,55 @@ Works out of the box — ships with free providers, no API key needed.
 
 ## Features
 
-- **Free by default** — 3 built-in Unturf providers (Hermes, Qwen, Qwen Vision) with no API key
+- **Free by default** — 4 built-in providers with no API key: Unturf Hermes, Unturf Qwen, Unturf Vision (for images), OpenCode Zen
 - **Any OpenAI-compatible API** — OpenAI, Anthropic, Gemini, DeepSeek, Groq, local Ollama, anything
-- **Image recognition** — handles images in questions and answer options
-- **Silent modes** — indicators (dot next to correct answer), page title, or clipboard-only stealth
-- **Auto-answer** — automatically selects the correct option
+- **Image recognition** — handles images in questions and answer options (via vision-capable providers)
+- **Web search** — the model can search the web for current information (via LangSearch / SearXNG, up to 3 iterations)
+- **Silent modes** — indicators (dot next to correct answer), page title, clipboard-only stealth, or one-click (click question to answer)
+- **Auto-answer** — automatically selects the correct option with configurable cooldown
+- **Consensus** — runs the same question through multiple models simultaneously and picks the majority answer
 - **Floating helper** — draggable, shows answer + reasoning + elapsed time
+- **Multilingual** — interface in Ukrainian, Russian, and English
+- **Custom themes** — pick a preset or create your own with the + button
+- **Disabler (anti-cheat bypass)** — universal and site-specific (details below)
+
+## Disabler (Anti-cheat Bypass)
+
+The extension includes **two levels of anti-cheat bypass**:
+
+### Universal (toggled in settings)
+Works across all sites simultaneously:
+- **Blur / Focus bypass** — blocks blur, focus, focusin, focusout events so the site cannot detect tab switching
+- **Visibility API spoofing** — always reports `visibilityState = 'visible'` and `hidden = false`
+- **Visibilitychange interception** — hides the real page visibility state
+
+### Site-specific (built into providers)
+Each platform has its own bypass methods:
+- **Naurok** — hiding the helper, minimizing DOM traces
+- **Vseosvita** — bypassing copy/paste and tab-switching protection
+- **JustClass / Classtime / Miyklas / lCloud** — specific patches for each site
+
+> [!WARNING]
+> Disabler does not guarantee 100% invisibility. Use at your own discretion.
+
+## Silent Modes
+
+Modes when the helper is hidden or minimized:
+
+| Mode | Description |
+|:---|:---|
+| **Indicators** | Green dot next to the correct answer, no text shown |
+| **Ghost** | Answer shown only in the browser tab title |
+| **Stealth** | Answer copied to clipboard, no visual signs on the page |
+| **One-click** | Click on the question container to trigger an answer (no auto-trigger) |
+
+## Consensus
+
+Runs the same question through several different models at once, then:
+- Normalizes answers (ignores case, extra spaces, prefixes like "A:")
+- Computes majority voting
+- Shows agreement level (agreement %) between models
+- States: `unanimous` (all agree), `majority` (most agree), `no-consensus` (no agreement)
 
 ## Install
 
@@ -99,10 +142,16 @@ When you're done, remove the generated `manifest.json` with `npm run clean`.
 
 ## Supported Sites
 
-| Site | URL | Status |
-|------|-----|--------|
-| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable |
-| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta |
-| JustClass | [justclass.com.ua](https://justclass.com.ua) | beta |
-| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta |
-| Microsoft Forms | [forms.office.com](https://forms.office.com) | beta |
+| Site | URL | Status | Auto-answer | Disabler | Silent mode |
+|------|-----|--------|:-----------:|:--------:|:-----------:|
+| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable | ✅ | ✅ | ✅ |
+| Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta | ✅ | ✅ | ✅ |
+| JustClass | [justclass.com.ua](https://justclass.com.ua) | beta | ❌ | ⚠️ | ⚠️ |
+| Kahoot! | [kahoot.it](https://kahoot.it) | beta | ❌ | ✅ | ⚠️ |
+| Classtime | [classtime.com](https://classtime.com) | beta | ❌ | ⚠️ | ⚠️ |
+| MiyKlas | [miyklas.com.ua](https://miyklas.com.ua) | beta | ❌ | ⚠️ | ⚠️ |
+| LCloud | [lcloud.in.ua](https://lcloud.in.ua) | beta | ❌ | ⚠️ | ⚠️ |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta | ✅ | ⚠️ | ✅ |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | beta | ✅ | ⚠️ | ✅ |
+
+**Marks:** "stable" — full coverage of question formats | "beta" — partial coverage of question formats | ✅ — fully supported | ⚠️ — partial / in development | ❌ — not supported

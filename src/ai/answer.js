@@ -34,7 +34,10 @@
             if (s.apiFormat === 'openai' || s.apiFormat === 'google' || s.apiFormat === 'anthropic') {
                 body.messages = messages;
             }
-            if (s.webSearchEnabled) {
+            // buildRequestBody may have added tools on its own; strip them so we only add on first loop.
+            delete body.tools;
+            // Only include tools on the first request; omit on follow-ups after tool calls
+            if (s.webSearchEnabled && toolLoops === 0) {
                 if (s.apiFormat !== 'google') body.tools = buildWebSearchTool(s.apiFormat);
                 else body.tools = buildWebSearchTool('google');
             }
@@ -51,7 +54,16 @@
                 const msg = parsed.choices[0].message;
                 if (msg.tool_calls && msg.tool_calls.length > 0 && toolLoops < MAX_TOOL_LOOPS) {
                     toolLoops++;
-                    messages.push(msg); // assistant with tool_calls
+                    // Sanitize assistant message to only standard fields
+                    messages.push({
+                        role: 'assistant',
+                        content: msg.content || '',
+                        tool_calls: msg.tool_calls.map(tc => ({
+                            id: tc.id,
+                            type: 'function',
+                            function: { name: tc.function.name, arguments: tc.function.arguments }
+                        }))
+                    });
                     for (const tc of msg.tool_calls) {
                         try {
                             const args = JSON.parse(tc.function.arguments || '{}');
@@ -83,7 +95,7 @@
                                 const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: resultJson });
                             } catch (err) {
-                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: err.message }), is_error: true });
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: err.message }) });
                             }
                         }
                     }

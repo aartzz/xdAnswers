@@ -24,6 +24,7 @@
                 lastQuestionHash = '';
                 setTimeout(scanQuestions, 1500);
             }
+            return true; // keep channel open for async responses
         });
 
         // ── Question type detection ──
