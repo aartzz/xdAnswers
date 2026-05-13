@@ -23,7 +23,12 @@
         "*://justclass.com.ua/*",
         "*://justclass.me/*",
         "*://miyklas.com.ua/*",
-        "*://lcloud.in.ua/*"
+        "*://lcloud.in.ua/*",
+        "*://quizizz.com/*",
+        "*://quizlet.com/*",
+        "*://*.testportal.pl/*",
+        "*://*.testportal.net/*",
+        "*://*.szkolawchmurze.org/*"
       ]
     }
   ],
@@ -62,7 +67,12 @@
         "*://miyklas.com.ua/*",
         "*://lcloud.in.ua/*",
         "*://naurok.com.ua/*",
-        "*://naurok.ua/*"
+        "*://naurok.ua/*",
+        "*://quizizz.com/join/game/*",
+        "*://quizlet.com/*",
+        "*://*.testportal.pl/*",
+        "*://*.testportal.net/*",
+        "*://*.szkolawchmurze.org/*"
       ],
       "js": ["src/core/disabler.js"],
       "run_at": "document_start",
@@ -370,6 +380,139 @@
         "src/ui/styles.js",
         "src/ui/helper.js",
         "providers/lcloud.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+    {
+      "matches": [
+        "*://quizizz.com/join/game/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/quizizz.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://quizlet.com/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/quizlet.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.testportal.pl/*",
+        "*://*.testportal.net/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/testportal.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.szkolawchmurze.org/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/szkolawchmurze.js"
       ],
       "run_at": "document_end",
       "all_frames": true
