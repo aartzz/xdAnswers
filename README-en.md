@@ -153,5 +153,9 @@ When you're done, remove the generated `manifest.json` with `npm run clean`.
 | LCloud | [lcloud.in.ua](https://lcloud.in.ua) | beta | ❌ | ⚠️ | ⚠️ |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta | ✅ | ⚠️ | ✅ |
 | Microsoft Forms | [forms.office.com](https://forms.office.com) | beta | ✅ | ⚠️ | ✅ |
+| Quizizz | [quizizz.com/join/game](https://quizizz.com/join/game) | beta | ❌ | ⚠️ | ⚠️ |
+| Quizlet | [quizlet.com](https://quizlet.com) | beta | ❌ | ⚠️ | ⚠️ |
+| Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | beta | ❌ | ⚠️ | ⚠️ |
+| TestPortal | [testportal.pl](https://testportal.pl) | beta | ❌ | ⚠️ | ⚠️ |
 
 **Marks:** "stable" — full coverage of question formats | "beta" — partial coverage of question formats | ✅ — fully supported | ⚠️ — partial / in development | ❌ — not supported
