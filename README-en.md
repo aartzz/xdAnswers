@@ -144,18 +144,17 @@ When you're done, remove the generated `manifest.json` with `npm run clean`.
 
 | Site | URL | Status | Auto-answer | Disabler | Silent mode |
 |------|-----|--------|:-----------:|:--------:|:-----------:|
-| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable | ✅ | ✅ | ✅ |
+| NaUrok | [naurok.com.ua](https://naurok.com.ua) | stable | ✅ | ➖ | ✅ |
 | Vseosvita | [vseosvita.ua](https://vseosvita.ua) | beta | ✅ | ✅ | ✅ |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | beta | ❌ | ⚠️ | ⚠️ |
 | Kahoot! | [kahoot.it](https://kahoot.it) | beta | ❌ | ✅ | ⚠️ |
 | Classtime | [classtime.com](https://classtime.com) | beta | ❌ | ⚠️ | ⚠️ |
 | MiyKlas | [miyklas.com.ua](https://miyklas.com.ua) | beta | ❌ | ⚠️ | ⚠️ |
 | LCloud | [lcloud.in.ua](https://lcloud.in.ua) | beta | ❌ | ⚠️ | ⚠️ |
-| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta | ✅ | ⚠️ | ✅ |
-| Microsoft Forms | [forms.office.com](https://forms.office.com) | beta | ✅ | ⚠️ | ✅ |
-| Quizizz | [quizizz.com/join/game](https://quizizz.com/join/game) | beta | ❌ | ⚠️ | ⚠️ |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | beta | ✅ | ➖ | ✅ |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | beta | ✅ | ➖ | ✅ |
 | Quizlet | [quizlet.com](https://quizlet.com) | beta | ❌ | ⚠️ | ⚠️ |
 | Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | beta | ❌ | ⚠️ | ⚠️ |
 | TestPortal | [testportal.pl](https://testportal.pl) | beta | ❌ | ⚠️ | ⚠️ |
 
-**Marks:** "stable" — full coverage of question formats | "beta" — partial coverage of question formats | ✅ — fully supported | ⚠️ — partial / in development | ❌ — not supported
+**Marks:** "stable" — full coverage of question formats | "beta" — partial coverage of question formats | ✅ — fully supported | ⚠️ — partial / in development | ❌ — not supported | ➖ — not planned

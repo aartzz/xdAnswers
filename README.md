@@ -144,18 +144,17 @@ npx web-ext run -t chromium
 
 | Сайт | URL | Статус | Авто-Відповідь | Disabler | Silent mode |
 |------|-----|--------|:--------------:|:--------:|:-----------:|
-| НаУрок | [naurok.com.ua](https://naurok.com.ua) | стабільний | ✅ | ✅ | ✅ |
+| НаУрок | [naurok.com.ua](https://naurok.com.ua) | стабільний | ✅ | ➖ | ✅ |
 | Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | бета | ✅ | ✅ | ✅ |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | бета | ❌ | ⚠️ | ⚠️ |
 | Kahoot! | [kahoot.it](https://kahoot.it) | бета | ❌ | ✅ | ⚠️ |
 | Classtime | [classtime.com](https://classtime.com) | бета | ❌ | ⚠️ | ⚠️ |
 | МійКлас | [miyklas.com.ua](https://miyklas.com.ua) | бета | ❌ | ⚠️ | ⚠️ |
 | LCloud | [lcloud.in.ua](https://lcloud.in.ua) | бета | ❌ | ⚠️ | ⚠️ |
-| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета | ✅ | ⚠️ | ✅ |
-| Microsoft Forms | [forms.office.com](https://forms.office.com) | бета | ✅ | ⚠️ | ✅ |
-| Quizizz | [quizizz.com/join/game](https://quizizz.com/join/game) | бета | ❌ | ⚠️ | ⚠️ |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета | ✅ | ➖ | ✅ |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | бета | ✅ | ➖ | ✅ |
 | Quizlet | [quizlet.com](https://quizlet.com) | бета | ❌ | ⚠️ | ⚠️ |
 | Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | бета | ❌ | ⚠️ | ⚠️ |
 | TestPortal | [testportal.pl](https://testportal.pl) | бета | ❌ | ⚠️ | ⚠️ |
 
-**Умовні позначення:** "стабільний" — повне покриття форматів питання | "бета" — часткове покриття форматів питання | ✅ — повністю підтримується | ⚠️ — частково / у розробці | ❌ — не підтримується
+**Умовні позначення:** "стабільний" — повне покриття форматів питання | "бета" — часткове покриття форматів питання | ✅ — повністю підтримується | ⚠️ — частково / у розробці | ❌ — не підтримується | ➖ — не планується
