@@ -81,100 +81,137 @@
     } catch (e) { /* ignore */ }
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    //  VSEOSVITA SPECIFIC — Fullscreen bypass
+    //  GLOBAL FULLSCREEN BYPASS — applies to ALL platforms
+    //  Many educational platforms (vseosvita, naurok, classtime, etc.) check
+    //  fullscreen availability and element state for anti-cheat detection.
     // ═══════════════════════════════════════════════════════════════════════════════
-    if (isVseosvita) {
-        // Spoof fullscreen support so isFullscreenSupported returns false
-        try {
-            Object.defineProperty(document, 'fullscreenEnabled', {
-                get: function() { return false; },
-                configurable: true
-            });
-            Object.defineProperty(document, 'mozFullscreenEnabled', {
-                get: function() { return false; },
-                configurable: true
-            });
+
+    // 6. Spoof fullscreen support — always report fullscreen as unavailable
+    try {
+        Object.defineProperty(document, 'fullscreenEnabled', {
+            get: function() { return false; },
+            configurable: true
+        });
+        if (typeof document.webkitFullscreenEnabled !== 'undefined') {
             Object.defineProperty(document, 'webkitFullscreenEnabled', {
                 get: function() { return false; },
                 configurable: true
             });
-        } catch (e) { /* ignore */ }
+        }
+        if (typeof document.mozFullScreenEnabled !== 'undefined') {
+            Object.defineProperty(document, 'mozFullScreenEnabled', {
+                get: function() { return false; },
+                configurable: true
+            });
+        }
+        // mS prefixes
+        if (typeof document.msFullscreenEnabled !== 'undefined') {
+            Object.defineProperty(document, 'msFullscreenEnabled', {
+                get: function() { return false; },
+                configurable: true
+            });
+        }
+    } catch (e) { /* ignore */ }
 
-        // Nullify fullscreenElement getters
-        try {
-            Object.defineProperty(document, 'fullscreenElement', {
-                get: function() { return null; },
-                configurable: true
-            });
-            Object.defineProperty(document, 'mozFullscreenElement', {
-                get: function() { return null; },
-                configurable: true
-            });
+    // 7. Nullify fullscreenElement getters — always report nothing is fullscreened
+    try {
+        Object.defineProperty(document, 'fullscreenElement', {
+            get: function() { return null; },
+            configurable: true
+        });
+        if (typeof document.webkitFullscreenElement !== 'undefined') {
             Object.defineProperty(document, 'webkitFullscreenElement', {
                 get: function() { return null; },
                 configurable: true
             });
-        } catch (e) { /* ignore */ }
+        }
+        if (typeof document.mozFullScreenElement !== 'undefined') {
+            Object.defineProperty(document, 'mozFullScreenElement', {
+                get: function() { return null; },
+                configurable: true
+            });
+        }
+        if (typeof document.msFullscreenElement !== 'undefined') {
+            Object.defineProperty(document, 'msFullscreenElement', {
+                get: function() { return null; },
+                configurable: true
+            });
+        }
+    } catch (e) { /* ignore */ }
 
-        // Neutralize requestFullscreen on Element prototype (all variants)
-        const noopFullscreen = function() { return Promise.resolve(); };
-        if (typeof Element.prototype.requestFullscreen === 'function') {
+    // 8. Neutralize requestFullscreen — prevent programmatic fullscreen entry
+    const noopFullscreen = function() { return Promise.resolve(); };
+    try {
+        if (typeof Element.prototype.requestFullscreen !== 'undefined') {
             Element.prototype.requestFullscreen = noopFullscreen;
         }
-        if (typeof Element.prototype.requestFullScreen === 'function') {
-            Element.prototype.requestFullScreen = noopFullscreen;
+        if (typeof Element.prototype.webkitRequestFullscreen !== 'undefined') {
+            Element.prototype.webkitRequestFullscreen = noopFullscreen;
         }
-        if (typeof Element.prototype.mozRequestFullScreen === 'function') {
+        if (typeof Element.prototype.mozRequestFullScreen !== 'undefined') {
             Element.prototype.mozRequestFullScreen = noopFullscreen;
         }
-        if (typeof Element.prototype.webkitRequestFullScreen === 'function') {
-            Element.prototype.webkitRequestFullScreen = noopFullscreen;
-        }
-        if (typeof Element.prototype.msRequestFullscreen === 'function') {
+        if (typeof Element.prototype.msRequestFullscreen !== 'undefined') {
             Element.prototype.msRequestFullscreen = noopFullscreen;
         }
+    } catch (e) { /* ignore */ }
 
-        // Neutralize cancel/exit methods
-        if (typeof document.exitFullscreen === 'function') {
+    // 9. Neutralize fullscreen exit methods
+    try {
+        if (typeof document.exitFullscreen !== 'undefined') {
             document.exitFullscreen = function() { return Promise.resolve(); };
         }
-        if (typeof document.mozCancelFullScreen === 'function') {
+        if (typeof document.webkitExitFullscreen !== 'undefined') {
+            document.webkitExitFullscreen = function() { return Promise.resolve(); };
+        }
+        if (typeof document.mozCancelFullScreen !== 'undefined') {
             document.mozCancelFullScreen = function() { return Promise.resolve(); };
         }
-        if (typeof document.webkitCancelFullScreen === 'function') {
-            document.webkitCancelFullScreen = function() { return Promise.resolve(); };
+        if (typeof document.msExitFullscreen !== 'undefined') {
+            document.msExitFullscreen = function() { return Promise.resolve(); };
         }
-        if (typeof document.cancelFullScreen === 'function') {
-            document.cancelFullScreen = function() { return Promise.resolve(); };
-        }
+    } catch (e) { /* ignore */ }
 
-        // Clear inline fullscreen handlers
-        try {
-            document.onfullscreenchange = null;
-            document.onwebkitfullscreenchange = null;
-            document.onmozfullscreenchange = null;
-            document.onMSFullscreenChange = null;
-        } catch (e) { /* ignore */ }
+    // 10. Clear inline fullscreen event handlers
+    try {
+        document.onfullscreenchange = null;
+        document.onfullscreenerror = null;
+        document.onwebkitfullscreenchange = null;
+        document.onwebkitfullscreenerror = null;
+        document.onmozfullscreenchange = null;
+        document.onmozfullscreenerror = null;
+        document.onMSFullscreenChange = null;
+        document.onMSFullscreenError = null;
+    } catch (e) { /* ignore */ }
 
-        // Intercept addEventListener for fullscreen events (in page world!)
+    // 11. Intercept addEventListener for fullscreen events — block them globally
+    try {
         const origAddEventListenerFS = EventTarget.prototype.addEventListener;
+        const FS_EVENTS = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange',
+                           'fullscreenerror', 'webkitfullscreenerror', 'mozfullscreenerror', 'MSFullscreenError'];
         EventTarget.prototype.addEventListener = function(type, listener, options) {
-            if (type === 'fullscreenchange' || type === 'webkitfullscreenchange' || type === 'mozfullscreenchange' || type === 'MSFullscreenChange') {
-                const wrapped = function(event) {
-                    const originalFullscreenElement = Object.getOwnPropertyDescriptor(document, 'fullscreenElement');
+            if (FS_EVENTS.indexOf(type) !== -1) {
+                var wrapped = function(event) {
+                    var desc = Object.getOwnPropertyDescriptor(document, 'fullscreenElement');
                     try {
-                        Object.defineProperty(document, 'fullscreenElement', {
-                            get: function() { return null; },
-                            configurable: true
-                        });
+                        if (typeof document.fullscreenElement !== 'undefined') {
+                            Object.defineProperty(document, 'fullscreenElement', {
+                                get: function() { return null; },
+                                configurable: true
+                            });
+                        }
+                        if (typeof document.webkitFullscreenElement !== 'undefined') {
+                            Object.defineProperty(document, 'webkitFullscreenElement', {
+                                get: function() { return null; },
+                                configurable: true
+                            });
+                        }
                     } catch (e) {}
                     try {
                         listener.call(this, event);
                     } finally {
-                        if (originalFullscreenElement) {
-                            try {
-                                Object.defineProperty(document, 'fullscreenElement', originalFullscreenElement);
-                            } catch (e) {}
+                        if (desc) {
+                            try { Object.defineProperty(document, 'fullscreenElement', desc); } catch (e) {}
                         }
                     }
                 };
@@ -182,8 +219,13 @@
             }
             return origAddEventListenerFS.call(this, type, listener, options);
         };
+    } catch (e) { /* ignore */ }
 
-        // Patch Vue instances
+    // ═══════════════════════════════════════════════════════════════════════════════
+    //  VSEOSVITA SPECIFIC — Vue instance patches + layout fixes
+    // ═══════════════════════════════════════════════════════════════════════════════
+    if (isVseosvita) {
+        // Patch Vue instances (vseosvita uses Vue with fullscreen computed properties)
         function patchVueInstance() {
             const vueEls = document.querySelectorAll('*');
             for (const el of vueEls) {
@@ -245,7 +287,7 @@
             addTopPadding();
         }
 
-        console.log('[xdAnswers Disabler] Fullscreen checks neutralized on vseosvita.ua (page world)');
+        console.log('[xdAnswers Disabler] Fullscreen + Vue patches neutralized on vseosvita.ua (page world)');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -256,10 +298,34 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    //  KAHOOT SPECIFIC — Anti-focus detection
+    //  KAHOOT SPECIFIC — Watermark bypass + focus detection
+    //  Kahoot injects a visual watermark marker for proctored tests. The marker
+    //  should NOT be removed (that triggers detection), but its functional hooks
+    //  must be neutralized so it doesn't affect submission behavior.
     // ═══════════════════════════════════════════════════════════════════════════════
     if (isKahoot) {
-        console.log('[xdAnswers Disabler] Anti-detect active for kahoot.it');
+        // Block visibilitychange handlers (Kahoot uses them for focus-out detection)
+        try {
+            var vcAdd = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function(type, listener, options) {
+                if (type === 'visibilitychange' || type === 'webkitvisibilitychange') { return; }
+                return vcAdd.call(this, type, listener, options);
+            };
+        } catch (e) { /* ignore */ }
+
+        // Prevent page from resetting input focus (Kahoot watermarks track this)
+        try {
+            var bhOrig = HTMLInputElement.prototype.blur;
+            HTMLInputElement.prototype.blur = function() {
+                // Only block blur if no explicit user action is happening
+                if (document.querySelector('[data-functional-selector*="answer"]')) {
+                    return; // ignore blur during answer flow
+                }
+                return bhOrig.apply(this, arguments);
+            };
+        } catch (e) { /* ignore */ }
+
+        console.log('[xdAnswers Disabler] Anti-detect active for kahoot.it (watermark + blur bypass)');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -278,5 +344,5 @@
         };
     } catch (e) { /* ignore */ }
 
-    console.log('[xdAnswers Disabler] Global anti-detect active (blur/focus/visibility bypass)');
+    console.log('[xdAnswers Disabler] Global anti-detect active (blur/focus/visibility/fullscreen bypass)');
 })();
