@@ -191,21 +191,45 @@
         return null;
     }
 
+    function extractFinalAnswerRegex(text) {
+        if (!text) return null;
+        var m = text.match(/FINAL_ANSWER:\s*(.+?)(?:\n|$)/i);
+        if (!m) m = text.match(/Відповідь:\s*(.+?)(?:\n|$)/i);
+        if (!m) m = text.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
+        if (!m) return null;
+
+        var answer = m[1].trim();
+        var explanation = text.substring(0, m.index).trim().replace(/\n{3,}/g, '\n\n');
+
+        return {
+            answer: answer,
+            explanation: explanation,
+            solution: '',
+            confidence: '',
+            raw: text,
+            isStructured: true,
+            extractedBy: 'final_answer_regex'
+        };
+    }
+
     function parseAIResponse(text) {
         if (!text) return { answer: '', explanation: '', solution: '', confidence: '', raw: text, parseFailed: true };
 
-        const labeled = parseLabeledResponse(text);
+        var labeled = parseLabeledResponse(text);
         if (labeled) return labeled;
 
-        let jsonStr = text.trim();
-        const jsonMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        var finalAnswerExtracted = extractFinalAnswerRegex(text);
+        if (finalAnswerExtracted && finalAnswerExtracted.answer) return finalAnswerExtracted;
+
+        var jsonStr = text.trim();
+        var jsonMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
         if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
         try {
-            const p = JSON.parse(jsonStr);
+            var p = JSON.parse(jsonStr);
             return { answer: p.answer || '', explanation: p.explanation || '', solution: p.solution || '', confidence: p.confidence, raw: text, isJSON: true };
-        } catch {
-            const salvaged = salvagePartialJSON(jsonStr);
+        } catch (e) {
+            var salvaged = salvagePartialJSON(jsonStr);
             if (salvaged) return salvaged;
 
             return { answer: '', explanation: '', solution: '', confidence: '', raw: text, isJSON: false, parseFailed: true };
