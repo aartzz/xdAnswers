@@ -154,7 +154,7 @@ const API_PROVIDERS = [
 const PROVIDER_ICON_MAP = {
     'openai': 'openai', 'anthropic': 'anthropic', 'google': 'google',
     'nvidia': 'nvidia', 'ollama-cloud': 'ollama-cloud', 'ollamacloud': 'ollama-cloud',
-    'opencode-zen': 'opencode', 'opencode-go': 'opencode', 'venice': 'venice', 'pollinations': 'pollinations',
+    'opencode-zen': 'opencode', 'opencode-go': 'opencode', 'opencode': 'opencode', 'venice': 'venice', 'pollinations': 'pollinations',
     'publicai': 'openai', 'unturf': 'unturf', 'unturf-hermes': 'unturf',
     'unturf-qwen': 'unturf', 'unturf-vl': 'unturf', 'g4f': 'openai',
     'deepseek-ai': 'deepseek', 'deepseek': 'deepseek',
@@ -1011,12 +1011,21 @@ async function fetchModelsForProvider(provider) {
     const hasRealKey = key && key !== 'free';
     let url, headers = {};
 
+    // Skip auth headers for /models on custom providers — Authorization/x-api-key
+    // triggers CORS preflight which Firefox enforces even with host_permissions.
+    // Known providers (OpenAI, Anthropic, etc.) handle CORS properly.
+    const KNOWN_MODEL_PROVIDERS = new Set([
+        'openai', 'anthropic', 'google', 'deepseek', 'groq', 'openrouter',
+        'cerebras', 'together', 'fireworks', 'mistral',
+        'opencode-zen', 'opencode-go', 'ollama-cloud'
+    ]);
+
     if (format === 'openai') {
         url = `${base}/models`;
-        if (hasRealKey) headers['Authorization'] = `Bearer ${key}`;
+        if (hasRealKey && KNOWN_MODEL_PROVIDERS.has(provider.type)) headers['Authorization'] = `Bearer ${key}`;
     } else if (format === 'anthropic') {
         url = `${base}/models`;
-        if (hasRealKey) {
+        if (hasRealKey && KNOWN_MODEL_PROVIDERS.has(provider.type)) {
             headers['x-api-key'] = key;
             headers['anthropic-version'] = '2023-06-01';
         }
@@ -1026,22 +1035,8 @@ async function fetchModelsForProvider(provider) {
         return [];
     }
 
-    const fullText = await new Promise((resolve, reject) => {
-        const port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
-        let data = '';
-        port.onMessage.addListener((msg) => {
-            if (msg.type === 'chunk') data += msg.data;
-            else if (msg.type === 'done') { resolve(data); port.disconnect(); }
-            else if (msg.type === 'error') { reject(new Error(msg.error + (msg.details ? ': ' + msg.details : ''))); port.disconnect(); }
-        });
-        port.onDisconnect.addListener(() => {
-            if (data) resolve(data);
-            else reject(new Error('Port disconnected'));
-        });
-        port.postMessage({ type: 'fetch_stream', payload: { url, method: 'GET', headers } });
-    });
-
-    const parsed = JSON.parse(fullText);
+    const response = await makeRequest({ url, method: 'GET', headers });
+    const parsed = JSON.parse(response.data);
     let models = processModels(parsed, format);
 
     const isOpenCodeZenWithoutKey = provider.type === 'opencode-zen' && !hasRealKey;
@@ -1088,7 +1083,7 @@ function renderModelList() {
             openai: 'openai', anthropic: 'anthropic', google: 'google',
             deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
             cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral',
-            'opencode-zen': 'opencode-zen', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama', nvidia: 'nvidia'
+            'opencode-zen': 'opencode', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama-cloud', nvidia: 'nvidia'
         };
         const devProvId = provKeyLookup[provId] || provId;
         for (const [key, info] of Object.entries(modelsDevCache)) {
@@ -1244,7 +1239,7 @@ function getConsensusProviderDevKey(providerType) {
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
         cerebras: 'cerebras', together: 'together-ai', fireworks: 'fireworks-ai', mistral: 'mistral',
-        'opencode-zen': 'opencode-zen', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama', nvidia: 'nvidia'
+        'opencode-zen': 'opencode', 'opencode-go': 'opencode-go', 'ollama-cloud': 'ollama-cloud', nvidia: 'nvidia'
     };
     return provKeyLookup[providerType] || providerType || '';
 }

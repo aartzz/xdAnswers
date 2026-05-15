@@ -92,6 +92,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'fetch') {
         try {
             const { url, method, headers, data, responseType, timeout } = request.payload;
+
+            // Firefox MV3: XMLHttpRequest bypasses CORS where fetch() is blocked in service workers.
+            // Chrome: XMLHttpRequest is not available in service workers; fall through to fetch.
+            if (typeof XMLHttpRequest !== 'undefined') {
+                const xhr = new XMLHttpRequest();
+                xhr.open(method || 'GET', url, true);
+                if (headers) {
+                    for (const [k, v] of Object.entries(headers)) {
+                        xhr.setRequestHeader(k, v);
+                    }
+                }
+                xhr.timeout = timeout || 60000;
+                const isBlob = responseType === 'blob';
+                xhr.responseType = isBlob ? 'blob' : 'text';
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        if (isBlob) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                                try { sendResponse({ success: true, data: reader.result }); } catch (e) {}
+                            };
+                            reader.onerror = () => {
+                                try { sendResponse({ success: false, error: 'FileReader error', details: reader.error?.toString() || '' }); } catch (e) {}
+                            };
+                            reader.readAsDataURL(xhr.response);
+                        } else {
+                            try { sendResponse({ success: true, data: xhr.responseText }); } catch (e) {}
+                        }
+                    } else {
+                        try { sendResponse({ success: false, error: `API Error: ${xhr.status}`, details: xhr.responseText || xhr.statusText }); } catch (e) {}
+                    }
+                };
+                xhr.ontimeout = () => {
+                    try { sendResponse({ success: false, error: 'Timeout', details: `Request to ${url} timed out.` }); } catch (e) {}
+                };
+                xhr.onerror = () => {
+                    try { sendResponse({ success: false, error: 'Fetch Error', details: 'Network request failed' }); } catch (e) {}
+                };
+                xhr.send(data || null);
+                return true;
+            }
+
+            // Chrome: fetch works with host_permissions
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort('Timeout'), timeout || 60000);
 
