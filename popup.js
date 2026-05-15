@@ -147,7 +147,8 @@ const API_PROVIDERS = [
     { id: 'exa', name: 'Exa', hint: 'Web Search — neural/fast search', logo: 'openai', kind: 'search' },
     { id: 'tavily', name: 'Tavily', hint: 'Web Search — tvly- API key', logo: 'openai', kind: 'search' },
     { id: 'linkup', name: 'Linkup', hint: 'Web Search — fast/standard/deep', logo: 'openai', kind: 'search' },
-    { id: 'searchapi', name: 'SearchAPI', hint: 'Web Search — Google/Bing/Yahoo', logo: 'openai', kind: 'search' }
+    { id: 'searchapi', name: 'SearchAPI', hint: 'Web Search — Google/Bing/Yahoo', logo: 'openai', kind: 'search' },
+    { id: 'searxng', name: 'SearXNG', hint: 'Web Search — Open-source, no API key', logo: 'openai', kind: 'search' }
 ];
 
 const PROVIDER_ICON_MAP = {
@@ -685,7 +686,7 @@ function showProviderForm(existing, isOther, isSearch) {
     const initialType = existing?.type || (isSearch ? 'langsearch' : (isOther ? 'other' : 'openai'));
     const isOtherType = initialType === 'other';
     const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (window.xdAnswers._internal.DEFAULT_BASE_URLS[initialType] || ''));
-    const urlDisplay = isOtherType ? '' : ' style="display:none"';
+    const urlDisplay = (isOtherType || initialType === 'searxng') ? '' : ' style="display:none"';
 
     // For search providers, only show search-type providers in the dropdown
     const providerOptions = isSearch
@@ -784,7 +785,9 @@ function showProviderForm(existing, isOther, isSearch) {
                 btn.classList.add('active');
                 pfTypeDropdown.classList.add('hidden');
                 pfUrl.value = window.xdAnswers._internal.DEFAULT_BASE_URLS[newType] || '';
-                const nameInput = formWrapper.querySelector('#pf-name');
+                var urlGroup = formWrapper.querySelector('.pf-url-group');
+                if (urlGroup) urlGroup.style.display = (newType === 'searxng' || newType === 'other') ? '' : 'none';
+                var nameInput = formWrapper.querySelector('#pf-name');
                 if (!nameInput.value.trim()) nameInput.placeholder = meta?.name || 'Provider';
             });
         });

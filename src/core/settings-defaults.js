@@ -35,6 +35,22 @@
                 name: 'OpenCode Zen',
                 baseUrl: 'https://opencode.ai/zen/v1',
                 apiKey: ''
+            },
+            {
+                id: 'searxng-mdosch',
+                kind: 'search',
+                type: 'searxng',
+                name: 'SearXNG (mdosch)',
+                baseUrl: 'https://search.mdosch.de',
+                apiKey: ''
+            },
+            {
+                id: 'searxng-perennial',
+                kind: 'search',
+                type: 'searxng',
+                name: 'SearXNG (perennialte.ch)',
+                baseUrl: 'https://searx.perennialte.ch',
+                apiKey: ''
             }
         ],
         activeProviderId: 'opencode-zen-default',
@@ -48,7 +64,7 @@
         silentMode: '',
         _silentModePreselect: 'indicators',
         hotkey: 'Ctrl+Shift+X',
-        webSearchEnabled: false,
+        webSearchEnabled: true,
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,
         savedPosition: null,
