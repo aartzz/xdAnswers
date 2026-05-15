@@ -69,7 +69,7 @@
                             const args = JSON.parse(tc.function.arguments || '{}');
                             const query = args.query || '';
                             const numResults = args.num_results || 5;
-                            const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                            const resultJson = query ? await executeSearch(query, numResults, args.source || null) : JSON.stringify({ error: 'Empty query' });
                             messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
                         } catch (err) {
                             messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
@@ -92,7 +92,8 @@
                             try {
                                 const query = block.input?.query || '';
                                 const numResults = block.input?.num_results || 5;
-                                const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                                const source = block.input?.source || null;
+                                const resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: resultJson });
                             } catch (err) {
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: err.message }) });
@@ -124,7 +125,8 @@
                             try {
                                 const query = p.functionCall.args?.query || '';
                                 const numResults = p.functionCall.args?.num_results || 5;
-                                const resultJson = query ? await executeSearch(query, numResults) : JSON.stringify({ error: 'Empty query' });
+                                const source = p.functionCall.args?.source || null;
+                                const resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
                                 functionResponses.push({ functionResponse: { name: p.functionCall.name, response: JSON.parse(resultJson) } });
                             } catch (err) {
                                 functionResponses.push({ functionResponse: { name: p.functionCall.name, response: { error: err.message } } });

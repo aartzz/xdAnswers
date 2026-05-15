@@ -214,7 +214,8 @@
                             searchCalls.push({ query, status: 'searching', resultCount: 0 });
                             updateStreamUI();
 
-                            const resultJson = await executeSearch(query, numResults);
+                            const source = args.source || null;
+                            const resultJson = await executeSearch(query, numResults, source);
                             const resultObj = JSON.parse(resultJson);
                             const count = resultObj.organic?.length || 0;
                             searchCalls[searchCalls.length - 1].status = 'done';
@@ -257,7 +258,8 @@
                             searchCalls.push({ query, status: 'searching', resultCount: 0 });
                             updateStreamUI();
 
-                            const resultJson = await executeSearch(query, numResults);
+                            const source = args.source || null;
+                            const resultJson = await executeSearch(query, numResults, source);
                             const resultObj = JSON.parse(resultJson);
                             const count = resultObj.organic?.length || 0;
                             searchCalls[searchCalls.length - 1].status = 'done';
