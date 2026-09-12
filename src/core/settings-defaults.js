@@ -48,7 +48,7 @@
             }
         ],
         activeProviderId: 'opencode-zen-default',
-        model: '',
+        model: 'big-pickle',
         promptPrefix: I.DEFAULT_SYSTEM_PROMPT,
         language: 'uk',
         autoAnswer: false,
