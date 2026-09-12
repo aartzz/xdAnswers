@@ -181,8 +181,27 @@
             <p class="field-hint" id="theme-engine-hint">Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).</p>
         </div>
         <hr class="separator">
-        <p class="tab-description">Choose a preset or click <strong>+</strong> to build your own.</p>
-        <div id="themes-grid" class="themes-grid"></div>
+        <div class="form-group">
+            <label id="theme-mode-label">Theme mode:</label>
+            <div class="theme-mode-segmented" id="theme-mode-segmented" role="radiogroup">
+                <button type="button" class="theme-mode-btn" data-mode="dark" role="radio" aria-checked="true">
+                    <span class="theme-mode-icon">dark_mode</span>
+                    <span class="theme-mode-text" id="theme-mode-dark-text">Dark</span>
+                </button>
+                <button type="button" class="theme-mode-btn" data-mode="light" role="radio" aria-checked="false">
+                    <span class="theme-mode-icon">light_mode</span>
+                    <span class="theme-mode-text" id="theme-mode-light-text">Light</span>
+                </button>
+            </div>
+            <p class="field-hint" id="theme-mode-hint">Switch between dark and light theme.</p>
+        </div>
+
+        <hr class="separator">
+        <div class="form-group">
+            <label id="theme-palette-label">Color palette (accent):</label>
+            <div class="theme-palette-swatches" id="theme-palette-swatches"></div>
+            <p class="field-hint" id="theme-palette-hint">Choose an accent color for the interface.</p>
+        </div>
 
         <hr class="separator">
         <div class="form-group toggle-group">

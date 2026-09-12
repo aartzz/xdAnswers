@@ -30,6 +30,26 @@ body.theme-material3 {
     --nav-margin: 8px;
 }
 
+body.theme-material3.light,
+body.theme-material3:not(.dark) {
+    --m3-primary: #3b82f6;
+    --m3-on-primary: #ffffff;
+    --m3-primary-container: #dbeafe;
+    --m3-on-primary-container: #1e40af;
+    --m3-secondary-container: #e2e8f0;
+    --m3-on-secondary-container: #1e293b;
+    --m3-surface: #f8fafc;
+    --m3-on-surface: #0f172a;
+    --m3-surface-variant: #e2e8f0;
+    --m3-on-surface-variant: #475569;
+    --m3-surface-low: #ffffff;
+    --m3-surface-mid: #f1f5f9;
+    --m3-surface-high: #e2e8f0;
+    --m3-surface-highest: #cbd5e1;
+    --m3-outline: #94a3b8;
+    --m3-outline-variant: #cbd5e1;
+}
+
 /* ── Body: visual override, keep popup.css shell, fix overflow ── */
 body.theme-material3 {
     font-family: "Roboto", system-ui, sans-serif !important;
@@ -341,6 +361,11 @@ body.theme-material3 .m3-select-item {
 
 body.theme-material3 .m3-select-item:hover {
     background: rgba(168, 199, 250, 0.12) !important;
+}
+
+body.theme-material3.light .m3-select-item:hover,
+body.theme-material3:not(.dark) .m3-select-item:hover {
+    background: rgba(59, 130, 246, 0.1) !important;
 }
 
 body.theme-material3 .m3-select-item.selected {
@@ -808,6 +833,69 @@ body.theme-material3 .position-cell:hover {
 body.theme-material3 .position-cell.active {
     background: var(--m3-primary-container) !important;
     border-color: var(--m3-primary) !important;
+}
+
+/* ── Theme Mode Segmented & Swatches in M3 ── */
+body.theme-material3 .theme-mode-segmented {
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-full) !important;
+    padding: 4px !important;
+    gap: 4px !important;
+}
+
+body.theme-material3 .theme-mode-btn {
+    border-radius: var(--m3-r-full) !important;
+    color: var(--m3-on-surface-variant) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
+}
+
+body.theme-material3 .theme-mode-btn:hover {
+    background: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface) !important;
+}
+
+body.theme-material3 .theme-mode-btn.active {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .theme-palette-swatches {
+    gap: 10px !important;
+    margin-top: 10px !important;
+}
+
+body.theme-material3 .theme-swatch {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: var(--m3-r-full) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.theme-material3 .theme-swatch.active {
+    border: 3px solid var(--m3-surface) !important;
+    box-shadow: 0 0 0 2px var(--m3-primary) !important;
+    transform: scale(1.08) !important;
+}
+
+body.theme-material3 .theme-swatch.custom {
+    background: var(--m3-surface-mid) !important;
+    border: 2px dashed var(--m3-outline) !important;
+}
+
+body.theme-material3 .theme-swatch.custom.active {
+    border-style: solid !important;
+    border: 3px solid var(--m3-surface) !important;
+    box-shadow: 0 0 0 2px var(--m3-primary) !important;
+}
+
+body.theme-material3 .theme-swatch .swatch-check,
+body.theme-material3 .theme-swatch .swatch-icon {
+    font-family: var(--font-icon) !important;
+    font-size: 20px !important;
 }
 
 /* ── Themes Grid ── */

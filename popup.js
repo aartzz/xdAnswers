@@ -117,6 +117,20 @@ function applyLanguage() {
         const optLegacy = themeEngineSelect.querySelector('option[value="legacy"]');
         if (optLegacy) optLegacy.textContent = t('themeEngineLegacy');
     }
+    const themeModeLabel = document.getElementById('theme-mode-label');
+    if (themeModeLabel) themeModeLabel.textContent = t('themeModeLabel');
+    const themeModeDarkText = document.getElementById('theme-mode-dark-text');
+    if (themeModeDarkText) themeModeDarkText.textContent = t('themeModeDark');
+    const themeModeLightText = document.getElementById('theme-mode-light-text');
+    if (themeModeLightText) themeModeLightText.textContent = t('themeModeLight');
+    const themeModeHint = document.getElementById('theme-mode-hint');
+    if (themeModeHint) themeModeHint.textContent = t('themeModeHint');
+
+    const themePaletteLabel = document.getElementById('theme-palette-label');
+    if (themePaletteLabel) themePaletteLabel.textContent = t('themePaletteLabel');
+    const themePaletteHint = document.getElementById('theme-palette-hint');
+    if (themePaletteHint) themePaletteHint.textContent = t('themePaletteHint');
+
     const themesDesc = document.querySelector('.tab-description');
     if (themesDesc) themesDesc.innerHTML = t('themesDesc');
     const editorTitle = document.querySelector('.theme-editor-title');
@@ -484,6 +498,7 @@ function applyThemeToPopup() {
     const c = settings.customization || {};
     const engine = settings.themeEngine || 'material3';
     const isM3 = engine !== 'legacy';
+    const isDark = isColorDark(c.contentColor);
 
     const beerCss = document.getElementById('beercss-stylesheet');
     const m3Css = document.getElementById('beercss-m3-stylesheet');
@@ -491,25 +506,40 @@ function applyThemeToPopup() {
     if (m3Css) m3Css.disabled = !isM3;
 
     document.body.classList.toggle('theme-material3', isM3);
-    document.body.classList.toggle('dark', isM3);
+    document.body.classList.toggle('dark', isDark);
+    document.body.classList.toggle('light', !isDark);
     document.body.classList.toggle('theme-legacy', !isM3);
 
     if (isM3) {
-        const primaryColor = c.borderColor || '#a8c7fa';
+        const primaryColor = c.borderColor || (isDark ? '#a8c7fa' : '#3b82f6');
         root.style.setProperty('--primary', primaryColor);
-        root.style.setProperty('--primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
-        root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
-        root.style.setProperty('--surface', c.contentColor || '#121316');
-        root.style.setProperty('--surface-container', c.headerColor || '#1e1f23');
-        root.style.setProperty('--on-surface', c.textColor || '#e2e2e6');
+        root.style.setProperty('--m3-primary', primaryColor);
+
+        if (isDark) {
+            root.style.setProperty('--primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
+            root.style.setProperty('--m3-primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
+            root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
+            root.style.setProperty('--m3-on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
+            root.style.setProperty('--surface', c.contentColor || '#121316');
+            root.style.setProperty('--surface-container', c.headerColor || '#1e1f23');
+            root.style.setProperty('--on-surface', c.textColor || '#e2e2e6');
+        } else {
+            root.style.setProperty('--primary-container', 'rgba(' + hexToRgb(primaryColor) + ', 0.16)');
+            root.style.setProperty('--m3-primary-container', 'rgba(' + hexToRgb(primaryColor) + ', 0.16)');
+            root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? primaryColor : '#042f66');
+            root.style.setProperty('--m3-on-primary-container', isColorDark(primaryColor) ? primaryColor : '#042f66');
+            root.style.setProperty('--surface', c.contentColor || '#fdf8fd');
+            root.style.setProperty('--surface-container', c.headerColor || '#f3edf7');
+            root.style.setProperty('--on-surface', c.textColor || '#1b1b1f');
+        }
     }
 
     root.style.setProperty('--popup-bg', c.contentColor);
     root.style.setProperty('--header-bg', c.headerColor);
     root.style.setProperty('--popup-text', c.textColor);
     root.style.setProperty('--popup-border', c.borderColor);
-    root.classList.toggle('xd-dark-icons', isColorDark(c.contentColor));
-    root.classList.toggle('xd-light-icons', !isColorDark(c.contentColor));
+    root.classList.toggle('xd-dark-icons', isDark);
+    root.classList.toggle('xd-light-icons', !isDark);
     initM3Selects();
 }
 
@@ -1065,79 +1095,111 @@ function showProviderForm(existing, isOther, isSearch) {
     });
 }
 
-function themesAreEqual(a, b) {
-    if (!a || !b) return false;
-    return a.borderColor === b.borderColor
-        && a.contentColor === b.contentColor
-        && a.headerColor === b.headerColor
-        && a.textColor === b.textColor;
-}
-
-function buildThemeCard(name, theme, { custom = false, index = -1 } = {}) {
-    const card = document.createElement('div');
-    card.className = 'theme-card' + (custom ? ' custom' : '');
-    if (themesAreEqual(theme, settings.customization)) {
-        card.classList.add('active');
-    }
-
-    const deleteBtn = custom
-        ? `<button type="button" class="theme-delete" data-idx="${index}" title="${t('deleteTheme')}" aria-label="${t('deleteTheme')}">×</button>`
-        : '';
-
-    card.innerHTML = `${deleteBtn}<div class="theme-name">${escapeHTML(name)}</div><div class="theme-preview">
-        <div class="theme-color-chip" style="background:${theme.borderColor}"></div>
-        <div class="theme-color-chip" style="background:${theme.contentColor}"></div>
-        <div class="theme-color-chip" style="background:${theme.headerColor}"></div>
-        <div class="theme-color-chip" style="background:${theme.textColor}"></div></div>`;
-
-    card.addEventListener('click', async (e) => {
-        if (e.target.closest('.theme-delete')) return;
-        settings.customization = {
-            ...settings.customization,
-            borderColor: theme.borderColor,
-            contentColor: theme.contentColor,
-            headerColor: theme.headerColor,
-            textColor: theme.textColor
-        };
-        populateUI();
-        await saveSettingsAndNotify(settings);
-    });
-
-    if (custom) {
-        card.querySelector('.theme-delete').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const idx = parseInt(e.currentTarget.dataset.idx, 10);
-            if (!Number.isInteger(idx)) return;
-            settings.customThemes.splice(idx, 1);
-            populateThemesGrid();
-            await saveSettingsAndNotify(settings);
-        });
-    }
-
-    return card;
-}
-
-function buildAddThemeCard() {
-    const card = document.createElement('div');
-    card.className = 'theme-card add';
-    card.setAttribute('role', 'button');
-    card.setAttribute('aria-label', t('createTheme'));
-    card.innerHTML = `<div class="theme-add-plus">+</div><div class="theme-add-label">${t('addThemeLabel')}</div>`;
-    card.addEventListener('click', () => openThemeEditor());
-    return card;
-}
+const M3_PALETTE_COLORS = [
+    { id: 'blue', color: '#3b82f6', name: 'Blue' },
+    { id: 'indigo', color: '#6366f1', name: 'Indigo' },
+    { id: 'purple', color: '#8b5cf6', name: 'Purple' },
+    { id: 'rose', color: '#f43f5e', name: 'Rose' },
+    { id: 'amber', color: '#f59e0b', name: 'Amber' },
+    { id: 'emerald', color: '#10b981', name: 'Emerald' },
+    { id: 'cyan', color: '#06b6d4', name: 'Cyan' },
+    { id: 'slate', color: '#64748b', name: 'Slate' }
+];
 
 function populateThemesGrid() {
-    const grid = uiElements.themesGrid;
-    if (!grid) return;
-    grid.innerHTML = '';
-    for (const name in PREDEFINED_THEMES) {
-        grid.appendChild(buildThemeCard(name, PREDEFINED_THEMES[name]));
-    }
-    (settings.customThemes || []).forEach((theme, idx) => {
-        grid.appendChild(buildThemeCard(theme.name || t('untitled'), theme, { custom: true, index: idx }));
+    renderThemeSettings();
+}
+
+function renderThemeSettings() {
+    const c = settings.customization || {};
+    const isDark = isColorDark(c.contentColor);
+
+    // 1. Update Segmented Buttons (Dark / Light)
+    const modeBtns = document.querySelectorAll('.theme-mode-btn');
+    modeBtns.forEach(btn => {
+        const mode = btn.dataset.mode;
+        const isActive = (mode === 'dark' && isDark) || (mode === 'light' && !isDark);
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
     });
-    grid.appendChild(buildAddThemeCard());
+
+    // 2. Render Swatches
+    const container = document.getElementById('theme-palette-swatches');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const currentBorder = (c.borderColor || '#3b82f6').toLowerCase();
+    let isPresetSelected = false;
+
+    M3_PALETTE_COLORS.forEach(item => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'theme-swatch';
+        swatch.style.backgroundColor = item.color;
+        swatch.title = item.name;
+        swatch.setAttribute('aria-label', item.name);
+
+        const isMatch = currentBorder === item.color.toLowerCase();
+        if (isMatch) {
+            swatch.classList.add('active');
+            isPresetSelected = true;
+            swatch.innerHTML = '<span class="swatch-check">check</span>';
+        }
+
+        swatch.addEventListener('click', async () => {
+            settings.customization.borderColor = item.color;
+            applyThemeToPopup();
+            renderThemeSettings();
+            await autoSave();
+        });
+
+        container.appendChild(swatch);
+    });
+
+    // Custom Color Swatch with hidden input[type="color"]
+    const customWrap = document.createElement('div');
+    customWrap.className = 'theme-swatch-custom-wrap';
+
+    const customBtn = document.createElement('button');
+    customBtn.type = 'button';
+    customBtn.className = 'theme-swatch custom';
+    customBtn.title = t('themeCustomColor');
+    customBtn.setAttribute('aria-label', t('themeCustomColor'));
+
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    colorPicker.className = 'theme-swatch-native-picker';
+    colorPicker.value = currentBorder;
+
+    if (!isPresetSelected) {
+        customBtn.classList.add('active');
+        customBtn.style.backgroundColor = currentBorder;
+        customBtn.innerHTML = '<span class="swatch-check">colorize</span>';
+    } else {
+        customBtn.innerHTML = '<span class="swatch-icon">colorize</span>';
+    }
+
+    customBtn.addEventListener('click', () => {
+        colorPicker.click();
+    });
+
+    colorPicker.addEventListener('input', (e) => {
+        const val = e.target.value;
+        customBtn.style.backgroundColor = val;
+        settings.customization.borderColor = val;
+        applyThemeToPopup();
+    });
+
+    colorPicker.addEventListener('change', async (e) => {
+        settings.customization.borderColor = e.target.value;
+        applyThemeToPopup();
+        renderThemeSettings();
+        await autoSave();
+    });
+
+    customWrap.appendChild(customBtn);
+    customWrap.appendChild(colorPicker);
+    container.appendChild(customWrap);
 }
 
 function openThemeEditor() {
@@ -1879,6 +1941,26 @@ function attachEventListeners() {
             autoSave({ themeEngine: el.themeEngineSelect.value });
         };
     }
+
+    // Theme mode switch (dark / light)
+    document.querySelectorAll('.theme-mode-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const mode = btn.dataset.mode;
+            const isDarkTarget = mode === 'dark';
+            if (isDarkTarget) {
+                settings.customization.contentColor = '#1c1c1c';
+                settings.customization.headerColor = '#333333';
+                settings.customization.textColor = '#e0e0e0';
+            } else {
+                settings.customization.contentColor = '#f5f5f7';
+                settings.customization.headerColor = '#e8e6f0';
+                settings.customization.textColor = '#1a1a2e';
+            }
+            applyThemeToPopup();
+            renderThemeSettings();
+            await autoSave();
+        });
+    });
 
     // Silent mode: checkbox toggles on/off, select chooses mode (always visible)
     el.silentModeToggle.onchange = () => {

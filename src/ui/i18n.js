@@ -107,7 +107,14 @@
             themeEngineLabel: 'Система дизайну / Тема:',
             themeEngineHint: 'Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).',
             themeEngineM3: 'Material 3 Expressive (Beer CSS)',
-            themeEngineLegacy: 'Класичний (Legacy)'
+            themeEngineLegacy: 'Класичний (Legacy)',
+            themeModeLabel: 'Режим теми:',
+            themeModeDark: 'Темна',
+            themeModeLight: 'Світла',
+            themeModeHint: 'Перемикання між темною та світлою темою.',
+            themePaletteLabel: 'Колірна палітра (акцент):',
+            themePaletteHint: 'Оберіть акцентний колір інтерфейсу.',
+            themeCustomColor: 'Власний колір'
         },
         ru: {
             tabAI: 'ИИ',
@@ -211,7 +218,14 @@
             themeEngineLabel: 'Система дизайна / Тема:',
             themeEngineHint: 'Material 3 Expressive (Beer CSS) или классический стиль (Legacy).',
             themeEngineM3: 'Material 3 Expressive (Beer CSS)',
-            themeEngineLegacy: 'Классический (Legacy)'
+            themeEngineLegacy: 'Классический (Legacy)',
+            themeModeLabel: 'Режим темы:',
+            themeModeDark: 'Тёмная',
+            themeModeLight: 'Светлая',
+            themeModeHint: 'Переключение между тёмной и светлой темой.',
+            themePaletteLabel: 'Цветовая палитра (акцент):',
+            themePaletteHint: 'Выберите акцентный цвет интерфейса.',
+            themeCustomColor: 'Свой цвет'
         },
         en: {
             tabAI: 'AI',
@@ -315,7 +329,14 @@
             themeEngineLabel: 'Design System / Theme:',
             themeEngineHint: 'Material 3 Expressive (Beer CSS) or classic dark style (Legacy).',
             themeEngineM3: 'Material 3 Expressive (Beer CSS)',
-            themeEngineLegacy: 'Classic (Legacy)'
+            themeEngineLegacy: 'Classic (Legacy)',
+            themeModeLabel: 'Theme mode:',
+            themeModeDark: 'Dark',
+            themeModeLight: 'Light',
+            themeModeHint: 'Switch between dark and light theme.',
+            themePaletteLabel: 'Color palette (accent):',
+            themePaletteHint: 'Choose an accent color for the interface.',
+            themeCustomColor: 'Custom color'
         }
     };
 

@@ -712,6 +712,110 @@ textarea {
 
 /* ── Themes Grid ── */
 
+/* ── Theme Mode Segmented & Swatches ── */
+.theme-mode-segmented {
+    display: flex;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.theme-mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--popup-text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.theme-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-mode-btn.active {
+    background: var(--popup-border);
+    color: #ffffff;
+}
+
+.theme-mode-icon {
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.theme-palette-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.theme-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, border-color 0.15s;
+    position: relative;
+    padding: 0;
+}
+
+.theme-swatch:hover {
+    transform: scale(1.1);
+}
+
+.theme-swatch.active {
+    border-color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.theme-swatch .swatch-check,
+.theme-swatch .swatch-icon {
+    font-family: 'Material Symbols Outlined', sans-serif;
+    font-size: 18px;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.theme-swatch-custom-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.theme-swatch.custom {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+.theme-swatch.custom.active {
+    border-style: solid;
+    border-color: #ffffff;
+}
+
+.theme-swatch-native-picker {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+}
+
 .themes-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
