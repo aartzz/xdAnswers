@@ -20,13 +20,16 @@
                     const choice = json.choices?.[0];
                     if (!choice) continue;
                     // Tool call finish — stop streaming, hand off to tool loop
-                    if (choice.finish_reason === 'tool_calls') {
+                    if (choice.finish_reason === 'tool_calls' || choice.finish_reason === 'function_call') {
                         // Emit any remaining tool_calls delta in this chunk
                         const delta = choice.delta || {};
                         if (delta.tool_calls) {
                             for (const tc of delta.tool_calls) {
                                 results.push({ tool_call_delta: { index: tc.index, id: tc.id || undefined, name: tc.function?.name || undefined, argsDelta: tc.function?.arguments || '' } });
                             }
+                        }
+                        if (delta.function_call) {
+                            results.push({ tool_call_delta: { index: 0, id: undefined, name: delta.function_call.name || undefined, argsDelta: delta.function_call.arguments || '' } });
                         }
                         results.push({ tool_call_stop: true });
                         continue;
@@ -35,12 +38,17 @@
                     const delta = choice.delta || {};
                     if (delta.reasoning_content) {
                         results.push({ thinking: delta.reasoning_content });
-                    } else if (delta.tool_calls) {
+                    }
+                    if (delta.tool_calls) {
                         // Streaming tool call deltas
                         for (const tc of delta.tool_calls) {
                             results.push({ tool_call_delta: { index: tc.index, id: tc.id || undefined, name: tc.function?.name || undefined, argsDelta: tc.function?.arguments || '' } });
                         }
-                    } else if (delta.content) {
+                    }
+                    if (delta.function_call) {
+                        results.push({ tool_call_delta: { index: 0, id: undefined, name: delta.function_call.name || undefined, argsDelta: delta.function_call.arguments || '' } });
+                    }
+                    if (delta.content) {
                         results.push({ content: delta.content });
                     }
                 } else if (apiFormat === 'anthropic') {
