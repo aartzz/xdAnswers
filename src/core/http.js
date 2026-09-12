@@ -15,36 +15,51 @@
                 }
             }, timeoutMs);
 
+            const retryCount = options._retryCount || 0;
+            const maxRetries = 3;
+
             try {
                 chrome.runtime.sendMessage({ type: 'fetch', payload: options }, (response) => {
                     if (settled) return;
-                    settled = true;
                     clearTimeout(timeoutId);
                     if (chrome.runtime.lastError) {
                         const errMsg = chrome.runtime.lastError.message || '';
                         if (errMsg.includes('Receiving end does not exist') || errMsg.includes('Could not establish connection')) {
-                            // Retry once after 500ms in case background service worker was sleeping/waking up
-                            if (!options._retried) {
+                            if (retryCount < maxRetries) {
                                 setTimeout(() => {
-                                    window.xdAnswers.makeRequest(Object.assign({}, options, { _retried: true }))
+                                    window.xdAnswers.makeRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }))
                                         .then(resolve)
                                         .catch(reject);
-                                }, 500);
+                                }, 300 * (retryCount + 1));
                                 return;
                             }
+                            settled = true;
                             reject(new Error('Extension background reloaded or disconnected. Please refresh the page.'));
                         } else {
+                            settled = true;
                             reject(new Error(errMsg));
                         }
                     }
-                    else if (response && response.success) resolve(response);
+                    else if (response && response.success) {
+                        settled = true;
+                        resolve(response);
+                    }
                     else {
+                        settled = true;
                         const details = response && response.details ? '\n' + response.details : '';
                         reject(new Error(((response && response.error) || 'Unknown error') + details));
                     }
                 });
             } catch (err) {
                 if (!settled) {
+                    if (retryCount < maxRetries) {
+                        setTimeout(() => {
+                            window.xdAnswers.makeRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }))
+                                .then(resolve)
+                                .catch(reject);
+                        }, 300 * (retryCount + 1));
+                        return;
+                    }
                     settled = true;
                     clearTimeout(timeoutId);
                     reject(new Error('Extension background reloaded or disconnected. Please refresh the page.'));
@@ -56,15 +71,17 @@
     window.xdAnswers.streamRequest = function(options, onChunk, onDone, onError) {
         let port;
         let finished = false;
+        const retryCount = options._retryCount || 0;
+        const maxRetries = 3;
 
         function connect() {
             try {
                 port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
             } catch (e) {
-                if (!options._retried) {
+                if (retryCount < maxRetries) {
                     setTimeout(() => {
-                        window.xdAnswers.streamRequest(Object.assign({}, options, { _retried: true }), onChunk, onDone, onError);
-                    }, 500);
+                        window.xdAnswers.streamRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }), onChunk, onDone, onError);
+                    }, 300 * (retryCount + 1));
                     return null;
                 }
                 onError('Extension disconnected', 'Extension context invalidated. Please refresh the page.');
@@ -91,8 +108,10 @@
                     finished = true;
                     const lastErr = chrome.runtime.lastError?.message || '';
                     if (lastErr.includes('Receiving end does not exist') || lastErr.includes('Could not establish connection')) {
-                        if (!options._retried) {
-                            window.xdAnswers.streamRequest(Object.assign({}, options, { _retried: true }), onChunk, onDone, onError);
+                        if (retryCount < maxRetries) {
+                            setTimeout(() => {
+                                window.xdAnswers.streamRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }), onChunk, onDone, onError);
+                            }, 300 * (retryCount + 1));
                             return;
                         }
                         onError('Extension disconnected', 'Extension context was invalidated or reloaded. Please refresh the page.');

@@ -448,6 +448,7 @@ body.theme-material3 .aosp-subpage-header {
 
 body.theme-material3 .aosp-back-btn {
     all: unset !important;
+    position: relative !important;
     box-sizing: border-box !important;
     width: 38px !important;
     height: 38px !important;
@@ -457,6 +458,7 @@ body.theme-material3 .aosp-back-btn {
     max-height: 38px !important;
     flex: 0 0 38px !important;
     border-radius: 50% !important;
+    overflow: hidden !important;
     background: var(--m3-surface-high) !important;
     border: none !important;
     outline: none !important;
@@ -470,6 +472,12 @@ body.theme-material3 .aosp-back-btn {
     padding: 0 !important;
     margin: 0 !important;
     line-height: 1 !important;
+}
+
+body.theme-material3 .aosp-back-btn::before,
+body.theme-material3 .aosp-back-btn::after {
+    display: none !important;
+    content: none !important;
 }
 
 body.theme-material3.light .aosp-back-btn {
@@ -544,8 +552,12 @@ body.theme-material3 .settings-card {
     outline: none !important;
     border-radius: var(--m3-r-l) !important;
     margin-bottom: 14px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.theme-material3 .settings-card:has(.m3-select-wrap.m3-open) {
+    z-index: 50 !important;
 }
 
 body.theme-material3.light .settings-card {
@@ -564,6 +576,7 @@ body.theme-material3 .settings-card > .form-group {
     box-sizing: border-box !important;
     flex-shrink: 0 !important;
     width: 100% !important;
+    border-radius: inherit !important;
 }
 
 body.theme-material3 .settings-card > .form-group:last-child {
@@ -860,7 +873,12 @@ body.theme-material3 input[type="password"]:hover {
 body.theme-material3 .m3-select-wrap {
     position: relative !important;
     width: 100% !important;
-    display: block !important;
+    box-sizing: border-box !important;
+    z-index: 10 !important;
+}
+
+body.theme-material3 .m3-select-wrap.m3-open {
+    z-index: 100 !important;
 }
 
 body.theme-material3 .m3-select-wrap select {
@@ -930,8 +948,8 @@ body.theme-material3 .m3-select-list {
     border-radius: var(--m3-r-m) !important;
     overflow: hidden !important;
     overflow-y: auto !important;
-    max-height: 140px !important;
-    z-index: 500 !important;
+    max-height: 200px !important;
+    z-index: 9999 !important;
     list-style: none !important;
     margin: 0 !important;
     padding: 4px 0 !important;

@@ -195,7 +195,7 @@ const API_PROVIDERS = [
     { id: 'fireworks', name: 'Fireworks AI', hint: 'Fireworks API', logo: 'fireworks-ai' },
     { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' },
     { id: 'unturf-hermes', name: 'Unturf Hermes', hint: 'Free — Hermes 3 Llama 3.1 8B', logo: 'unturf' },
-    { id: 'opencode-zen', name: 'OpenCode Zen', hint: 'OpenCode Zen — -free models need no key', logo: 'opencode' },
+    { id: 'opencode-zen', name: 'OpenCode Zen', hint: 'OpenCode Zen — free models & big-pickle need no key', logo: 'opencode' },
     { id: 'opencode-go', name: 'OpenCode Go', hint: 'OpenCode Go — API key required', logo: 'opencode' },
     { id: 'ollama-cloud', name: 'Ollama Cloud', hint: 'Ollama Cloud — API key required', logo: 'ollama-cloud' },
     { id: 'nvidia', name: 'NVIDIA NIM', hint: 'NVIDIA NIM — API key required', logo: 'nvidia' },
@@ -1463,7 +1463,19 @@ async function fetchModelsForProvider(provider) {
 
     const isOpenCodeZenWithoutKey = provider.type === 'opencode-zen' && !hasRealKey;
     if (isOpenCodeZenWithoutKey) {
-        models = models.filter(m => m.id.toLowerCase().endsWith('-free'));
+        models = models.filter(m => {
+            const id = m.id.toLowerCase();
+            return id.endsWith('-free') || id === 'big-pickle' || id.endsWith('/big-pickle');
+        });
+        // Ensure big-pickle is in list even if API /models does not return it yet
+        if (!models.some(m => m.id.toLowerCase() === 'big-pickle')) {
+            models.unshift({
+                id: 'big-pickle',
+                ownedBy: 'opencode',
+                root: 'big-pickle',
+                contextLength: 200000
+            });
+        }
     }
 
     return models;
@@ -1501,6 +1513,8 @@ function renderModelList() {
     if (!mergedModels.length && modelsDevCache) {
         const active = getActiveProvider(settings);
         const provId = active?.type || '';
+        const hasRealKey = active?.apiKey && active.apiKey !== 'free';
+        const isOpenCodeZenWithoutKey = provId === 'opencode-zen' && !hasRealKey;
         const provKeyLookup = {
             openai: 'openai', anthropic: 'anthropic', google: 'google',
             deepseek: 'deepseek', groq: 'groq', openrouter: 'openrouter',
@@ -1512,6 +1526,10 @@ function renderModelList() {
             // Only take entries where p matches the provider, and key doesn't contain '/'
             if (key.includes('/')) continue; // skip composite keys
             if (info.p === devProvId || !devProvId) {
+                if (isOpenCodeZenWithoutKey) {
+                    const idLower = key.toLowerCase();
+                    if (!idLower.endsWith('-free') && idLower !== 'big-pickle') continue;
+                }
                 mergedModels.push({
                     id: key,
                     ownedBy: info.p || 'other',
@@ -1519,6 +1537,14 @@ function renderModelList() {
                     contextLength: info.l?.c || null
                 });
             }
+        }
+        if (isOpenCodeZenWithoutKey && !mergedModels.some(m => m.id.toLowerCase() === 'big-pickle')) {
+            mergedModels.unshift({
+                id: 'big-pickle',
+                ownedBy: 'opencode',
+                root: 'big-pickle',
+                contextLength: 200000
+            });
         }
     }
 
@@ -1686,6 +1712,8 @@ function renderConsensusModelList(runIdx) {
     const effectiveProviderId = run.providerId || settings.activeProviderId || '';
     const provider = (settings.providers || []).find(p => p.id === effectiveProviderId);
     const devProvId = getConsensusProviderDevKey(provider?.type || '');
+    const hasRealKey = provider?.apiKey && provider.apiKey !== 'free';
+    const isOpenCodeZenWithoutKey = provider?.type === 'opencode-zen' && !hasRealKey;
 
     // Use cached API models first, fallback to modelsDevCache
     const cachedModels = providerModelsCache[run.providerId];
@@ -1695,6 +1723,10 @@ function renderConsensusModelList(runIdx) {
         for (const [key, info] of Object.entries(modelsDevCache)) {
             if (key.includes('/')) continue;
             if (info.p === devProvId) {
+                if (isOpenCodeZenWithoutKey) {
+                    const idLower = key.toLowerCase();
+                    if (!idLower.endsWith('-free') && idLower !== 'big-pickle') continue;
+                }
                 providerModels.push({
                     id: key,
                     ownedBy: info.p || 'other',
@@ -1702,6 +1734,14 @@ function renderConsensusModelList(runIdx) {
                     contextLength: info.l?.c || null
                 });
             }
+        }
+        if (isOpenCodeZenWithoutKey && !providerModels.some(m => m.id.toLowerCase() === 'big-pickle')) {
+            providerModels.unshift({
+                id: 'big-pickle',
+                ownedBy: 'opencode',
+                root: 'big-pickle',
+                contextLength: 200000
+            });
         }
     }
 
