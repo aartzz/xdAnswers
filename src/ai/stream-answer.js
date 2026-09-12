@@ -144,10 +144,14 @@
                 }
 
                 // 2. Prose header based (e.g. Qwen / Deepseek / Llama without tags):
-                // matches "Here's a thinking...", "Thinking Process:", "The user wants...", "The user asks...", "The user is asking...", "I need to select...", "Let's think..."
-                if (!inInlineThinking && (/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking|wants|is trying)|I need to (?:select|choose|find|determine)|Let's think)/i.test(rawContentBuffer) || /\n\s*(?:The user (?:asks|is asking|wants|is trying)|Here's a thinking process)/i.test(rawContentBuffer))) {
-                    inInlineThinking = true;
-                    ensureThinkingUI();
+                // Matches thinking prose that models emit at the start or on a new line
+                if (!inInlineThinking) {
+                    const isThinkingHeader = /^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)/i.test(rawContentBuffer) ||
+                        /\n\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)/i.test(rawContentBuffer);
+                    if (isThinkingHeader) {
+                        inInlineThinking = true;
+                        ensureThinkingUI();
+                    }
                 }
 
                 if (inInlineThinking) {
@@ -165,11 +169,12 @@
                             rawContentBuffer = '';
                         }
                     } else if (!rawContentBuffer.startsWith('<think>')) {
-                        // Check prose transition like "---" or "**Answer:**" or "\n\nAnswer:" or "FINAL_ANSWER:" or JSON start "{" or labeled answer "Answer:" / "Відповідь:" / "C: " / "A: "
-                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\n\s*[A-DА-Яа-яІіЇїЄє]\s*:\s*\S+))/i);
+                        // Check prose transition like "---", "**Answer:**", "\nAnswer:", "FINAL_ANSWER:", JSON start "{" or labeled answer "Answer:" / "Відповідь:" / "Option A"
+                        // Note: do NOT match option letters during thinking like "Options:\nA: ... B: ..."
+                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i);
                         if (transitionMatch !== -1) {
                             const thinkPart = rawContentBuffer.slice(0, transitionMatch);
-                            fullThinking += thinkPart;
+                            fullThinking = thinkPart;
                             rawContentBuffer = rawContentBuffer.slice(transitionMatch + 1);
                             inInlineThinking = false;
                             thinkingDone = true;
@@ -193,6 +198,7 @@
                         const chars = contentDiv?.querySelector('.xd-thinking-chars');
                         if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
                     }
+                    // During prose thinking, don't display rawContentBuffer in the answer section
                     updateStreamUI();
                     return;
                 }
