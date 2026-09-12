@@ -244,7 +244,7 @@ body.theme-material3 .settings-card {
     width: 100% !important;
     box-sizing: border-box !important;
     background: var(--m3-surface-low) !important;
-    border: 1px solid var(--m3-outline-variant) !important;
+    border: none !important;
     border-radius: var(--m3-r-l) !important;
     margin-bottom: 14px !important;
     overflow: hidden !important;
@@ -253,7 +253,7 @@ body.theme-material3 .settings-card {
 
 body.theme-material3.light .settings-card {
     background: #ffffff !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
+    border: none !important;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -316,6 +316,7 @@ body.theme-material3 .settings-card #consensus-runs-container {
 
 body.theme-material3 .settings-card .add-consensus-run-btn {
     margin: 0 14px 14px !important;
+    width: calc(100% - 28px) !important;
 }
 
 /* Toggle group rows: right-aligned M3 Expressive switches */
@@ -326,6 +327,7 @@ body.theme-material3 .settings-card > .form-group.toggle-group {
     flex-direction: column !important;
     justify-content: center !important;
     cursor: pointer !important;
+    position: relative !important;
 }
 
 body.theme-material3 .settings-card > .form-group.toggle-group label {
@@ -338,6 +340,7 @@ body.theme-material3 .settings-card > .form-group.toggle-group label {
     font-size: 13px !important;
     font-weight: 500 !important;
     letter-spacing: normal !important;
+    position: static !important;
 }
 
 body.theme-material3 .settings-card > .form-group.toggle-group label input[type="checkbox"] {
@@ -345,6 +348,7 @@ body.theme-material3 .settings-card > .form-group.toggle-group label input[type=
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
+    bottom: 0 !important;
     width: 100% !important;
     height: 100% !important;
     opacity: 0 !important;
@@ -357,6 +361,7 @@ body.theme-material3 .settings-card > .form-group.toggle-group label input[type=
     padding-left: 0 !important;
     display: block !important;
     font-size: 13px !important;
+    position: static !important;
     font-weight: 500 !important;
     color: var(--m3-on-surface) !important;
     line-height: 1.3 !important;
@@ -384,6 +389,8 @@ body.theme-material3 .settings-card > .form-group.toggle-group label input[type=
     border-radius: 14px !important;
     box-sizing: border-box !important;
     transition: background 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease) !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
 }
 
 body.theme-material3.light .settings-card > .form-group.toggle-group label input[type="checkbox"] + span::before {
@@ -411,6 +418,8 @@ body.theme-material3 .settings-card > .form-group.toggle-group label input[type=
     border-radius: 50% !important;
     box-shadow: none !important;
     transition: right 0.25s var(--m3-ease), background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
 }
 
 body.theme-material3.light .settings-card > .form-group.toggle-group label input[type="checkbox"] + span::after {
