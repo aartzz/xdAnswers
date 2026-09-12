@@ -36,8 +36,9 @@
                     }
                     if (choice.finish_reason) { results.push({ done: true }); continue; }
                     const delta = choice.delta || {};
-                    if (delta.reasoning_content) {
-                        results.push({ thinking: delta.reasoning_content });
+                    const rContent = delta.reasoning_content || delta.reasoning || delta.thinking || (delta.thought !== undefined ? delta.thought : null);
+                    if (rContent) {
+                        results.push({ thinking: rContent });
                     }
                     if (delta.tool_calls) {
                         // Streaming tool call deltas

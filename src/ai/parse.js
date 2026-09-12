@@ -212,8 +212,25 @@
         };
     }
 
+    function stripInlineThinking(text) {
+        if (!text) return '';
+        // Strip <think>...</think>
+        let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+        // Strip leading "Here's a thinking process..." until answer transition
+        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+        if (proseMatch) {
+            const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+            if (transition) {
+                cleaned = cleaned.substring(transition.index + 1).trim();
+            }
+        }
+        return cleaned || text;
+    }
+
     function parseAIResponse(text) {
         if (!text) return { answer: '', explanation: '', solution: '', confidence: '', raw: text, parseFailed: true };
+
+        text = stripInlineThinking(text);
 
         var labeled = parseLabeledResponse(text);
         if (labeled) return labeled;

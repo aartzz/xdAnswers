@@ -43,7 +43,7 @@
             window.xdAnswers.lastRequestBody = body;
 
             const response = await window.xdAnswers.makeRequest({
-                url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body)
+                url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body), timeout: 120000
             });
 
             const parsed = JSON.parse(response.data);
@@ -160,7 +160,7 @@
                     body.contents = newContents;
                     // Re-request
                     const resp2 = await window.xdAnswers.makeRequest({
-                        url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body)
+                        url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body), timeout: 120000
                     });
                     const parsed2 = JSON.parse(resp2.data);
                     return parsed2.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -173,7 +173,7 @@
 
         // Fallback after max loops — just return whatever we have
         const lastParsed = JSON.parse((await window.xdAnswers.makeRequest({
-            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(buildRequestBody(s, systemPrompt, userMsg, images, false))
+            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(buildRequestBody(s, systemPrompt, userMsg, images, false)), timeout: 120000
         })).data);
         if (s.apiFormat === 'openai') return lastParsed.choices[0].message.content;
         if (s.apiFormat === 'anthropic') { const tb = lastParsed.content?.find(b => b.type === 'text'); return tb?.text || ''; }

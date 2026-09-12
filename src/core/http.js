@@ -7,7 +7,7 @@
     window.xdAnswers.makeRequest = function(options) {
         return new Promise((resolve, reject) => {
             let settled = false;
-            const timeoutMs = options.timeout || 25000;
+            const timeoutMs = options.timeout || 120000;
             const timeoutId = setTimeout(() => {
                 if (!settled) {
                     settled = true;

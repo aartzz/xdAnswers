@@ -124,6 +124,85 @@
                  startStreamTimer();
             }
 
+            // Track inline thinking (<think>...</think> or "Here's a thinking process...")
+            let inInlineThinking = false;
+            let rawContentBuffer = '';
+
+            function checkAndExtractInlineThinking(newText) {
+                rawContentBuffer += newText;
+
+                // 1. Tag based: <think>...</think>
+                if (!inInlineThinking && rawContentBuffer.includes('<think>')) {
+                    const parts = rawContentBuffer.split('<think>');
+                    const before = parts[0];
+                    rawContentBuffer = '<think>' + parts.slice(1).join('<think>');
+                    inInlineThinking = true;
+                    ensureThinkingUI();
+                    if (before) {
+                        fullContent += before;
+                    }
+                }
+
+                // 2. Prose header based (e.g. Qwen / Deepseek without tags): "Here's a thinking process..." or "Thinking Process:"
+                if (!inInlineThinking && !fullContent && /^\s*(Here's a thinking process|Thinking Process:|Thinking:)/i.test(rawContentBuffer)) {
+                    inInlineThinking = true;
+                    ensureThinkingUI();
+                }
+
+                if (inInlineThinking) {
+                    // Check for close of thinking
+                    // Check </think>
+                    const closeIndex = rawContentBuffer.indexOf('</think>');
+                    if (closeIndex !== -1) {
+                        const thinkPart = rawContentBuffer.slice(0, closeIndex).replace(/^<think>/i, '');
+                        fullThinking += thinkPart;
+                        rawContentBuffer = rawContentBuffer.slice(closeIndex + 8);
+                        inInlineThinking = false;
+                        thinkingDone = true;
+                        if (rawContentBuffer) {
+                            fullContent += rawContentBuffer;
+                            rawContentBuffer = '';
+                        }
+                    } else if (!rawContentBuffer.startsWith('<think>')) {
+                        // Check prose transition like "---" or "**Answer:**" or "\n\nAnswer:" or "FINAL_ANSWER:" or JSON start "{"
+                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+                        if (transitionMatch !== -1) {
+                            const thinkPart = rawContentBuffer.slice(0, transitionMatch);
+                            fullThinking += thinkPart;
+                            rawContentBuffer = rawContentBuffer.slice(transitionMatch + 1);
+                            inInlineThinking = false;
+                            thinkingDone = true;
+                            if (rawContentBuffer) {
+                                fullContent += rawContentBuffer;
+                                rawContentBuffer = '';
+                            }
+                        } else {
+                            // Still streaming prose thinking - push into fullThinking incrementally
+                            fullThinking = rawContentBuffer;
+                        }
+                    } else {
+                        // Still in <think> tags
+                        fullThinking = rawContentBuffer.replace(/^<think>/i, '');
+                    }
+
+                    if (fullThinking) {
+                        ensureThinkingUI();
+                        const tc = contentDiv?.querySelector('.xd-thinking-content');
+                        if (tc) tc.innerHTML = window.xdAnswers.renderMarkdown(fullThinking);
+                        const chars = contentDiv?.querySelector('.xd-thinking-chars');
+                        if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
+                    }
+                    updateStreamUI();
+                    return;
+                }
+
+                // Normal content flow
+                if (thinkingStarted && !thinkingDone) thinkingDone = true;
+                fullContent += rawContentBuffer;
+                rawContentBuffer = '';
+                updateStreamUI();
+            }
+
             function ensureThinkingUI() {
                 if (thinkingStarted || !contentDiv) return;
                 clearStatus();
@@ -473,6 +552,8 @@
                 pendingToolCalls = {};
                 fullContent = '';
                 fullThinking = '';
+                inInlineThinking = false;
+                rawContentBuffer = '';
                 thinkingStarted = false;
                 thinkingDone = false;
                 isHandlingToolCalls = false;
@@ -483,6 +564,15 @@
 
             function finishStream() {
                 stopStreamTimer();
+                // If stream ended while still in inline thinking buffer, flush it
+                if (rawContentBuffer) {
+                    if (inInlineThinking) {
+                        fullThinking = (fullThinking || rawContentBuffer).replace(/^<think>/i, '').replace(/<\/think>$/i, '');
+                    } else {
+                        fullContent += rawContentBuffer;
+                    }
+                    rawContentBuffer = '';
+                }
                 resolve({ content: fullContent, thinking: fullThinking, searchCalls, calcCalls });
             }
 
@@ -515,9 +605,7 @@
                                 if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
                             }
                             if (ev.content) {
-                                if (thinkingStarted && !thinkingDone) thinkingDone = true;
-                                fullContent += ev.content;
-                                updateStreamUI();
+                                checkAndExtractInlineThinking(ev.content);
                             }
                             // Tool call events
                             if (ev.tool_call_start) {
