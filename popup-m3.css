@@ -56,11 +56,13 @@ body.theme-material3 {
     color: var(--m3-on-surface) !important;
     padding-bottom: 0 !important;
     overflow-x: hidden !important;
+    transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 body.theme-material3 .tab-content {
     background-color: var(--m3-surface) !important;
     color: var(--m3-on-surface) !important;
+    transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 /* ── Header ── */
@@ -891,7 +893,9 @@ body.theme-material3 .theme-mode-btn {
     height: auto !important;
     min-height: 0 !important;
     line-height: normal !important;
-    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
+    cursor: pointer !important;
+    transition: background 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s cubic-bezier(0.2, 0, 0, 1), transform 0.15s ease !important;
+    will-change: background, color, box-shadow !important;
 }
 
 body.theme-material3 .theme-mode-btn::before,
@@ -904,9 +908,14 @@ body.theme-material3 .theme-mode-btn:hover {
     color: var(--m3-on-surface) !important;
 }
 
+body.theme-material3 .theme-mode-btn:active {
+    transform: scale(0.97) !important;
+}
+
 body.theme-material3 .theme-mode-btn.active {
     background: var(--m3-primary-container) !important;
     color: var(--m3-on-primary-container) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
     border-radius: var(--m3-r-full) !important;
 }
 
@@ -923,19 +932,47 @@ body.theme-material3 .theme-swatch {
     max-width: 36px !important;
     max-height: 36px !important;
     border-radius: 50% !important;
+    border: 2px solid transparent !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-    transition: transform 0.15s ease, border-color 0.15s ease !important;
+    cursor: pointer !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    position: relative !important;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), border-color 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+    will-change: transform, box-shadow !important;
 }
 
 body.theme-material3 .theme-swatch:hover {
-    transform: scale(1.08) !important;
+    transform: scale(1.12) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+}
+
+body.theme-material3 .theme-swatch:active {
+    transform: scale(0.95) !important;
 }
 
 body.theme-material3 .theme-swatch.active {
     border: 3px solid var(--m3-surface) !important;
     border-radius: 50% !important;
-    box-shadow: 0 0 0 2px var(--m3-primary) !important;
-    transform: scale(1.08) !important;
+    box-shadow: 0 0 0 2.5px var(--m3-primary), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transform: scale(1.1) !important;
+}
+
+body.theme-material3 .theme-swatch .swatch-check,
+body.theme-material3 .theme-swatch .swatch-icon {
+    font-family: var(--font-icon) !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+    animation: m3PopIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+@keyframes m3PopIn {
+    0% { transform: scale(0.4); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 /* ── Inline Custom Color Picker Box ── */
@@ -1012,13 +1049,20 @@ body.theme-material3 .theme-swatch.custom {
     background: var(--m3-surface-mid) !important;
     border: 2px dashed var(--m3-outline) !important;
     border-radius: 50% !important;
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), border-color 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+
+body.theme-material3 .theme-swatch.custom:hover {
+    border-color: var(--m3-primary) !important;
+    transform: scale(1.12) !important;
 }
 
 body.theme-material3 .theme-swatch.custom.active {
     border-style: solid !important;
     border: 3px solid var(--m3-surface) !important;
     border-radius: 50% !important;
-    box-shadow: 0 0 0 2px var(--m3-primary) !important;
+    box-shadow: 0 0 0 2.5px var(--m3-primary), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    transform: scale(1.1) !important;
 }
 
 body.theme-material3 .theme-swatch .swatch-check,

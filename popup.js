@@ -1168,9 +1168,34 @@ function renderThemeSettings() {
     // 2. Render Swatches
     const container = document.getElementById('theme-palette-swatches');
     if (!container) return;
-    container.innerHTML = '';
 
     const currentBorder = (c.borderColor || '#3b82f6').toLowerCase();
+    const existingSwatches = container.querySelectorAll('.theme-swatch:not(.custom)');
+
+    if (existingSwatches.length === M3_PALETTE_COLORS.length) {
+        // In-place update: smooth transition without wiping DOM nodes
+        existingSwatches.forEach((swatch, idx) => {
+            const item = M3_PALETTE_COLORS[idx];
+            const isMatch = currentBorder === item.color.toLowerCase();
+            swatch.classList.toggle('active', isMatch);
+            swatch.innerHTML = isMatch ? '<span class="swatch-check">check</span>' : '';
+        });
+        const customBtn = container.querySelector('.theme-swatch.custom');
+        if (customBtn) {
+            const isPreset = M3_PALETTE_COLORS.some(item => item.color.toLowerCase() === currentBorder);
+            customBtn.classList.toggle('active', !isPreset);
+            if (!isPreset) {
+                customBtn.style.backgroundColor = currentBorder;
+                customBtn.innerHTML = '<span class="swatch-check">colorize</span>';
+            } else {
+                customBtn.style.backgroundColor = '';
+                customBtn.innerHTML = '<span class="swatch-icon">colorize</span>';
+            }
+        }
+        return;
+    }
+
+    container.innerHTML = '';
     let isPresetSelected = false;
 
     M3_PALETTE_COLORS.forEach(item => {
