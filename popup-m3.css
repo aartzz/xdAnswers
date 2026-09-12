@@ -824,6 +824,184 @@ body.theme-material3 .consensus-answeronly-toggle {
     align-items: center !important;
 }
 
+/* ── Provider Form (Add/Edit Dialog) ── */
+body.theme-material3 .pf-type-wrapper {
+    position: relative !important;
+}
+
+body.theme-material3 .pf-type-trigger {
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    color: var(--m3-on-surface) !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+    padding: 8px 12px !important;
+    box-shadow: none !important;
+}
+
+body.theme-material3 .pf-type-trigger .provider-trigger-value {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    text-align: left !important;
+    min-width: 0 !important;
+}
+
+body.theme-material3 .pf-type-dropdown {
+    background: var(--m3-surface-high) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-m) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+    padding: 6px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+body.theme-material3 .pf-type-option {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    gap: 12px !important;
+    padding: 8px 12px !important;
+    margin: 2px 0 !important;
+    border-radius: var(--m3-r-m) !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--m3-on-surface) !important;
+    font-weight: normal !important;
+    box-sizing: border-box !important;
+    transition: background 0.15s var(--m3-ease) !important;
+}
+
+body.theme-material3 .pf-type-option::before,
+body.theme-material3 .pf-type-option::after {
+    display: none !important;
+}
+
+body.theme-material3 .pf-type-option .provider-icon {
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+}
+
+body.theme-material3 .pf-type-option .provider-option-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+}
+
+body.theme-material3 .pf-type-option .provider-option-title {
+    font-size: 13px !important;
+    color: var(--m3-on-surface) !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+}
+
+body.theme-material3 .pf-type-option .provider-option-hint {
+    font-size: 11px !important;
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.75 !important;
+    text-align: left !important;
+}
+
+body.theme-material3 .pf-type-option:hover {
+    background: var(--m3-surface-highest) !important;
+}
+
+body.theme-material3 .pf-type-option.active {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .pf-type-option.active .provider-option-title {
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .pf-type-option.active .provider-option-hint {
+    color: var(--m3-on-primary-container) !important;
+    opacity: 0.8 !important;
+}
+
+/* ── Provider Options Dropdown (Active Provider Selector) ── */
+body.theme-material3 .provider-option {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+    width: 100% !important;
+    gap: 12px !important;
+    padding: 8px 12px !important;
+    border-radius: var(--m3-r-m) !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--m3-on-surface) !important;
+}
+
+body.theme-material3 .provider-option::before,
+body.theme-material3 .provider-option::after {
+    display: none !important;
+}
+
+body.theme-material3 .provider-option-main {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: left !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+}
+
+body.theme-material3 .provider-option .provider-icon {
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+}
+
+body.theme-material3 .provider-option-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+}
+
+body.theme-material3 .provider-option-title {
+    font-size: 13px !important;
+    color: var(--m3-on-surface) !important;
+    font-weight: 500 !important;
+    text-align: left !important;
+}
+
+body.theme-material3 .provider-option-hint {
+    font-size: 11px !important;
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.75 !important;
+    text-align: left !important;
+}
+
+body.theme-material3 .provider-option:hover {
+    background: var(--m3-surface-highest) !important;
+}
+
+body.theme-material3 .provider-option.active {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .provider-option.active .provider-option-title {
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .provider-option.active .provider-option-hint {
+    color: var(--m3-on-primary-container) !important;
+    opacity: 0.8 !important;
+}
+
 /* ── Hotkey Recorder ── */
 body.theme-material3 .hotkey-recorder {
     background: var(--m3-surface-low) !important;
