@@ -19,18 +19,31 @@
                 if (settled) return;
                 settled = true;
                 clearTimeout(timeoutId);
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                if (chrome.runtime.lastError) {
+                    const errMsg = chrome.runtime.lastError.message || '';
+                    if (errMsg.includes('Receiving end does not exist') || errMsg.includes('Could not establish connection')) {
+                        reject(new Error('Extension background reloaded or disconnected. Please refresh the page.'));
+                    } else {
+                        reject(new Error(errMsg));
+                    }
+                }
                 else if (response && response.success) resolve(response);
                 else {
-                    const details = response.details ? '\n' + response.details : '';
-                    reject(new Error((response.error || 'Unknown error') + details));
+                    const details = response && response.details ? '\n' + response.details : '';
+                    reject(new Error(((response && response.error) || 'Unknown error') + details));
                 }
             });
         });
     };
 
     window.xdAnswers.streamRequest = function(options, onChunk, onDone, onError) {
-        const port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
+        let port;
+        try {
+            port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
+        } catch (e) {
+            onError('Extension disconnected', 'Extension context invalidated. Please refresh the page.');
+            return () => {};
+        }
         let finished = false;
 
         port.onMessage.addListener((msg) => {
@@ -51,7 +64,12 @@
         port.onDisconnect.addListener(() => {
             if (!finished) {
                 finished = true;
-                onError('Connection lost', 'Background stream disconnected unexpectedly');
+                const lastErr = chrome.runtime.lastError?.message || '';
+                if (lastErr.includes('Receiving end does not exist') || lastErr.includes('Could not establish connection')) {
+                    onError('Extension disconnected', 'Extension context was invalidated or reloaded. Please refresh the page.');
+                } else {
+                    onError('Connection lost', lastErr || 'Background stream disconnected unexpectedly');
+                }
             }
         });
 

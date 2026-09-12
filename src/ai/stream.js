@@ -36,7 +36,11 @@
                     }
                     if (choice.finish_reason) { results.push({ done: true }); continue; }
                     const delta = choice.delta || {};
-                    const rContent = delta.reasoning_content || delta.reasoning || delta.thinking || (delta.thought !== undefined ? delta.thought : null);
+                    // Check all known fields where LLM providers put reasoning / chain-of-thought
+                    const rContent = delta.reasoning_content || delta.reasoning || delta.thinking || 
+                                     (delta.thought !== undefined ? delta.thought : null) ||
+                                     delta.reasoning_text || delta.thinking_process ||
+                                     json.reasoning_content || json.reasoning;
                     if (rContent) {
                         results.push({ thinking: rContent });
                     }

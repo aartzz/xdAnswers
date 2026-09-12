@@ -216,8 +216,8 @@
         if (!text) return '';
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-        // Strip leading "Here's a thinking process..." until answer transition
-        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+        // Strip leading prose thinking ("Here's a thinking process...", "The user asks...", "I need to select...")
+        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user asks|I need to (?:select|choose|find|determine)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
         if (proseMatch) {
             const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
             if (transition) {
