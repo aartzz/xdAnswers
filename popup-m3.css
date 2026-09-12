@@ -83,10 +83,9 @@ body.theme-material3 .tab-buttons {
     display: flex !important;
     background: var(--m3-surface-high) !important;
     border: 1px solid var(--m3-outline-variant) !important;
-    border-top: none !important;
     border-radius: var(--m3-r-xl) !important;
-    padding: 8px !important;
-    gap: 4px !important;
+    padding: 5px !important;
+    gap: 3px !important;
     margin: 0 !important;
     z-index: 100 !important;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3) !important;
@@ -99,7 +98,7 @@ body.theme-material3 .tab-button {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 10px 4px !important;
+    padding: 7px 4px !important;
     border-radius: var(--m3-r-l) !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
@@ -110,6 +109,8 @@ body.theme-material3 .tab-button {
     border-bottom: none !important;
     transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
     min-width: 0 !important;
+    height: auto !important;
+    box-sizing: border-box !important;
 }
 
 /* Material Symbol icons via ::before */
@@ -231,6 +232,8 @@ body.theme-material3 select {
     padding: 9px 36px 9px 12px !important;
     font-family: "Roboto", system-ui, sans-serif !important;
     font-size: 13px !important;
+    height: auto !important;
+    min-height: 38px !important;
     outline: none !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -579,7 +582,7 @@ body.theme-material3 .add-consensus-run-btn {
     border: 1px dashed var(--m3-outline) !important;
     border-radius: var(--m3-r-m) !important;
     color: var(--m3-primary) !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     font-size: 12px !important;
     padding: 9px !important;
     opacity: 1 !important;
@@ -779,7 +782,7 @@ body.theme-material3 .pf-save-btn {
     border-color: var(--m3-primary) !important;
     color: var(--m3-on-primary) !important;
     border-radius: var(--m3-r-full) !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
 }
 
 body.theme-material3 .pf-cancel-btn {
@@ -794,6 +797,7 @@ body.theme-material3 .theme-editor-overlay {
     background: rgba(0, 0, 0, 0.65) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
+    animation: m3OverlayIn 0.2s var(--m3-ease) !important;
 }
 
 body.theme-material3 .theme-editor-card {
@@ -802,13 +806,21 @@ body.theme-material3 .theme-editor-card {
     border-radius: var(--m3-r-xl) !important;
     padding: 20px !important;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    overflow-y: auto !important;
+    animation: m3DialogIn 0.25s var(--m3-ease) !important;
+}
+
+body.theme-material3 .theme-editor-actions {
+    margin-top: 12px !important;
+    padding-top: 12px !important;
+    border-top: 1px solid var(--m3-outline-variant) !important;
 }
 
 body.theme-material3 .theme-editor-btn.primary {
     background: var(--m3-primary) !important;
     color: var(--m3-on-primary) !important;
     border-radius: var(--m3-r-full) !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
 }
 
 body.theme-material3 .theme-editor-btn.secondary {
@@ -832,7 +844,7 @@ body.theme-material3 .donate-button.telegram {
     color: var(--m3-on-primary-container) !important;
     border-radius: var(--m3-r-full) !important;
     padding: 12px 20px !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
     transition: all 0.2s var(--m3-ease) !important;
 }
