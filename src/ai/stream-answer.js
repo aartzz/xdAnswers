@@ -124,9 +124,12 @@
                  startStreamTimer();
             }
 
-            // Track inline thinking (<think>...</think> or "Here's a thinking process...")
+            // Track inline thinking (<think>...</think> or prose reasoning like "The user is asking...")
             let inInlineThinking = false;
             let rawContentBuffer = '';
+
+            const PROSE_THINKING_ANYWHERE_REGEX = /(?:^|\n)\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze)/i;
+            const PROSE_TRANSITION_REGEX = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
 
             function checkAndExtractInlineThinking(newText) {
                 rawContentBuffer += newText;
@@ -144,13 +147,29 @@
                 }
 
                 // 2. Prose header based (e.g. Qwen / Deepseek / Llama without tags):
-                // Matches thinking prose that models emit at the start or on a new line
                 if (!inInlineThinking) {
-                    const isThinkingHeader = /^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)/i.test(rawContentBuffer) ||
-                        /\n\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)/i.test(rawContentBuffer);
-                    if (isThinkingHeader) {
+                    if (fullContent.length === 0) {
+                        // At stream beginning, hold buffer if it could be start of prose thinking header
+                        if (rawContentBuffer.length < 30) {
+                            const prefix = rawContentBuffer.trimStart();
+                            const possiblePrefixes = ["here", "thinking", "the", "i need", "let", "first"];
+                            const isCandidate = possiblePrefixes.some(p => p.startsWith(prefix.toLowerCase()) || prefix.toLowerCase().startsWith(p));
+                            if (isCandidate) {
+                                return; // hold buffer for more chunks
+                            }
+                        }
+                    }
+
+                    const anywhereMatch = rawContentBuffer.match(PROSE_THINKING_ANYWHERE_REGEX);
+                    if (anywhereMatch) {
+                        const matchIndex = anywhereMatch.index;
+                        const before = rawContentBuffer.slice(0, matchIndex);
+                        rawContentBuffer = rawContentBuffer.slice(matchIndex).replace(/^\n\s*/, '');
                         inInlineThinking = true;
                         ensureThinkingUI();
+                        if (before) {
+                            fullContent += before;
+                        }
                     }
                 }
 
@@ -160,7 +179,7 @@
                     const closeIndex = rawContentBuffer.indexOf('</think>');
                     if (closeIndex !== -1) {
                         const thinkPart = rawContentBuffer.slice(0, closeIndex).replace(/^<think>/i, '');
-                        fullThinking += thinkPart;
+                        fullThinking = thinkPart;
                         rawContentBuffer = rawContentBuffer.slice(closeIndex + 8);
                         inInlineThinking = false;
                         thinkingDone = true;
@@ -171,7 +190,7 @@
                     } else if (!rawContentBuffer.startsWith('<think>')) {
                         // Check prose transition like "---", "**Answer:**", "\nAnswer:", "FINAL_ANSWER:", JSON start "{" or labeled answer "Answer:" / "Відповідь:" / "Option A"
                         // Note: do NOT match option letters during thinking like "Options:\nA: ... B: ..."
-                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i);
+                        const transitionMatch = rawContentBuffer.search(PROSE_TRANSITION_REGEX);
                         if (transitionMatch !== -1) {
                             const thinkPart = rawContentBuffer.slice(0, transitionMatch);
                             fullThinking = thinkPart;
@@ -193,10 +212,6 @@
 
                     if (fullThinking) {
                         ensureThinkingUI();
-                        const tc = contentDiv?.querySelector('.xd-thinking-content');
-                        if (tc) tc.innerHTML = window.xdAnswers.renderMarkdown(fullThinking);
-                        const chars = contentDiv?.querySelector('.xd-thinking-chars');
-                        if (chars) chars.textContent = '(' + fullThinking.length + ' chars)';
                     }
                     // During prose thinking, don't display rawContentBuffer in the answer section
                     updateStreamUI();

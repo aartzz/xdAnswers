@@ -248,20 +248,20 @@
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
+        const proseHeaderRegex = /(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze)/i;
+        const proseTransitionRegex = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
+
         // 1. Strip leading prose thinking when transition to answer exists
-        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?answer\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:))/i);
-        if (proseMatch) {
-            const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?answer\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:))/i);
+        if (proseHeaderRegex.test(cleaned)) {
+            const transition = cleaned.match(proseTransitionRegex);
             if (transition) {
                 cleaned = cleaned.substring(transition.index + 1).trim();
-            }
-        }
-
-        // 2. If entire text is prose thinking without standard transition, look for trailing option conclusion or answer
-        if (/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think)/i.test(cleaned)) {
-            const trailingAnswer = cleaned.match(/(?:(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ)\*{0,2}\s*:\s*)|(?:(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\s*:?\s*)|(?:The\s+correct\s+option\s+is\s*:?\s*))([A-DА-Яа-яІіЇїЄє0-9][^\n\.]*)/i);
-            if (trailingAnswer) {
-                return 'Answer: ' + trailingAnswer[1].trim();
+            } else {
+                // Look for trailing option conclusion or answer in prose
+                const trailingAnswer = cleaned.match(/(?:(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ)\*{0,2}\s*:\s*)|(?:(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\s*:?\s*)|(?:The\s+correct\s+option\s+is\s*:?\s*))([A-DА-Яа-яІіЇїЄє0-9][^\n\.]*)/i);
+                if (trailingAnswer) {
+                    return 'Answer: ' + trailingAnswer[1].trim();
+                }
             }
         }
 
