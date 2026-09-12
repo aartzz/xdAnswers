@@ -142,13 +142,17 @@ h3 {
     padding: 2px 6px;
 }
 
-.settings-categories-view {
+.settings-categories-view:not(.hidden) {
     display: flex;
     flex-direction: column;
     gap: 0;
     background: rgba(255, 255, 255, 0.04);
     border-radius: 16px;
     overflow: hidden;
+}
+
+.settings-categories-view.hidden {
+    display: none !important;
 }
 
 .aosp-category-card {
@@ -207,6 +211,15 @@ h3 {
     text-overflow: ellipsis;
 }
 
+.settings-subpage-view:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-subpage-view.hidden {
+    display: none !important;
+}
+
 .aosp-subpage-header {
     display: flex;
     align-items: center;
@@ -259,9 +272,13 @@ h3 {
     min-width: 0;
 }
 
-.settings-section-panel {
+.settings-section-panel:not(.hidden) {
     display: flex;
     flex-direction: column;
+}
+
+.settings-section-panel.hidden {
+    display: none !important;
 }
 
 .tab-content.active {

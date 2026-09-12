@@ -289,7 +289,7 @@ body.theme-material3 .hidden {
 }
 
 /* Category cards list (AOSP Style - Single Rounded Group) */
-body.theme-material3 .settings-categories-view {
+body.theme-material3 .settings-categories-view:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     gap: 0 !important;
@@ -300,6 +300,10 @@ body.theme-material3 .settings-categories-view {
     outline: none !important;
     overflow: hidden !important;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.theme-material3 .settings-categories-view.hidden {
+    display: none !important;
 }
 
 body.theme-material3.light .settings-categories-view {
@@ -395,11 +399,15 @@ body.theme-material3 .aosp-category-desc {
 }
 
 /* Subpage Header with MD3 Back Button (AOSP Top App Bar) */
-body.theme-material3 .settings-subpage-view {
+body.theme-material3 .settings-subpage-view:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     animation: m3SubpageIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+}
+
+body.theme-material3 .settings-subpage-view.hidden {
+    display: none !important;
 }
 
 @keyframes m3SubpageIn {
@@ -499,10 +507,14 @@ body.theme-material3 .aosp-subpage-title {
     letter-spacing: -0.2px !important;
 }
 
-body.theme-material3 .settings-section-panel {
+body.theme-material3 .settings-section-panel:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
+}
+
+body.theme-material3 .settings-section-panel.hidden {
+    display: none !important;
 }
 
 /* ── Android 14/15 Grouped Settings Cards & Section Titles ── */
