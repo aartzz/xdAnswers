@@ -514,20 +514,23 @@ function applyThemeToPopup() {
         const primaryColor = c.borderColor || (isDark ? '#a8c7fa' : '#3b82f6');
         root.style.setProperty('--primary', primaryColor);
         root.style.setProperty('--m3-primary', primaryColor);
+        root.style.setProperty('--on-primary', isColorDark(primaryColor) ? '#ffffff' : '#000000');
+        root.style.setProperty('--m3-on-primary', isColorDark(primaryColor) ? '#ffffff' : '#000000');
 
         if (isDark) {
-            root.style.setProperty('--primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
-            root.style.setProperty('--m3-primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
-            root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
-            root.style.setProperty('--m3-on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
+            const isDarkPrimary = isColorDark(primaryColor);
+            root.style.setProperty('--primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
+            root.style.setProperty('--m3-primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
+            root.style.setProperty('--on-primary-container', '#ffffff');
+            root.style.setProperty('--m3-on-primary-container', '#ffffff');
             root.style.setProperty('--surface', c.contentColor || '#121316');
             root.style.setProperty('--surface-container', c.headerColor || '#1e1f23');
             root.style.setProperty('--on-surface', c.textColor || '#e2e2e6');
         } else {
-            root.style.setProperty('--primary-container', 'rgba(' + hexToRgb(primaryColor) + ', 0.16)');
-            root.style.setProperty('--m3-primary-container', 'rgba(' + hexToRgb(primaryColor) + ', 0.16)');
-            root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? primaryColor : '#042f66');
-            root.style.setProperty('--m3-on-primary-container', isColorDark(primaryColor) ? primaryColor : '#042f66');
+            root.style.setProperty('--primary-container', primaryColor);
+            root.style.setProperty('--m3-primary-container', primaryColor);
+            root.style.setProperty('--on-primary-container', '#ffffff');
+            root.style.setProperty('--m3-on-primary-container', '#ffffff');
             root.style.setProperty('--surface', c.contentColor || '#fdf8fd');
             root.style.setProperty('--surface-container', c.headerColor || '#f3edf7');
             root.style.setProperty('--on-surface', c.textColor || '#1b1b1f');

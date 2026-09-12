@@ -179,9 +179,13 @@ body.theme-material3 .tab-button:hover {
 }
 
 body.theme-material3 .tab-button.active {
-    background: var(--m3-primary-container) !important;
-    color: var(--m3-on-primary-container) !important;
+    background: var(--m3-primary) !important;
+    color: var(--m3-on-primary) !important;
     border-radius: 50% !important;
+}
+
+body.theme-material3 .tab-button.active::before {
+    color: var(--m3-on-primary) !important;
 }
 
 body.theme-material3 .tab-button.active::before {
@@ -901,12 +905,17 @@ body.theme-material3 .theme-palette-swatches {
 body.theme-material3 .theme-swatch {
     width: 36px !important;
     height: 36px !important;
-    border-radius: var(--m3-r-full) !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    border-radius: 50% !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
 }
 
 body.theme-material3 .theme-swatch.active {
     border: 3px solid var(--m3-surface) !important;
+    border-radius: 50% !important;
     box-shadow: 0 0 0 2px var(--m3-primary) !important;
     transform: scale(1.08) !important;
 }
@@ -984,11 +993,13 @@ body.theme-material3 .quick-shade-btn:hover {
 body.theme-material3 .theme-swatch.custom {
     background: var(--m3-surface-mid) !important;
     border: 2px dashed var(--m3-outline) !important;
+    border-radius: 50% !important;
 }
 
 body.theme-material3 .theme-swatch.custom.active {
     border-style: solid !important;
     border: 3px solid var(--m3-surface) !important;
+    border-radius: 50% !important;
     box-shadow: 0 0 0 2px var(--m3-primary) !important;
 }
 
