@@ -216,34 +216,80 @@ body.theme-material3 .tab-content.active {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Forms ── */
+/* ── Forms: M3 Expressive Card Blocks ──
+   Every setting row/group is styled as an elevated surface card
+   matching Google Android 14/15 Settings & Beer CSS Cards.
+─────────────────────────────────────────────────────────────────────── */
 body.theme-material3 .form-group {
-    margin-bottom: 12px !important;
+    background: var(--m3-surface-low) !important;
+    border-radius: var(--m3-r-l) !important;
+    padding: 14px 16px !important;
+    margin-bottom: 10px !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    box-shadow: none !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    transition: background-color 0.2s var(--m3-ease), border-color 0.2s !important;
+}
+
+body.theme-material3.dark .form-group {
+    background: #1a1b20 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.theme-material3.light .form-group {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.theme-material3 .form-group:hover {
+    border-color: var(--m3-outline) !important;
+}
+
+/* Specific styling for toggle-group items (switch cards) */
+body.theme-material3 .form-group.toggle-group {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 60px !important;
+    cursor: pointer !important;
+    padding-right: 78px !important; /* Reserve space for the right-hand M3 switch */
+    user-select: none !important;
+}
+
+body.theme-material3 .form-group.toggle-group:active {
+    transform: scale(0.995);
 }
 
 body.theme-material3 .form-group > label:first-child,
 body.theme-material3 .form-group > label:not(.toggle-group label):first-child {
     font-size: 11px !important;
-    font-weight: 600 !important;
-    color: var(--m3-on-surface-variant) !important;
-    letter-spacing: 0.4px !important;
+    font-weight: 700 !important;
+    color: var(--m3-primary) !important;
+    letter-spacing: 0.6px !important;
     text-transform: uppercase !important;
-    margin-bottom: 5px !important;
+    margin-bottom: 8px !important;
     display: block !important;
 }
 
 body.theme-material3 .field-hint {
-    font-size: 11px !important;
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
     color: var(--m3-on-surface-variant) !important;
-    opacity: 0.8 !important;
-    margin-top: 4px !important;
+    opacity: 0.85 !important;
+    margin-top: 5px !important;
+    margin-bottom: 0 !important;
 }
 
+/* Form groups without switches shouldn't have right padding */
+body.theme-material3 .form-group:not(.toggle-group) .field-hint {
+    padding-right: 0 !important;
+}
+
+/* Hide standard divider line when inside card-based layout */
 body.theme-material3 .separator {
-    border: none !important;
-    border-top: 1px solid var(--m3-outline-variant) !important;
-    margin: 10px 0 !important;
-    opacity: 0.5 !important;
+    display: none !important;
 }
 
 /* ── Inputs ── */
@@ -402,64 +448,108 @@ body.theme-material3 .m3-select-item.selected {
     font-weight: 500 !important;
 }
 
-/* ── Switches: override span::before (track) and span::after (knob)
-   popup.css: input + span { padding-left: 42px }
-              ::before = track (absolute left:0, w:32px h:18px)
-              ::after  = knob  (absolute left:3px, w:12px h:12px)
-   Track now 40px wide, knob center stays in 42px pad zone.
-─────────────────────────────────────────────────────── */
+/* ── Switches: M3 Expressive Right-aligned pill switch with icons (✓ / ×) ──
+   Card is relative, switch is absolute right: 14px, centered vertically.
+───────────────────────────────────────────────────────────────────────── */
 body.theme-material3 .toggle-group label {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
     color: var(--m3-on-surface) !important;
-    gap: 14px !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+body.theme-material3 .toggle-group label input[type="checkbox"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
 }
 
 body.theme-material3 .toggle-group label input[type="checkbox"] + span {
-    padding-left: 50px !important;
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    line-height: 1.35 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--m3-on-surface) !important;
 }
 
-/* Track */
+/* Switch Track (positioned absolute at the right side of the card) */
 body.theme-material3 .toggle-group label input[type="checkbox"] + span::before {
-    width: 40px !important;
-    height: 22px !important;
+    content: "" !important;
+    position: absolute !important;
+    right: 14px !important;
+    left: auto !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
+    width: 52px !important;
+    height: 30px !important;
     background: var(--m3-surface-highest) !important;
     border: 2px solid var(--m3-outline) !important;
-    border-radius: 11px !important;
-    transition: background 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease) !important;
+    border-radius: 15px !important;
+    box-sizing: border-box !important;
+    transition: background-color 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease) !important;
+    pointer-events: none !important;
 }
 
-/* Knob */
+/* Switch Knob (resting inside right track, with M3 icon glyph) */
 body.theme-material3 .toggle-group label input[type="checkbox"] + span::after {
-    width: 14px !important;
-    height: 14px !important;
+    content: "✕" !important;
+    position: absolute !important;
+    right: 40px !important; /* 14px right + 52px width - 4px pad - 22px knob = 40px */
+    left: auto !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
-    left: 4px !important;
+    width: 22px !important;
+    height: 22px !important;
     background: var(--m3-outline) !important;
-    box-shadow: none !important;
-    transition: left 0.25s var(--m3-ease), background 0.2s var(--m3-ease), width 0.15s, height 0.15s !important;
+    color: var(--m3-surface-high) !important;
     border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+    transition: right 0.25s var(--m3-ease), background-color 0.2s var(--m3-ease), color 0.2s, transform 0.2s var(--m3-ease) !important;
+    pointer-events: none !important;
 }
 
-/* Checked: track */
+/* Checked State: Track */
 body.theme-material3 .toggle-group label input[type="checkbox"]:checked + span::before {
     background: var(--m3-primary) !important;
     border-color: var(--m3-primary) !important;
 }
 
-/* Checked: knob */
+/* Checked State: Knob (slides right, shows ✓ checkmark) */
 body.theme-material3 .toggle-group label input[type="checkbox"]:checked + span::after {
-    left: 22px !important;
-    width: 16px !important;
-    height: 16px !important;
+    content: "✓" !important;
+    right: 18px !important; /* 14px right + 4px pad = 18px */
+    width: 22px !important;
+    height: 22px !important;
     background: var(--m3-on-primary) !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+    color: var(--m3-primary) !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28) !important;
 }
 
 /* Hover on unchecked */
-body.theme-material3 .toggle-group label:hover input[type="checkbox"]:not(:checked) + span::before {
+body.theme-material3 .form-group.toggle-group:hover input[type="checkbox"]:not(:checked) + span::before {
     border-color: var(--m3-on-surface) !important;
+    background: var(--m3-surface-high) !important;
+}
+
+body.theme-material3 .form-group.toggle-group:hover input[type="checkbox"]:not(:checked) + span::after {
+    background: var(--m3-on-surface-variant) !important;
 }
 
 /* ── Provider Select Trigger ── */
@@ -580,23 +670,24 @@ body.theme-material3 .fetch-models-btn:hover {
 
 /* ── Providers Tab: section headers ── */
 body.theme-material3 .providers-section-header {
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     letter-spacing: 0.8px !important;
     text-transform: uppercase !important;
-    color: var(--m3-on-surface-variant) !important;
-    padding: 6px 0 4px !important;
+    color: var(--m3-primary) !important;
+    padding: 10px 4px 6px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
 }
 
 body.theme-material3 .providers-section-hint {
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 400 !important;
     text-transform: none !important;
     letter-spacing: 0 !important;
-    opacity: 0.6 !important;
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.75 !important;
 }
 
 /* ── Provider Cards ── */
@@ -604,14 +695,41 @@ body.theme-material3 .provider-card {
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-l) !important;
-    padding: 10px 10px 10px 12px !important;
-    margin-bottom: 8px !important;
-    transition: border-color 0.2s !important;
+    padding: 12px 14px !important;
+    margin-bottom: 10px !important;
+    transition: background-color 0.2s var(--m3-ease), border-color 0.2s, box-shadow 0.2s !important;
 }
 
-body.theme-material3 .provider-card.active {
+body.theme-material3.dark .provider-card {
+    background: #1a1b20 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.theme-material3.light .provider-card {
+    background: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.theme-material3 .provider-card:hover {
+    border-color: var(--m3-outline) !important;
+}
+
+body.theme-material3 .provider-card.active,
+body.theme-material3 .provider-card.active-provider {
     border-color: var(--m3-primary) !important;
     background: var(--m3-surface-mid) !important;
+    box-shadow: 0 0 0 1px var(--m3-primary) !important;
+}
+
+body.theme-material3.dark .provider-card.active,
+body.theme-material3.dark .provider-card.active-provider {
+    background: #20222a !important;
+}
+
+body.theme-material3.light .provider-card.active,
+body.theme-material3.light .provider-card.active-provider {
+    background: #f0f3fa !important;
 }
 
 body.theme-material3 .provider-card-header {
