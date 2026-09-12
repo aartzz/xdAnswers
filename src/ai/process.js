@@ -42,15 +42,15 @@
             window.xdAnswers.answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
             const statusDiv = document.createElement('div');
             statusDiv.className = 'xd-status';
-            statusDiv.textContent = '⏳ Connecting...';
+            statusDiv.innerHTML = '<span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_top</span> Connecting...';
             window.xdAnswers.answerContentDiv.appendChild(statusDiv);
             const statusInterval = setInterval(() => {
                 // Always update footer elapsed
                 const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
-                if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
+                if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + getElapsed();
                 // Update status text if still showing
                 const s = window.xdAnswers.answerContentDiv?.querySelector('.xd-status');
-                if (s) s.textContent = '⏳ Waiting for response...';
+                if (s) s.innerHTML = '<span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_empty</span> Waiting for response...';
             }, 1000);
             window.xdAnswers._statusInterval = statusInterval;
         }
@@ -73,7 +73,7 @@
 
                 const updateFooterElapsed = () => {
                     const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
-                    if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
+                    if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + getElapsed();
                 };
 
                 const updateFooterModel = (label) => {
@@ -269,36 +269,38 @@
             if (isSilent) {
                 I.applySilentMode(parsed.answer || parsed.explanation || 'Parse error', parsed);
             } else if (window.xdAnswers.answerContentDiv) {
-                let html = '<div class="xd-elapsed">⏱ ' + elapsed + '</div>';
+                let html = '<div class="xd-elapsed"><span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed + '</div>';
                 // Update footer elapsed too
                 const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
-                if (footerElapsed) footerElapsed.textContent = '⏱ ' + elapsed;
+                if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed;
                 if (result.thinking) {
                     const isExpanded = !!window.xdAnswers._thinkingExpanded;
                     const displayStyle = isExpanded ? 'block' : 'none';
-                    const toggleIcon = isExpanded ? '▲' : '▼';
+                    const toggleIcon = isExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                     html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                        '<div class="xd-thinking-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">psychology</span> Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
                         '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
                 }
                 if (result.searchCalls && result.searchCalls.length > 0) {
                     const scDone = result.searchCalls.filter(sc => sc.status === 'done').length;
                     html += '<div class="xd-search-block">' +
-                        '<div class="xd-search-header" style="cursor:pointer;">🔍 Web Search <span class="xd-search-count">(' + scDone + ')</span> <span class="xd-search-toggle">▼</span></div>' +
+                        '<div class="xd-search-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Web Search <span class="xd-search-count">(' + scDone + ')</span> <span class="xd-search-toggle"><span class="xd-icon" style="font-size:14px !important;">expand_more</span></span></div>' +
                         '<div class="xd-search-content" style="display:none !important;">';
                     for (const sc of result.searchCalls) {
-                        html += '<div class="xd-search-entry">✓ <span class="xd-searching-query">' + I.escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + (sc.resultCount || 0) + ' results)</span></div>';
+                        html += '<div class="xd-search-entry"><span class="xd-icon" style="font-size:14px !important;color:#4ade80;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-searching-query">' + I.escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + (sc.resultCount || 0) + ' results)</span></div>';
                     }
                     html += '</div></div>';
                 }
                 if (result.calcCalls && result.calcCalls.length > 0) {
                     const ccDone = result.calcCalls.filter(c => c.status === 'done').length;
                     html += '<div class="xd-calc-block">' +
-                        '<div class="xd-calc-header" style="cursor:pointer;">🧮 Calculator <span class="xd-calc-count">(' + ccDone + ')</span> <span class="xd-calc-toggle">▼</span></div>' +
+                        '<div class="xd-calc-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculator <span class="xd-calc-count">(' + ccDone + ')</span> <span class="xd-calc-toggle"><span class="xd-icon" style="font-size:14px !important;">expand_more</span></span></div>' +
                         '<div class="xd-calc-content" style="display:none !important;">';
                     for (const cc of result.calcCalls) {
                         const resText = cc.result !== undefined ? ' = ' + I.escapeHTML(String(cc.result)) : '';
-                        html += '<div class="xd-calc-entry">✓ <span class="xd-calc-expr">' + I.escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
+                        html += '<div class="xd-calc-entry"><span class="xd-icon" style="font-size:14px !important;color:#38bdf8;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-calc-expr">' + I.escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
                     }
                     html += '</div></div>';
                 }
@@ -314,7 +316,9 @@
                     const toggle = this.querySelector('.xd-search-toggle');
                     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
                     content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                    if (toggle) toggle.innerHTML = isHidden 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
                 const ch = window.xdAnswers.answerContentDiv.querySelector('.xd-calc-header');
                 if (ch) ch.addEventListener('click', function() {
@@ -323,7 +327,9 @@
                     const toggle = this.querySelector('.xd-calc-toggle');
                     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
                     content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                    if (toggle) toggle.innerHTML = isHidden 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
             }
 

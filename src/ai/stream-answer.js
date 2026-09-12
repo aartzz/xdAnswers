@@ -99,7 +99,7 @@
                 if (streamTimerInterval) return;
                 streamTimerInterval = setInterval(() => {
                     const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
-                    if (footerElapsed) footerElapsed.textContent = '⏱ ' + getElapsed();
+                    if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + getElapsed();
                     // Only update thinking timer while thinking is still in progress
                     if (!thinkingDone) {
                         const thinkingTimer = contentDiv?.querySelector('.xd-thinking-timer');
@@ -234,10 +234,12 @@
                 clearStatus();
                 thinkingStarted = true;
                 const displayStyle = isThinkingExpanded ? 'block' : 'none';
-                const toggleIcon = isThinkingExpanded ? '▲' : '▼';
+                const toggleIcon = isThinkingExpanded 
+                    ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                    : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 contentDiv.innerHTML =
                     '<div class="xd-thinking">' +
-                    '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking... <span class="xd-thinking-timer">(0s)</span> <span class="xd-thinking-chars"></span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                    '<div class="xd-thinking-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">psychology</span> Thinking... <span class="xd-thinking-timer">(0s)</span> <span class="xd-thinking-chars"></span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
                     '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;"></div>' +
                     '</div>';
                 const header = contentDiv.querySelector('.xd-thinking-header');
@@ -257,9 +259,11 @@
                 // Thinking block always first (at the top)
                 if (thinkingStarted) {
                     const displayStyle = isThinkingExpanded ? 'block' : 'none';
-                    const toggleIcon = isThinkingExpanded ? '▲' : '▼';
+                    const toggleIcon = isThinkingExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                     html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                        '<div class="xd-thinking-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">psychology</span> Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
                         '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
                 }
 
@@ -268,19 +272,21 @@
                     const doneCount = searchCalls.filter(sc => sc.status === 'done').length;
                     const searchingCount = searchCalls.length - doneCount;
                     const headerLabel = searchingCount > 0
-                        ? '🔍 Web Search... <span class="xd-search-count">(' + searchCalls.length + ')</span>'
-                        : '🔍 Web Search <span class="xd-search-count">(' + doneCount + ')</span>';
+                        ? '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Web Search... <span class="xd-search-count">(' + searchCalls.length + ')</span>'
+                        : '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Web Search <span class="xd-search-count">(' + doneCount + ')</span>';
                     const sDisplay = isSearchExpanded ? 'block' : 'none';
-                    const sToggle = isSearchExpanded ? '▲' : '▼';
+                    const sToggle = isSearchExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                     html += '<div class="xd-search-block">' +
                         '<div class="xd-search-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-search-toggle">' + sToggle + '</span></div>' +
                         '<div class="xd-search-content" style="display:' + sDisplay + ' !important;">';
                     for (let i = 0; i < searchCalls.length; i++) {
                         const sc = searchCalls[i];
                         if (sc.status === 'searching') {
-                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '">⏳ <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span></div>';
+                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_top</span> <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span></div>';
                         } else {
-                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '">✓ <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + sc.resultCount + ' results)</span></div>';
+                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '"><span class="xd-icon" style="font-size:14px !important;color:#4ade80;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + sc.resultCount + ' results)</span></div>';
                         }
                     }
                     html += '</div></div>';
@@ -291,20 +297,22 @@
                     const doneCount = calcCalls.filter(c => c.status === 'done').length;
                     const calculatingCount = calcCalls.length - doneCount;
                     const headerLabel = calculatingCount > 0
-                        ? '🧮 Calculator... <span class="xd-calc-count">(' + calcCalls.length + ')</span>'
-                        : '🧮 Calculator <span class="xd-calc-count">(' + doneCount + ')</span>';
+                        ? '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculator... <span class="xd-calc-count">(' + calcCalls.length + ')</span>'
+                        : '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculator <span class="xd-calc-count">(' + doneCount + ')</span>';
                     const cDisplay = isCalcExpanded ? 'block' : 'none';
-                    const cToggle = isCalcExpanded ? '▲' : '▼';
+                    const cToggle = isCalcExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                     html += '<div class="xd-calc-block">' +
                         '<div class="xd-calc-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-calc-toggle">' + cToggle + '</span></div>' +
                         '<div class="xd-calc-content" style="display:' + cDisplay + ' !important;">';
                     for (let i = 0; i < calcCalls.length; i++) {
                         const cc = calcCalls[i];
                         if (cc.status === 'calculating') {
-                            html += '<div class="xd-calc-entry">⏳ <span class="xd-calc-expr">' + escapeHTML(cc.expression || '...') + '</span></div>';
+                            html += '<div class="xd-calc-entry"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_top</span> <span class="xd-calc-expr">' + escapeHTML(cc.expression || '...') + '</span></div>';
                         } else {
                             const resText = cc.result !== undefined ? ' = ' + escapeHTML(String(cc.result)) : '';
-                            html += '<div class="xd-calc-entry">✓ <span class="xd-calc-expr">' + escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
+                            html += '<div class="xd-calc-entry"><span class="xd-icon" style="font-size:14px !important;color:#38bdf8;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-calc-expr">' + escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
                         }
                     }
                     html += '</div></div>';
@@ -322,11 +330,11 @@
                 } else if (fullContent.trim()) {
                     html += '<div class="xd-answer xd-answer-partial">' + window.xdAnswers.renderMarkdown(fullContent) + '</div>';
                 } else if (searchCalls.some(sc => sc.status === 'searching')) {
-                    html += '<div class="xd-waiting">⏳ Executing web search...</div>';
+                    html += '<div class="xd-waiting"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Executing web search...</div>';
                 } else if (calcCalls.some(c => c.status === 'calculating')) {
-                    html += '<div class="xd-waiting">⏳ Calculating math expression...</div>';
+                    html += '<div class="xd-waiting"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculating math expression...</div>';
                 } else {
-                    html += '<div class="xd-waiting">⏳ Waiting for answer...</div>';
+                    html += '<div class="xd-waiting"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_empty</span> Waiting for answer...</div>';
                 }
 
                 contentDiv.innerHTML = html;
@@ -342,7 +350,9 @@
                     if (!content) return;
                     const toggle = this.querySelector('.xd-search-toggle');
                     content.style.setProperty('display', isSearchExpanded ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isSearchExpanded ? '▲' : '▼';
+                    if (toggle) toggle.innerHTML = isSearchExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
                 const ch = contentDiv.querySelector('.xd-calc-header');
                 if (ch) ch.addEventListener('click', function() {
@@ -351,7 +361,9 @@
                     if (!content) return;
                     const toggle = this.querySelector('.xd-calc-toggle');
                     content.style.setProperty('display', isCalcExpanded ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isCalcExpanded ? '▲' : '▼';
+                    if (toggle) toggle.innerHTML = isCalcExpanded 
+                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
+                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
             }
 

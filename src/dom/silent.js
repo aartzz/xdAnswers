@@ -12,7 +12,7 @@
         const isHidden = c.style.display === 'none' || getComputedStyle(c).display === 'none';
         const newDisplay = isHidden ? 'block' : 'none';
         c.style.setProperty('display', newDisplay, 'important');
-        if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+        if (toggle) toggle.innerHTML = isHidden ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
         if (window.xdAnswers) {
             window.xdAnswers._thinkingExpanded = isHidden;
         }

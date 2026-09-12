@@ -15,19 +15,12 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["src/core/disabler-page.js"],
+      "resources": [
+        "src/core/disabler-page.js",
+        "lib/beercss/material-symbols-outlined.woff2"
+      ],
       "matches": [
-        "*://vseosvita.ua/*",
-        "*://kahoot.it/*",
-        "*://classtime.com/*",
-        "*://justclass.com.ua/*",
-        "*://justclass.me/*",
-        "*://miyklas.com.ua/*",
-        "*://lcloud.in.ua/*",
-        "*://quizlet.com/*",
-        "*://*.testportal.pl/*",
-        "*://*.testportal.net/*",
-        "*://*.szkolawchmurze.org/*"
+        "<all_urls>"
       ]
     }
   ],

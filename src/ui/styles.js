@@ -24,13 +24,19 @@
             ? '0 12px 40px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.08)' 
             : 'inset 0 0 0 1px var(--xd-border),var(--xd-glow),0 4px 24px rgba(0,0,0,0.4)';
 
+        const fontUrl = typeof chrome !== 'undefined' && chrome.runtime?.getURL 
+            ? chrome.runtime.getURL('lib/beercss/material-symbols-outlined.woff2') 
+            : '';
+
         window.xdAnswers.addStyle(
+            (fontUrl ? '@font-face { font-family: "Material Symbols Outlined"; src: url("' + fontUrl + '") format("woff2"); font-weight: normal; font-style: normal; font-display: block; }\n' : '') +
             ':root {' +
             '--xd-bg:' + custom.contentColor + ';--xd-border:' + custom.borderColor + ';' +
             '--xd-text:' + custom.textColor + ';--xd-header:' + custom.headerColor + ';' +
             '--xd-glow:' + (custom.glowEffect ? '0 0 8px ' + custom.borderColor : 'none') + ';' +
             '--xd-font:Roboto,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
             '}' +
+            '.xd-icon{font-family:"Material Symbols Outlined" !important;font-weight:normal !important;font-style:normal !important;font-size:16px !important;line-height:1 !important;letter-spacing:normal !important;text-transform:none !important;display:inline-block !important;white-space:nowrap !important;word-wrap:normal !important;direction:ltr !important;-webkit-font-smoothing:antialiased !important;font-feature-settings:"liga" !important;vertical-align:middle !important;}' +
             '.ollama-helper-container{margin:0;padding:0;border:none;font-weight:normal;text-align:left;transform:none;' +
             'position:fixed !important;z-index:2147483647 !important;display:flex !important;flex-direction:column !important;' +
             'background-color:' + containerBg + ' !important;border:none !important;' +

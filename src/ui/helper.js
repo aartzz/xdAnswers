@@ -15,7 +15,7 @@
             '<div class="ollama-helper-header" id="ollama-helper-drag-header">' +
             '<span class="ollama-header-title">xdAnswers <small class="xd-version"></small></span>' +
             '<div class="ollama-header-buttons">' +
-            '<button id="silent-mode-btn" title="Silent mode: Off">✕</button>' +
+            '<button id="silent-mode-btn" title="Silent mode: Off"><span class="xd-icon">close</span></button>' +
             '<select id="silent-mode-inline-select" title="Silent mode">' +
             '<option value="">Off</option>' +
             '<option value="indicators">Indicators</option>' +
@@ -23,13 +23,13 @@
             '<option value="stealth">Stealth</option>' +
             '<option value="oneclick">One-click</option>' +
             '</select>' +
-            '<button id="refresh-answer-btn" title="Refresh">⟳</button>' +
+            '<button id="refresh-answer-btn" title="Refresh"><span class="xd-icon">refresh</span></button>' +
             '</div></div>' +
             '<div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>' +
             '<div class="ollama-helper-footer" id="ollama-helper-footer">' +
             '<span class="xd-footer-elapsed" id="xd-footer-elapsed"></span>' +
             '<span class="xd-footer-model" id="xd-footer-model"></span>' +
-            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer">🗎</button>' +
+            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer"><span class="xd-icon">content_copy</span></button>' +
             '</div>';
 
         window.xdAnswers.helperContainer = container;
@@ -42,7 +42,7 @@
         window.xdAnswers.updateHelperBaseStyles();
         // Set current model name in footer
         const footerModelEl = container.querySelector('#xd-footer-model');
-        if (footerModelEl) footerModelEl.textContent = window.xdAnswers.settings.model || 'select model ↗';
+        if (footerModelEl) footerModelEl.innerHTML = (window.xdAnswers.settings.model || 'select model') + ' <span class="xd-icon" style="font-size:12px !important;vertical-align:baseline;">north_east</span>';
         // Set version string in header
         const versionEl = container.querySelector('.xd-version');
         if (versionEl) versionEl.textContent = window.xdAnswers._internal.getVersionString();
@@ -154,9 +154,9 @@
             if (!div) return;
             const text = div.innerText;
             if (text && text !== 'Waiting for question...' && !div.querySelector('.xd-loader')) {
-                try { await navigator.clipboard.writeText(text); copyBtn.textContent = '✓'; }
-                catch { copyBtn.textContent = '✗'; }
-                setTimeout(() => { copyBtn.textContent = '🗎'; }, 1500);
+                try { await navigator.clipboard.writeText(text); copyBtn.innerHTML = '<span class="xd-icon" style="color:#4ade80;">check</span>'; }
+                catch { copyBtn.innerHTML = '<span class="xd-icon" style="color:#f87171;">close</span>'; }
+                setTimeout(() => { copyBtn.innerHTML = '<span class="xd-icon">content_copy</span>'; }, 1500);
             }
         };
 
