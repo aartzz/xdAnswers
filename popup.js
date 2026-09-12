@@ -525,6 +525,21 @@ function isColorDark(hex) {
     return luminance < 0.45;
 }
 
+function blendHex(baseHex, tintHex, tintRatio) {
+    const b = (baseHex || '#121316').replace('#', '');
+    const t = (tintHex || '#3b82f6').replace('#', '');
+    const br = parseInt(b.substring(0, 2), 16) || 0;
+    const bg = parseInt(b.substring(2, 4), 16) || 0;
+    const bb = parseInt(b.substring(4, 6), 16) || 0;
+    const tr = parseInt(t.substring(0, 2), 16) || 0;
+    const tg = parseInt(t.substring(2, 4), 16) || 0;
+    const tb = parseInt(t.substring(4, 6), 16) || 0;
+    const r = Math.round(br * (1 - tintRatio) + tr * tintRatio);
+    const g = Math.round(bg * (1 - tintRatio) + tg * tintRatio);
+    const bl = Math.round(bb * (1 - tintRatio) + tb * tintRatio);
+    return '#' + [r, g, bl].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
 function hexToRgb(hex) {
     const c = (hex || '#6366f1').replace('#', '');
     const r = parseInt(c.substring(0, 2), 16) || 0;
@@ -568,10 +583,19 @@ function applyThemeToPopup() {
             document.body.style.setProperty('--m3-primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
-            root.style.setProperty('--surface', '#121316');
-            document.body.style.setProperty('--m3-surface', '#121316');
-            root.style.setProperty('--surface-container', '#1e1f23');
-            document.body.style.setProperty('--m3-surface-mid', '#1e1f23');
+
+            // Tint M3 dark surfaces with the accent palette color for Material You tonal surface effect
+            const surfaceBase = blendHex('#121316', primaryColor, 0.05);
+            const surfaceMid = blendHex('#1e1f23', primaryColor, 0.08);
+            const surfaceHigh = blendHex('#282a2e', primaryColor, 0.11);
+            const surfaceHighest = blendHex('#333539', primaryColor, 0.14);
+
+            root.style.setProperty('--surface', surfaceBase);
+            document.body.style.setProperty('--m3-surface', surfaceBase);
+            root.style.setProperty('--surface-container', surfaceMid);
+            document.body.style.setProperty('--m3-surface-mid', surfaceMid);
+            document.body.style.setProperty('--m3-surface-high', surfaceHigh);
+            document.body.style.setProperty('--m3-surface-highest', surfaceHighest);
             root.style.setProperty('--on-surface', '#e2e2e6');
             document.body.style.setProperty('--m3-on-surface', '#e2e2e6');
         } else {
@@ -580,10 +604,19 @@ function applyThemeToPopup() {
             document.body.style.setProperty('--m3-primary-container', primaryColor);
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
-            root.style.setProperty('--surface', '#f8fafc');
-            document.body.style.setProperty('--m3-surface', '#f8fafc');
-            root.style.setProperty('--surface-container', '#f1f5f9');
-            document.body.style.setProperty('--m3-surface-mid', '#f1f5f9');
+
+            // Tint M3 light surfaces with the accent palette color
+            const surfaceBase = blendHex('#f8fafc', primaryColor, 0.04);
+            const surfaceMid = blendHex('#f1f5f9', primaryColor, 0.08);
+            const surfaceHigh = blendHex('#e2e8f0', primaryColor, 0.12);
+            const surfaceHighest = blendHex('#cbd5e1', primaryColor, 0.15);
+
+            root.style.setProperty('--surface', surfaceBase);
+            document.body.style.setProperty('--m3-surface', surfaceBase);
+            root.style.setProperty('--surface-container', surfaceMid);
+            document.body.style.setProperty('--m3-surface-mid', surfaceMid);
+            document.body.style.setProperty('--m3-surface-high', surfaceHigh);
+            document.body.style.setProperty('--m3-surface-highest', surfaceHighest);
             root.style.setProperty('--on-surface', '#0f172a');
             document.body.style.setProperty('--m3-on-surface', '#0f172a');
         }

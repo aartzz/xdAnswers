@@ -17,7 +17,36 @@
         const headerRadius = isM3 ? '24px 24px 0 0' : '12px 12px 0 0';
         const footerRadius = isM3 ? '0 0 24px 24px' : '0 0 12px 12px';
         const btnRadius = isM3 ? '50%' : '6px';
-        const containerBg = isM3 ? 'rgba(26, 27, 32, 0.94)' : 'var(--xd-bg)';
+
+        // Material You tinted background: subtle tint from borderColor (accent color)
+        let containerBg = 'var(--xd-bg)';
+        if (isM3) {
+            const hex = (custom.borderColor || '#3b82f6').replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16) || 59;
+            const g = parseInt(hex.substring(2, 4), 16) || 130;
+            const b = parseInt(hex.substring(4, 6), 16) || 246;
+            // Check if dark theme contentColor
+            const baseC = (custom.contentColor || '#1c1c1c').replace('#', '');
+            const br = parseInt(baseC.substring(0, 2), 16) || 28;
+            const bg = parseInt(baseC.substring(2, 4), 16) || 28;
+            const bb = parseInt(baseC.substring(4, 6), 16) || 28;
+            const isDark = ((0.299 * br + 0.587 * bg + 0.114 * bb) / 255) < 0.45;
+
+            if (isDark) {
+                // Dark mode: blend 6% accent tint into #18191e base
+                const tr = Math.round(24 * 0.94 + r * 0.06);
+                const tg = Math.round(25 * 0.94 + g * 0.06);
+                const tb = Math.round(30 * 0.94 + b * 0.06);
+                containerBg = 'rgba(' + tr + ', ' + tg + ', ' + tb + ', 0.94)';
+            } else {
+                // Light mode: blend 6% accent tint into #f6f8fb base
+                const tr = Math.round(246 * 0.94 + r * 0.06);
+                const tg = Math.round(248 * 0.94 + g * 0.06);
+                const tb = Math.round(251 * 0.94 + b * 0.06);
+                containerBg = 'rgba(' + tr + ', ' + tg + ', ' + tb + ', 0.95)';
+            }
+        }
+
         const headerBg = isM3 ? 'transparent' : 'var(--xd-header)';
         const footerBg = isM3 ? 'transparent' : 'var(--xd-header)';
         const boxShadow = isM3 
