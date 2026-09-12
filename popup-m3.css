@@ -26,58 +26,70 @@ body.theme-material3 {
     --m3-r-full: 9999px;
     --m3-ease: cubic-bezier(0.2, 0, 0, 1);
     --font-icon: "Material Symbols Outlined";
+    --nav-height: 64px;
+    --nav-margin: 8px;
 }
 
-/* ── Body: only visual override, keep popup.css shell ── */
+/* ── Body: visual override, keep popup.css shell, fix overflow ── */
 body.theme-material3 {
     font-family: "Roboto", system-ui, sans-serif !important;
     background-color: var(--m3-surface) !important;
     color: var(--m3-on-surface) !important;
-    padding-bottom: 60px !important; /* space for bottom nav bar */
+    padding-bottom: calc(var(--nav-height) + var(--nav-margin) * 2) !important;
+    overflow-x: hidden !important;
 }
 
 /* ── Header ── */
 body.theme-material3 .header {
-    padding: 10px 14px 6px;
-    border-bottom: 1px solid var(--m3-outline-variant);
-    flex-shrink: 0;
+    padding: 10px 16px 8px !important;
+    border-bottom: 1px solid var(--m3-outline-variant) !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 body.theme-material3 .header h3 {
-    color: var(--m3-on-surface);
-    font-size: 16px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: var(--m3-on-surface) !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    text-align: center !important;
 }
 
 body.theme-material3 .xd-popup-version {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 7px;
-    background: var(--m3-surface-highest);
-    color: var(--m3-primary);
-    border-radius: var(--m3-r-full);
-    border: 1px solid var(--m3-outline-variant);
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    padding: 2px 7px !important;
+    background: var(--m3-surface-highest) !important;
+    color: var(--m3-primary) !important;
+    border-radius: var(--m3-r-full) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    vertical-align: middle !important;
+    flex-shrink: 0 !important;
 }
 
-/* ── Bottom Navigation Bar ── */
+/* ── Floating Bottom Navigation Bar ── */
 body.theme-material3 .tab-buttons {
     position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    bottom: var(--nav-margin) !important;
+    left: var(--nav-margin) !important;
+    right: var(--nav-margin) !important;
     display: flex !important;
-    background: var(--m3-surface-mid) !important;
-    border-top: 1px solid var(--m3-outline-variant) !important;
-    border-bottom: none !important;
-    border-radius: var(--m3-r-l) var(--m3-r-l) 0 0 !important;
-    padding: 6px 8px !important;
+    background: var(--m3-surface-high) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-top: none !important;
+    border-radius: var(--m3-r-xl) !important;
+    padding: 8px !important;
     gap: 4px !important;
     margin: 0 !important;
     z-index: 100 !important;
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3) !important;
     width: auto !important;
     box-sizing: border-box !important;
 }
@@ -87,19 +99,20 @@ body.theme-material3 .tab-button {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 8px 4px !important;
-    border-radius: var(--m3-r-m) !important;
+    padding: 10px 4px !important;
+    border-radius: var(--m3-r-l) !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
     border: none !important;
     cursor: pointer !important;
-    font-size: 0 !important; /* hide HTML text */
+    font-size: 0 !important;
     opacity: 1 !important;
     border-bottom: none !important;
     transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
+    min-width: 0 !important;
 }
 
-/* Material Symbol icons */
+/* Material Symbol icons via ::before */
 body.theme-material3 .tab-button::before {
     font-family: var(--font-icon) !important;
     font-size: 22px !important;
@@ -111,14 +124,14 @@ body.theme-material3 .tab-button::before {
     display: block !important;
 }
 
-body.theme-material3 .tab-button[data-tab="ai-tab"]::before     { content: "smart_toy" !important; }
-body.theme-material3 .tab-button[data-tab="providers-tab"]::before { content: "hub" !important; }
-body.theme-material3 .tab-button[data-tab="features-tab"]::before  { content: "tune" !important; }
-body.theme-material3 .tab-button[data-tab="themes-tab"]::before    { content: "palette" !important; }
-body.theme-material3 .tab-button[data-tab="donate-tab"]::before    { content: "favorite" !important; }
+body.theme-material3 .tab-button[data-tab="ai-tab"]::before        { content: "smart_toy" !important; }
+body.theme-material3 .tab-button[data-tab="providers-tab"]::before  { content: "hub" !important; }
+body.theme-material3 .tab-button[data-tab="features-tab"]::before   { content: "tune" !important; }
+body.theme-material3 .tab-button[data-tab="themes-tab"]::before     { content: "palette" !important; }
+body.theme-material3 .tab-button[data-tab="donate-tab"]::before     { content: "favorite" !important; }
 
 body.theme-material3 .tab-button:hover {
-    background: var(--m3-surface-high) !important;
+    background: var(--m3-surface-highest) !important;
     color: var(--m3-on-surface) !important;
 }
 
@@ -134,6 +147,7 @@ body.theme-material3 .tab-button.active::before {
 /* ── Tab Content ── */
 body.theme-material3 .tab-content {
     padding: 12px 14px !important;
+    overflow-x: hidden !important;
 }
 
 body.theme-material3 .tab-content.active {
@@ -147,39 +161,38 @@ body.theme-material3 .tab-content.active {
 
 /* ── Forms ── */
 body.theme-material3 .form-group {
-    margin-bottom: 12px;
+    margin-bottom: 12px !important;
 }
 
 body.theme-material3 .form-group > label:first-child,
 body.theme-material3 .form-group > label:not(.toggle-group label):first-child {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--m3-on-surface-variant);
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-    display: block;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--m3-on-surface-variant) !important;
+    letter-spacing: 0.4px !important;
+    text-transform: uppercase !important;
+    margin-bottom: 5px !important;
+    display: block !important;
 }
 
 body.theme-material3 .field-hint {
-    font-size: 11px;
-    color: var(--m3-on-surface-variant);
-    opacity: 0.8;
-    margin-top: 4px;
+    font-size: 11px !important;
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.8 !important;
+    margin-top: 4px !important;
 }
 
 body.theme-material3 .separator {
-    border: none;
-    border-top: 1px solid var(--m3-outline-variant);
-    margin: 10px 0;
-    opacity: 0.5;
+    border: none !important;
+    border-top: 1px solid var(--m3-outline-variant) !important;
+    margin: 10px 0 !important;
+    opacity: 0.5 !important;
 }
 
-/* ── Inputs & Selects ── */
+/* ── Inputs ── */
 body.theme-material3 input[type="text"],
 body.theme-material3 input[type="number"],
-body.theme-material3 input[type="password"],
-body.theme-material3 select {
+body.theme-material3 input[type="password"] {
     background: var(--m3-surface-low) !important;
     color: var(--m3-on-surface) !important;
     border: 1px solid var(--m3-outline) !important;
@@ -195,8 +208,7 @@ body.theme-material3 select {
 
 body.theme-material3 input[type="text"]:focus,
 body.theme-material3 input[type="number"]:focus,
-body.theme-material3 input[type="password"]:focus,
-body.theme-material3 select:focus {
+body.theme-material3 input[type="password"]:focus {
     border-color: var(--m3-primary) !important;
     box-shadow: 0 0 0 1px var(--m3-primary) !important;
     background: var(--m3-surface-mid) !important;
@@ -204,26 +216,74 @@ body.theme-material3 select:focus {
 
 body.theme-material3 input[type="text"]:hover,
 body.theme-material3 input[type="number"]:hover,
-body.theme-material3 input[type="password"]:hover,
+body.theme-material3 input[type="password"]:hover {
+    border-color: var(--m3-on-surface-variant) !important;
+}
+
+/* ── Native <select>: M3 styled, appearance: none + custom arrow ── */
+body.theme-material3 select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-color: var(--m3-surface-low) !important;
+    color: var(--m3-on-surface) !important;
+    border: 1px solid var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    padding: 9px 36px 9px 12px !important;
+    font-family: "Roboto", system-ui, sans-serif !important;
+    font-size: 13px !important;
+    outline: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    cursor: pointer !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%238e919a' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+}
+
+body.theme-material3 select:focus {
+    border-color: var(--m3-primary) !important;
+    box-shadow: 0 0 0 1px var(--m3-primary) !important;
+    background-color: var(--m3-surface-mid) !important;
+}
+
 body.theme-material3 select:hover {
     border-color: var(--m3-on-surface-variant) !important;
 }
 
-/* ── Switches: override span::before (track) and span::after (knob) ──
-   popup.css renders the switch via:
-     input + span { padding-left: 42px }
-     input + span::before = track (absolute left:0)
-     input + span::after  = knob  (absolute left:3px)
-   We override only visuals, keeping geometry compatible.
+/* option elements — limited browser support, dark bg at minimum */
+body.theme-material3 select option {
+    background-color: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface) !important;
+    padding: 8px 12px !important;
+}
+
+body.theme-material3 select option:checked {
+    background-color: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+/* ── Switches: override span::before (track) and span::after (knob)
+   popup.css: input + span { padding-left: 42px }
+              ::before = track (absolute left:0, w:32px h:18px)
+              ::after  = knob  (absolute left:3px, w:12px h:12px)
+   Track now 40px wide, knob center stays in 42px pad zone.
 ─────────────────────────────────────────────────────── */
 body.theme-material3 .toggle-group label {
     color: var(--m3-on-surface) !important;
+    gap: 14px !important;
+}
+
+body.theme-material3 .toggle-group label input[type="checkbox"] + span {
+    padding-left: 50px !important;
 }
 
 /* Track */
 body.theme-material3 .toggle-group label input[type="checkbox"] + span::before {
     width: 40px !important;
     height: 22px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     background: var(--m3-surface-highest) !important;
     border: 2px solid var(--m3-outline) !important;
     border-radius: 11px !important;
@@ -234,10 +294,13 @@ body.theme-material3 .toggle-group label input[type="checkbox"] + span::before {
 body.theme-material3 .toggle-group label input[type="checkbox"] + span::after {
     width: 14px !important;
     height: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
     left: 4px !important;
     background: var(--m3-outline) !important;
     box-shadow: none !important;
     transition: left 0.25s var(--m3-ease), background 0.2s var(--m3-ease), width 0.15s, height 0.15s !important;
+    border-radius: 50% !important;
 }
 
 /* Checked: track */
@@ -255,7 +318,7 @@ body.theme-material3 .toggle-group label input[type="checkbox"]:checked + span::
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Hover on unchecked track */
+/* Hover on unchecked */
 body.theme-material3 .toggle-group label:hover input[type="checkbox"]:not(:checked) + span::before {
     border-color: var(--m3-on-surface) !important;
 }
@@ -276,11 +339,33 @@ body.theme-material3 .provider-select-trigger:hover {
     border-color: var(--m3-on-surface-variant) !important;
 }
 
+/* ── Provider Dropdown ── */
 body.theme-material3 .provider-dropdown {
     background: var(--m3-surface-high) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-m) !important;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    overflow: hidden !important;
+    animation: m3DropIn 0.18s var(--m3-ease) !important;
+}
+
+@keyframes m3DropIn {
+    from { opacity: 0; transform: scaleY(0.9) translateY(-6px); transform-origin: top; }
+    to   { opacity: 1; transform: scaleY(1)   translateY(0); }
+}
+
+body.theme-material3 .provider-dropdown-item {
+    transition: background 0.15s !important;
+    border-radius: 0 !important;
+}
+
+body.theme-material3 .provider-dropdown-item:hover {
+    background: var(--m3-surface-highest) !important;
+}
+
+body.theme-material3 .provider-dropdown-item.selected {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
 }
 
 /* ── Model Panel ── */
@@ -288,6 +373,7 @@ body.theme-material3 .model-panel {
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-l) !important;
+    overflow: hidden !important;
 }
 
 body.theme-material3 .model-panel-search input {
@@ -298,9 +384,20 @@ body.theme-material3 .model-panel-search input {
     box-shadow: none !important;
 }
 
+/* Model list: clip overflow, items animate in */
+body.theme-material3 .model-list {
+    overflow-x: hidden !important;
+}
+
 body.theme-material3 .model-item {
     border-radius: var(--m3-r-s) !important;
     margin: 2px 4px !important;
+    animation: m3ItemAppear 0.15s var(--m3-ease) both !important;
+}
+
+@keyframes m3ItemAppear {
+    from { opacity: 0; transform: translateX(-4px); }
+    to   { opacity: 1; transform: translateX(0); }
 }
 
 body.theme-material3 .model-item:hover {
@@ -316,6 +413,7 @@ body.theme-material3 .model-badges {
     display: flex !important;
     flex-wrap: wrap !important;
     gap: 3px !important;
+    align-items: center !important;
 }
 
 body.theme-material3 .model-badge {
@@ -324,6 +422,9 @@ body.theme-material3 .model-badge {
     padding: 2px 6px !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
+    line-height: 1.4 !important;
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
 body.theme-material3 .fetch-models-btn {
@@ -338,12 +439,33 @@ body.theme-material3 .fetch-models-btn:hover {
     background: var(--m3-surface-highest) !important;
 }
 
+/* ── Providers Tab: section headers ── */
+body.theme-material3 .providers-section-header {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    color: var(--m3-on-surface-variant) !important;
+    padding: 6px 0 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+body.theme-material3 .providers-section-hint {
+    font-size: 10px !important;
+    font-weight: 400 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    opacity: 0.6 !important;
+}
+
 /* ── Provider Cards ── */
 body.theme-material3 .provider-card {
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-l) !important;
-    padding: 10px 12px !important;
+    padding: 10px 10px 10px 12px !important;
     margin-bottom: 8px !important;
     transition: border-color 0.2s !important;
 }
@@ -358,11 +480,13 @@ body.theme-material3 .provider-card-header {
     align-items: center !important;
     gap: 8px !important;
     min-width: 0 !important;
+    width: 100% !important;
 }
 
 body.theme-material3 .provider-card-info {
     flex: 1 1 0 !important;
     min-width: 0 !important;
+    overflow: hidden !important;
 }
 
 body.theme-material3 .provider-card-name {
@@ -383,49 +507,63 @@ body.theme-material3 .provider-card-key {
     font-size: 10px !important;
     color: var(--m3-on-surface-variant) !important;
     opacity: 0.6 !important;
-}
-
-body.theme-material3 .provider-active-badge {
-    font-size: 9px !important;
-    padding: 2px 6px !important;
-    border-radius: var(--m3-r-full) !important;
-    background: var(--m3-primary-container) !important;
-    color: var(--m3-on-primary-container) !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    flex-shrink: 0 !important;
     white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
+/* Chips: active / search badges */
+body.theme-material3 .provider-active-badge,
 body.theme-material3 .provider-search-badge {
     font-size: 9px !important;
     padding: 2px 6px !important;
     border-radius: var(--m3-r-full) !important;
-    background: rgba(234, 179, 8, 0.15) !important;
-    color: #eab308 !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
     flex-shrink: 0 !important;
     white-space: nowrap !important;
+    line-height: 1.4 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    vertical-align: middle !important;
+}
+
+body.theme-material3 .provider-active-badge {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .provider-search-badge {
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #eab308 !important;
     margin-left: 0 !important;
 }
 
+/* Action buttons: compact icon-only M3 */
 body.theme-material3 .provider-card-actions {
     display: flex !important;
     gap: 4px !important;
     flex-shrink: 0 !important;
+    align-items: center !important;
 }
 
 body.theme-material3 .provider-card-btn {
-    width: 28px !important;
-    height: 28px !important;
+    width: 30px !important;
+    height: 30px !important;
     border-radius: var(--m3-r-s) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     background: var(--m3-surface-high) !important;
     color: var(--m3-on-surface-variant) !important;
-    font-size: 13px !important;
-    opacity: 0.8 !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    opacity: 0.85 !important;
     transition: opacity 0.15s, background 0.15s !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
 }
 
 body.theme-material3 .provider-card-btn:hover {
@@ -446,6 +584,11 @@ body.theme-material3 .add-consensus-run-btn {
     padding: 9px !important;
     opacity: 1 !important;
     transition: background 0.2s, border-color 0.2s !important;
+    width: 100% !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    display: block !important;
+    box-sizing: border-box !important;
 }
 
 body.theme-material3 .add-provider-btn:hover,
@@ -459,6 +602,87 @@ body.theme-material3 .consensus-run-card {
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-l) !important;
+    padding: 10px !important;
+    margin-bottom: 8px !important;
+}
+
+body.theme-material3 .consensus-run-model-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+
+body.theme-material3 .consensus-run-provider-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+body.theme-material3 .consensus-run-provider-select {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+body.theme-material3 .consensus-run-bottom {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+}
+
+body.theme-material3 .consensus-run-info {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+body.theme-material3 .consensus-run-meta {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+body.theme-material3 .consensus-run-model-name {
+    font-size: 12px !important;
+    color: var(--m3-on-surface) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+}
+
+body.theme-material3 .consensus-run-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+}
+
+body.theme-material3 .consensus-run-remove {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: var(--m3-r-s) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    background: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface-variant) !important;
+    font-size: 14px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+}
+
+body.theme-material3 .consensus-run-remove:hover {
+    background: var(--m3-surface-highest) !important;
+    color: #f28b82 !important;
+}
+
+/* consensus answeronly mini toggle */
+body.theme-material3 .consensus-answeronly-toggle {
+    display: flex !important;
+    align-items: center !important;
 }
 
 /* ── Hotkey Recorder ── */
@@ -518,7 +742,7 @@ body.theme-material3 .theme-card.active {
     box-shadow: 0 0 0 2px var(--m3-primary-container) !important;
 }
 
-/* ── Provider Form Modal (M3 dialog) ── */
+/* ── Provider Form Modal ── */
 body.theme-material3 .provider-form-overlay {
     background: rgba(0, 0, 0, 0.65) !important;
     backdrop-filter: blur(8px) !important;
@@ -617,4 +841,23 @@ body.theme-material3 .donate-button.telegram:hover {
     background: var(--m3-primary) !important;
     color: var(--m3-on-primary) !important;
     transform: translateY(-1px) !important;
+}
+
+/* ── Scrollbar styling ── */
+body.theme-material3 ::-webkit-scrollbar {
+    width: 4px !important;
+    height: 0px !important;
+}
+
+body.theme-material3 ::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+body.theme-material3 ::-webkit-scrollbar-thumb {
+    background: var(--m3-outline-variant) !important;
+    border-radius: 2px !important;
+}
+
+body.theme-material3 ::-webkit-scrollbar-thumb:hover {
+    background: var(--m3-outline) !important;
 }
