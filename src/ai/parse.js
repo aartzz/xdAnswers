@@ -27,6 +27,10 @@
             }
         }
 
+        for (const f of ['answer', 'explanation', 'solution', 'confidence']) {
+            result[f] = cleanFieldContent(f, result[f]);
+        }
+
         const hasAny = result.answer || result.explanation || result.solution;
         return hasAny ? result : null;
     }
@@ -74,6 +78,25 @@
         return null;
     }
 
+    function cleanFieldContent(field, val) {
+        if (!val) return '';
+        let s = val.trim();
+        if (field === 'solution') {
+            s = s.replace(/^\s*\.{2,}\s*(?:\([^\)]*\))?\s*/i, '');
+            if (/^(?:\.{2,}|none|нічого|немає|-|n\/a)$/i.test(s)) return '';
+        }
+        if (field === 'confidence') {
+            const numMatch = s.match(/^(\d{1,3})/);
+            if (numMatch) {
+                return numMatch[1];
+            }
+            if (/^0-100/i.test(s)) {
+                return '';
+            }
+        }
+        return s;
+    }
+
     function parseLabeledResponse(text) {
         if (!text) return null;
 
@@ -100,6 +123,12 @@
 
             if (currentField && line.trim()) {
                 result[currentField] += (result[currentField] ? '\n' : '') + line.trim();
+            }
+        }
+
+        if (result.isStructured) {
+            for (const f of ['answer', 'explanation', 'solution', 'confidence']) {
+                result[f] = cleanFieldContent(f, result[f]);
             }
         }
 
@@ -224,6 +253,11 @@
                 cleaned = cleaned.substring(transition.index + 1).trim();
             }
         }
+
+        // If prose thinking was appended after confidence / fields: e.g. "Confidence: 0-100 The user asks for..."
+        // Strip trailing thinking leak
+        cleaned = cleaned.replace(/\b(The user asks[\s\S]*|Here's a thinking process[\s\S]*)/i, '').trim();
+
         return cleaned || text;
     }
 
