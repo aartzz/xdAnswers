@@ -144,8 +144,8 @@
                 }
 
                 // 2. Prose header based (e.g. Qwen / Deepseek / Llama without tags):
-                // matches "Here's a thinking...", "Thinking Process:", "The user asks...", "I need to select...", "Let's think..."
-                if (!inInlineThinking && (/^\s*(Here's a thinking process|Thinking Process:|Thinking:|The user asks|I need to (?:select|choose|find|determine)|Let's think)/i.test(rawContentBuffer) || /\n\s*(?:The user asks|Here's a thinking process)/i.test(rawContentBuffer))) {
+                // matches "Here's a thinking...", "Thinking Process:", "The user asks...", "The user is asking...", "I need to select...", "Let's think..."
+                if (!inInlineThinking && (/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking)|I need to (?:select|choose|find|determine)|Let's think)/i.test(rawContentBuffer) || /\n\s*(?:The user (?:asks|is asking)|Here's a thinking process)/i.test(rawContentBuffer))) {
                     inInlineThinking = true;
                     ensureThinkingUI();
                 }

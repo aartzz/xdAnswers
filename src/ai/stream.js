@@ -37,12 +37,23 @@
                     if (choice.finish_reason) { results.push({ done: true }); continue; }
                     const delta = choice.delta || {};
                     // Check all known fields where LLM providers put reasoning / chain-of-thought
-                    const rContent = delta.reasoning_content || delta.reasoning || delta.thinking || 
-                                     (delta.thought !== undefined ? delta.thought : null) ||
-                                     delta.reasoning_text || delta.thinking_process ||
-                                     json.reasoning_content || json.reasoning;
+                    let rContent = delta.reasoning_content || delta.reasoning || delta.thinking || 
+                                   (delta.thought !== undefined ? delta.thought : null) ||
+                                   delta.reasoning_text || delta.thinking_process ||
+                                   json.reasoning_content || json.reasoning;
+
+                    // OpenRouter reasoning_details array support
+                    if (!rContent && Array.isArray(delta.reasoning_details)) {
+                        let combined = '';
+                        for (const rd of delta.reasoning_details) {
+                            if (rd.text) combined += rd.text;
+                            else if (rd.summary) combined += rd.summary;
+                        }
+                        if (combined) rContent = combined;
+                    }
+
                     if (rContent) {
-                        results.push({ thinking: rContent });
+                        results.push({ thinking: typeof rContent === 'string' ? rContent : JSON.stringify(rContent) });
                     }
                     if (delta.tool_calls) {
                         // Streaming tool call deltas

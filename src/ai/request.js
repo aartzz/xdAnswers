@@ -128,6 +128,10 @@
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
             const body = { model: s.model, messages, max_tokens: 4096, stream: !!stream };
+            // Request reasoning tokens from OpenRouter and OpenAI-compatible providers
+            if (s.baseUrl && s.baseUrl.includes('openrouter.ai')) {
+                body.include_reasoning = true;
+            }
             if (includeTools) body.tools = availableTools;
             return body;
         }

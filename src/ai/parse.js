@@ -245,8 +245,8 @@
         if (!text) return '';
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-        // Strip leading prose thinking ("Here's a thinking process...", "The user asks...", "I need to select...")
-        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user asks|I need to (?:select|choose|find|determine)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+        // Strip leading prose thinking ("Here's a thinking process...", "The user asks...", "The user is asking...", "I need to select...")
+        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking)|I need to (?:select|choose|find|determine)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
         if (proseMatch) {
             const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
             if (transition) {
@@ -255,8 +255,7 @@
         }
 
         // If prose thinking was appended after confidence / fields: e.g. "Confidence: 0-100 The user asks for..."
-        // Strip trailing thinking leak
-        cleaned = cleaned.replace(/\b(The user asks[\s\S]*|Here's a thinking process[\s\S]*)/i, '').trim();
+        cleaned = cleaned.replace(/\b(The user (?:asks|is asking)[\s\S]*|Here's a thinking process[\s\S]*)/i, '').trim();
 
         return cleaned || text;
     }
