@@ -98,9 +98,14 @@ body.theme-material3 .xd-popup-version {
 body.theme-material3 .tab-buttons {
     position: fixed !important;
     bottom: 14px !important;
-    left: 45px !important;
-    right: 45px !important;
-    display: flex !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: fit-content !important;
+    max-width: calc(100% - 40px) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: var(--m3-surface-high) !important;
     border: none !important;
     border-radius: var(--m3-r-full) !important;
@@ -109,20 +114,22 @@ body.theme-material3 .tab-buttons {
     margin: 0 !important;
     z-index: 100 !important;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
-    width: auto !important;
     box-sizing: border-box !important;
 }
 
 body.theme-material3 .tab-button {
-    flex: 1 !important;
-    display: flex !important;
+    flex: 0 0 36px !important;
+    display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
     width: 36px !important;
     height: 36px !important;
+    min-width: 36px !important;
     max-width: 36px !important;
-    border-radius: 50% !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    border-radius: var(--m3-r-full) !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
     border: none !important;
@@ -131,11 +138,10 @@ body.theme-material3 .tab-button {
     line-height: 0 !important;
     letter-spacing: 0 !important;
     gap: 0 !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     opacity: 1 !important;
     border-bottom: none !important;
     transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease), transform 0.15s !important;
-    min-width: 0 !important;
     box-sizing: border-box !important;
     text-align: center !important;
 }
@@ -840,20 +846,40 @@ body.theme-material3 .position-cell.active {
 
 /* ── Theme Mode Segmented & Swatches in M3 ── */
 body.theme-material3 .theme-mode-segmented {
+    display: flex !important;
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-full) !important;
     padding: 4px !important;
     gap: 4px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
 }
 
 body.theme-material3 .theme-mode-btn {
+    flex: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
     border-radius: var(--m3-r-full) !important;
     color: var(--m3-on-surface-variant) !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     padding: 8px 16px !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 0 !important;
+    line-height: normal !important;
     transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
+}
+
+body.theme-material3 .theme-mode-btn::before,
+body.theme-material3 .theme-mode-btn::after {
+    display: none !important;
 }
 
 body.theme-material3 .theme-mode-btn:hover {
@@ -864,6 +890,7 @@ body.theme-material3 .theme-mode-btn:hover {
 body.theme-material3 .theme-mode-btn.active {
     background: var(--m3-primary-container) !important;
     color: var(--m3-on-primary-container) !important;
+    border-radius: var(--m3-r-full) !important;
 }
 
 body.theme-material3 .theme-palette-swatches {
