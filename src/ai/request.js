@@ -107,11 +107,26 @@
                 h['HTTP-Referer'] = 'https://xdanswers.app';
                 h['X-Title'] = 'xdAnswers';
             }
+            // OpenCode Zen / Go endpoints require session headers
+            if (s.baseUrl && (s.baseUrl.includes('opencode.ai') || s.type === 'opencode-zen' || s.type === 'opencode-go')) {
+                const sessionId = 'ses_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                h['x-session-id'] = sessionId;
+                h['x-opencode-session'] = sessionId;
+                h['x-opencode-client'] = 'opencode';
+                h['User-Agent'] = 'opencode/1.18.29';
+            }
         }
         else if (s.apiFormat === 'anthropic') {
             h['x-api-key'] = s.apiKey;
             h['anthropic-version'] = '2023-06-01';
             h['anthropic-dangerous-direct-browser-access'] = 'true';
+            if (s.baseUrl && (s.baseUrl.includes('opencode.ai') || s.type === 'opencode-zen' || s.type === 'opencode-go')) {
+                const sessionId = 'ses_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                h['x-session-id'] = sessionId;
+                h['x-opencode-session'] = sessionId;
+                h['x-opencode-client'] = 'opencode';
+                h['User-Agent'] = 'opencode/1.18.29';
+            }
         }
         return h;
     }
