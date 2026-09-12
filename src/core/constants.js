@@ -42,8 +42,6 @@ answer: <скопіюй точний текст вибраного варіан�
         fireworks: 'https://api.fireworks.ai/inference/v1',
         mistral: 'https://api.mistral.ai/v1',
         'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
-        'unturf-qwen': 'https://qwen.ai.unturf.com/v1',
-        'unturf-vl': 'https://qwen-vl.ai.unturf.com/v1',
         'opencode-zen': 'https://opencode.ai/zen/v1',
         'opencode-go': 'https://opencode.ai/zen/go/v1',
         'ollama-cloud': 'https://ollama.com/v1',
@@ -62,7 +60,7 @@ answer: <скопіюй точний текст вибраного варіан�
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'openai', groq: 'openai', openrouter: 'openai',
         cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
-        'unturf-hermes': 'openai', 'unturf-qwen': 'openai', 'unturf-vl': 'openai',
+        'unturf-hermes': 'openai',
         'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai'
     };
 

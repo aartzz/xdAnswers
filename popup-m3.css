@@ -1,8 +1,8 @@
 /* popup-m3.css — Material 3 Expressive theme for xdAnswers */
 
 /* ── M3 Design Tokens ── */
-:root,
-body.theme-material3 {
+body.theme-material3,
+body.theme-material3.dark {
     --m3-primary: #a8c7fa;
     --m3-on-primary: #042f66;
     --m3-primary-container: #0842a0;
@@ -30,8 +30,7 @@ body.theme-material3 {
     --nav-margin: 8px;
 }
 
-body.theme-material3.light,
-body.theme-material3:not(.dark) {
+body.theme-material3.light {
     --m3-primary: #3b82f6;
     --m3-on-primary: #ffffff;
     --m3-primary-container: #dbeafe;
@@ -57,6 +56,11 @@ body.theme-material3 {
     color: var(--m3-on-surface) !important;
     padding-bottom: 0 !important;
     overflow-x: hidden !important;
+}
+
+body.theme-material3 .tab-content {
+    background-color: var(--m3-surface) !important;
+    color: var(--m3-on-surface) !important;
 }
 
 /* ── Header ── */
@@ -129,7 +133,7 @@ body.theme-material3 .tab-button {
     max-width: 36px !important;
     min-height: 36px !important;
     max-height: 36px !important;
-    border-radius: var(--m3-r-full) !important;
+    border-radius: 50% !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
     border: none !important;
@@ -141,9 +145,14 @@ body.theme-material3 .tab-button {
     margin: 0 !important;
     opacity: 1 !important;
     border-bottom: none !important;
-    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease), transform 0.15s !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
     box-sizing: border-box !important;
     text-align: center !important;
+}
+
+body.theme-material3 .tab-button::before,
+body.theme-material3 .tab-button::after {
+    transition: none !important;
 }
 
 body.theme-material3 .tab-button .tab-label {
@@ -176,6 +185,7 @@ body.theme-material3 .tab-button[data-tab="donate-tab"]::before     { content: "
 body.theme-material3 .tab-button:hover {
     background: var(--m3-surface-highest) !important;
     color: var(--m3-on-surface) !important;
+    border-radius: 50% !important;
 }
 
 body.theme-material3 .tab-button.active {
@@ -186,10 +196,7 @@ body.theme-material3 .tab-button.active {
 
 body.theme-material3 .tab-button.active::before {
     color: var(--m3-on-primary) !important;
-}
-
-body.theme-material3 .tab-button.active::before {
-    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24 !important;
 }
 
 /* ── Tab Content ── */
@@ -345,17 +352,23 @@ body.theme-material3 .m3-select-list {
     border-radius: var(--m3-r-m) !important;
     overflow: hidden !important;
     overflow-y: auto !important;
-    max-height: 200px !important;
-    z-index: 200 !important;
+    max-height: 140px !important;
+    z-index: 500 !important;
     list-style: none !important;
     margin: 0 !important;
     padding: 4px 0 !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
     opacity: 0 !important;
     transform: scaleY(0.85) !important;
     transform-origin: top center !important;
     pointer-events: none !important;
     transition: opacity 0.15s var(--m3-ease), transform 0.15s var(--m3-ease) !important;
+}
+
+body.theme-material3 .m3-select-wrap.m3-open-up .m3-select-list {
+    top: auto !important;
+    bottom: calc(100% + 4px) !important;
+    transform-origin: bottom center !important;
 }
 
 body.theme-material3 .m3-select-wrap.m3-open .m3-select-list {
@@ -911,6 +924,11 @@ body.theme-material3 .theme-swatch {
     max-height: 36px !important;
     border-radius: 50% !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+    transition: transform 0.15s ease, border-color 0.15s ease !important;
+}
+
+body.theme-material3 .theme-swatch:hover {
+    transform: scale(1.08) !important;
 }
 
 body.theme-material3 .theme-swatch.active {

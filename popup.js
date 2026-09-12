@@ -175,8 +175,6 @@ const API_PROVIDERS = [
     { id: 'fireworks', name: 'Fireworks AI', hint: 'Fireworks API', logo: 'fireworks-ai' },
     { id: 'mistral', name: 'Mistral', hint: 'Mistral API', logo: 'mistral' },
     { id: 'unturf-hermes', name: 'Unturf Hermes', hint: 'Free — Hermes 3 Llama 3.1 8B', logo: 'unturf' },
-    { id: 'unturf-qwen', name: 'Unturf Qwen', hint: 'Free — Qwen3 Coder + Gemma 4', logo: 'unturf' },
-    { id: 'unturf-vl', name: 'Unturf Vision', hint: 'Free — Qwen VL (image support)', logo: 'unturf' },
     { id: 'opencode-zen', name: 'OpenCode Zen', hint: 'OpenCode Zen — -free models need no key', logo: 'opencode' },
     { id: 'opencode-go', name: 'OpenCode Go', hint: 'OpenCode Go — API key required', logo: 'opencode' },
     { id: 'ollama-cloud', name: 'Ollama Cloud', hint: 'Ollama Cloud — API key required', logo: 'ollama-cloud' },
@@ -185,7 +183,7 @@ const API_PROVIDERS = [
     { id: 'langsearch', name: 'LangSearch', hint: 'Web Search — Free API', logo: 'openai', kind: 'search' },
     { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' },
     { id: 'perplexity', name: 'Perplexity', hint: 'Web Search — pplx- API key', logo: 'openai', kind: 'search' },
-    { id: 'exa', name: 'Exa', hint: 'Web Search — neural/fast search', logo: 'openai', kind: 'search' },
+    { id: 'exa', name: 'Exa', hint: 'Web Search — free neural search or API key', logo: 'openai', kind: 'search' },
     { id: 'tavily', name: 'Tavily', hint: 'Web Search — tvly- API key', logo: 'openai', kind: 'search' },
     { id: 'linkup', name: 'Linkup', hint: 'Web Search — fast/standard/deep', logo: 'openai', kind: 'search' },
     { id: 'searchapi', name: 'SearchAPI', hint: 'Web Search — Google/Bing/Yahoo', logo: 'openai', kind: 'search' },
@@ -197,7 +195,7 @@ const PROVIDER_ICON_MAP = {
     'nvidia': 'nvidia', 'ollama-cloud': 'ollama-cloud', 'ollamacloud': 'ollama-cloud',
     'opencode-zen': 'opencode', 'opencode-go': 'opencode', 'opencode': 'opencode', 'venice': 'venice', 'pollinations': 'pollinations',
     'publicai': 'openai', 'unturf': 'unturf', 'unturf-hermes': 'unturf',
-    'unturf-qwen': 'unturf', 'unturf-vl': 'unturf', 'g4f': 'openai',
+    'g4f': 'openai',
     'deepseek-ai': 'deepseek', 'deepseek': 'deepseek',
     'meta': 'meta', 'moonshotai': 'moonshot', 'z-ai': 'zhipu',
     'mistralai': 'mistral', 'mistral': 'mistral',
@@ -438,7 +436,23 @@ async function loadSettings() {
                 consensus: { ...loaded.consensus, ...(parsed.consensus || {}) }
             };
 
-            // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
+            // Очистити закриті Unturf Qwen / Vision провайдери
+            if (Array.isArray(loaded.providers)) {
+                loaded.providers = loaded.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
+                // Додати Exa якщо відсутній серед search-провайдерів
+                if (!loaded.providers.some(pr => pr.type === 'exa')) {
+                    loaded.providers.unshift({
+                        id: 'exa-default',
+                        kind: 'search',
+                        type: 'exa',
+                        name: 'Exa',
+                        baseUrl: 'https://api.exa.ai',
+                        apiKey: ''
+                    });
+                }
+            }
+
+            // Міграція: додати дефолтні провайдери для юзерів з порожнім списком
             if (!loaded.providers || loaded.providers.length === 0) {
                 loaded.providers = JSON.parse(JSON.stringify(window.xdAnswers._internal.DEFAULT_SETTINGS.providers));
                 loaded.activeProviderId = window.xdAnswers._internal.DEFAULT_SETTINGS.activeProviderId;
@@ -508,32 +522,44 @@ function applyThemeToPopup() {
     document.body.classList.toggle('theme-material3', isM3);
     document.body.classList.toggle('dark', isDark);
     document.body.classList.toggle('light', !isDark);
+    root.classList.toggle('dark', isDark);
+    root.classList.toggle('light', !isDark);
     document.body.classList.toggle('theme-legacy', !isM3);
 
     if (isM3) {
         const primaryColor = c.borderColor || (isDark ? '#a8c7fa' : '#3b82f6');
         root.style.setProperty('--primary', primaryColor);
         root.style.setProperty('--m3-primary', primaryColor);
+        document.body.style.setProperty('--m3-primary', primaryColor);
         root.style.setProperty('--on-primary', isColorDark(primaryColor) ? '#ffffff' : '#000000');
         root.style.setProperty('--m3-on-primary', isColorDark(primaryColor) ? '#ffffff' : '#000000');
+        document.body.style.setProperty('--m3-on-primary', isColorDark(primaryColor) ? '#ffffff' : '#000000');
 
         if (isDark) {
             const isDarkPrimary = isColorDark(primaryColor);
             root.style.setProperty('--primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
             root.style.setProperty('--m3-primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
+            document.body.style.setProperty('--m3-primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
-            root.style.setProperty('--surface', c.contentColor || '#121316');
-            root.style.setProperty('--surface-container', c.headerColor || '#1e1f23');
-            root.style.setProperty('--on-surface', c.textColor || '#e2e2e6');
+            root.style.setProperty('--surface', '#121316');
+            document.body.style.setProperty('--m3-surface', '#121316');
+            root.style.setProperty('--surface-container', '#1e1f23');
+            document.body.style.setProperty('--m3-surface-mid', '#1e1f23');
+            root.style.setProperty('--on-surface', '#e2e2e6');
+            document.body.style.setProperty('--m3-on-surface', '#e2e2e6');
         } else {
             root.style.setProperty('--primary-container', primaryColor);
             root.style.setProperty('--m3-primary-container', primaryColor);
+            document.body.style.setProperty('--m3-primary-container', primaryColor);
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
-            root.style.setProperty('--surface', c.contentColor || '#fdf8fd');
-            root.style.setProperty('--surface-container', c.headerColor || '#f3edf7');
-            root.style.setProperty('--on-surface', c.textColor || '#1b1b1f');
+            root.style.setProperty('--surface', '#f8fafc');
+            document.body.style.setProperty('--m3-surface', '#f8fafc');
+            root.style.setProperty('--surface-container', '#f1f5f9');
+            document.body.style.setProperty('--m3-surface-mid', '#f1f5f9');
+            root.style.setProperty('--on-surface', '#0f172a');
+            document.body.style.setProperty('--m3-on-surface', '#0f172a');
         }
     }
 
@@ -541,6 +567,8 @@ function applyThemeToPopup() {
     root.style.setProperty('--header-bg', c.headerColor);
     root.style.setProperty('--popup-text', c.textColor);
     root.style.setProperty('--popup-border', c.borderColor);
+    document.body.style.setProperty('--popup-border', c.borderColor);
+    document.body.style.setProperty('--primary', c.borderColor);
     root.classList.toggle('xd-dark-icons', isDark);
     root.classList.toggle('xd-light-icons', !isDark);
     initM3Selects();
@@ -613,10 +641,21 @@ function initM3Selects() {
             // Close all others
             document.querySelectorAll('.m3-select-wrap.m3-open').forEach(w => {
                 if (w !== wrap) {
-                    w.classList.remove('m3-open');
+                    w.classList.remove('m3-open', 'm3-open-up');
                     w.querySelector('.m3-select-trigger')?.setAttribute('aria-expanded', 'false');
                 }
             });
+
+            if (!isOpen) {
+                // Check if dropdown would collide with bottom navbar
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const opensUp = spaceBelow < 180;
+                wrap.classList.toggle('m3-open-up', opensUp);
+            } else {
+                wrap.classList.remove('m3-open-up');
+            }
+
             wrap.classList.toggle('m3-open', !isOpen);
             trigger.setAttribute('aria-expanded', String(!isOpen));
         }

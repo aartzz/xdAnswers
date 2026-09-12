@@ -90,7 +90,23 @@
 
                 s = { ...s, ...p, providers: p.providers || [], customization: { ...s.customization, ...(p.customization || {}) } };
 
-                // Міграція: додати безкоштовні unturf провайдери для юзерів з порожнім списком
+                // Очистити закриті Unturf Qwen / Vision провайдери
+                if (Array.isArray(s.providers)) {
+                    s.providers = s.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
+                    // Додати Exa якщо відсутній серед search-провайдерів
+                    if (!s.providers.some(pr => pr.type === 'exa')) {
+                        s.providers.unshift({
+                            id: 'exa-default',
+                            kind: 'search',
+                            type: 'exa',
+                            name: 'Exa',
+                            baseUrl: 'https://api.exa.ai',
+                            apiKey: ''
+                        });
+                    }
+                }
+
+                // Міграція: додати дефолтні провайдери для юзерів з порожнім списком
                 if (!s.providers || s.providers.length === 0) {
                     s.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
                     s.activeProviderId = DEFAULT_SETTINGS.activeProviderId;

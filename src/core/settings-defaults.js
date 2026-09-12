@@ -16,24 +16,18 @@
                 apiKey: ''
             },
             {
-                id: 'unturf-qwen-default',
-                type: 'unturf-qwen',
-                name: 'Unturf Qwen',
-                baseUrl: 'https://qwen.ai.unturf.com/v1',
-                apiKey: ''
-            },
-            {
-                id: 'unturf-vl-default',
-                type: 'unturf-vl',
-                name: 'Unturf Vision',
-                baseUrl: 'https://qwen-vl.ai.unturf.com/v1',
-                apiKey: ''
-            },
-            {
                 id: 'opencode-zen-default',
                 type: 'opencode-zen',
                 name: 'OpenCode Zen',
                 baseUrl: 'https://opencode.ai/zen/v1',
+                apiKey: ''
+            },
+            {
+                id: 'exa-default',
+                kind: 'search',
+                type: 'exa',
+                name: 'Exa',
+                baseUrl: 'https://api.exa.ai',
                 apiKey: ''
             },
             {

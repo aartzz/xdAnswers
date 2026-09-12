@@ -7,7 +7,7 @@
     function getEligibleProviders(s) {
         if (!s.providers) return [];
         return s.providers.filter(function(p) {
-            return p.kind === 'search' && (p.apiKey || p.type === 'searxng');
+            return p.kind === 'search' && (p.apiKey || p.type === 'searxng' || p.type === 'exa');
         });
     }
 
@@ -170,9 +170,13 @@
 
     async function searchExa(sp, query, num, DEFAULT_BASE_URLS) {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.exa) + '/search';
+        var headers = { 'Content-Type': 'application/json' };
+        if (sp.apiKey) {
+            headers['x-api-key'] = sp.apiKey;
+        }
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-api-key': sp.apiKey },
+            headers: headers,
             data: JSON.stringify({ query: query, type: 'auto', numResults: num,
                 contents: { text: { maxCharacters: 500 }, highlights: true } }),
             responseType: 'text', timeout: 15000
