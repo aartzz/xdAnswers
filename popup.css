@@ -1,3 +1,10 @@
+@font-face {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    font-weight: 400;
+    src: url('lib/beercss/material-symbols-subset.woff2') format('woff2');
+}
+
 :root {
     --popup-bg: #1c1c1c;
     --popup-text: #e0e0e0;
@@ -758,7 +765,18 @@ textarea {
 }
 
 .theme-mode-icon {
-    font-family: 'Material Symbols Outlined', sans-serif;
+    font-family: 'Material Symbols Outlined', sans-serif !important;
+    font-style: normal;
+    font-weight: normal;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
     font-size: 18px;
     line-height: 1;
 }
@@ -773,6 +791,8 @@ textarea {
 .theme-swatch {
     width: 32px;
     height: 32px;
+    min-width: 32px;
+    min-height: 32px;
     border-radius: 50% !important;
     border: 2px solid transparent;
     cursor: pointer;
@@ -782,6 +802,8 @@ textarea {
     transition: transform 0.15s, border-color 0.15s;
     position: relative;
     padding: 0;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .theme-swatch:hover {
@@ -861,7 +883,18 @@ textarea {
 
 .theme-swatch .swatch-check,
 .theme-swatch .swatch-icon {
-    font-family: 'Material Symbols Outlined', sans-serif;
+    font-family: 'Material Symbols Outlined', sans-serif !important;
+    font-style: normal;
+    font-weight: normal;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    font-feature-settings: 'liga';
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
     font-size: 18px;
     color: #ffffff;
     line-height: 1;
