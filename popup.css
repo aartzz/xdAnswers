@@ -785,6 +785,72 @@ textarea {
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
 
+.theme-palette-picker-container {
+    margin-top: 8px;
+}
+
+.theme-palette-picker-container.hidden {
+    display: none;
+}
+
+.inline-color-picker-box {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inline-color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inline-hex-input {
+    flex: 1;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    color: var(--popup-text);
+    padding: 0 8px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.inline-color-swatch-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+}
+
+.inline-color-quick-shades {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.quick-shade-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s;
+}
+
+.quick-shade-btn:hover {
+    transform: scale(1.15);
+}
+
 .theme-swatch .swatch-check,
 .theme-swatch .swatch-icon {
     font-family: 'Material Symbols Outlined', sans-serif;

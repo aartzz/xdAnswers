@@ -1147,16 +1147,18 @@ function renderThemeSettings() {
         }
 
         swatch.addEventListener('click', async () => {
+            const pickerBox = document.getElementById('theme-palette-picker-container');
+            if (pickerBox) pickerBox.classList.add('hidden');
             settings.customization.borderColor = item.color;
             applyThemeToPopup();
             renderThemeSettings();
-            await autoSave();
+            await autoSave({ 'customization.borderColor': item.color });
         });
 
         container.appendChild(swatch);
     });
 
-    // Custom Color Swatch with hidden input[type="color"]
+    // Inline custom color button & inline expandable picker
     const customWrap = document.createElement('div');
     customWrap.className = 'theme-swatch-custom-wrap';
 
@@ -1166,11 +1168,6 @@ function renderThemeSettings() {
     customBtn.title = t('themeCustomColor');
     customBtn.setAttribute('aria-label', t('themeCustomColor'));
 
-    const colorPicker = document.createElement('input');
-    colorPicker.type = 'color';
-    colorPicker.className = 'theme-swatch-native-picker';
-    colorPicker.value = currentBorder;
-
     if (!isPresetSelected) {
         customBtn.classList.add('active');
         customBtn.style.backgroundColor = currentBorder;
@@ -1179,27 +1176,87 @@ function renderThemeSettings() {
         customBtn.innerHTML = '<span class="swatch-icon">colorize</span>';
     }
 
+    const pickerContainer = document.getElementById('theme-palette-picker-container');
+
     customBtn.addEventListener('click', () => {
-        colorPicker.click();
-    });
-
-    colorPicker.addEventListener('input', (e) => {
-        const val = e.target.value;
-        customBtn.style.backgroundColor = val;
-        settings.customization.borderColor = val;
-        applyThemeToPopup();
-    });
-
-    colorPicker.addEventListener('change', async (e) => {
-        settings.customization.borderColor = e.target.value;
-        applyThemeToPopup();
-        renderThemeSettings();
-        await autoSave();
+        if (!pickerContainer) return;
+        const isHidden = pickerContainer.classList.contains('hidden');
+        if (isHidden) {
+            renderInlineCustomPicker(pickerContainer, currentBorder);
+            pickerContainer.classList.remove('hidden');
+        } else {
+            pickerContainer.classList.add('hidden');
+        }
     });
 
     customWrap.appendChild(customBtn);
-    customWrap.appendChild(colorPicker);
     container.appendChild(customWrap);
+}
+
+function renderInlineCustomPicker(container, currentColor) {
+    container.innerHTML = `
+        <div class="inline-color-picker-box">
+            <div class="inline-color-picker-row">
+                <input type="text" id="inline-hex-input" class="inline-hex-input" value="${currentColor}" maxlength="7" placeholder="#3b82f6" />
+                <input type="color" id="inline-native-color" class="inline-color-swatch-btn" value="${currentColor}" />
+            </div>
+            <div class="inline-color-quick-shades">
+                ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff', '#94a3b8', '#64748b', '#000000'].map(h => `
+                    <button type="button" class="quick-shade-btn" style="background:${h}" data-hex="${h}"></button>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    const hexInput = container.querySelector('#inline-hex-input');
+    const colorBtn = container.querySelector('#inline-native-color');
+    const shadeBtns = container.querySelectorAll('.quick-shade-btn');
+
+    const updateColor = async (hex) => {
+        settings.customization.borderColor = hex;
+        applyThemeToPopup();
+        renderThemeSettings();
+        await autoSave({ 'customization.borderColor': hex });
+    };
+
+    if (hexInput) {
+        hexInput.addEventListener('change', () => {
+            const val = hexInput.value.trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                if (colorBtn) colorBtn.value = val;
+                updateColor(val);
+            }
+        });
+        hexInput.addEventListener('input', () => {
+            const val = hexInput.value.trim();
+            if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                if (colorBtn) colorBtn.value = val;
+                settings.customization.borderColor = val;
+                applyThemeToPopup();
+            }
+        });
+    }
+
+    if (colorBtn) {
+        colorBtn.addEventListener('input', (e) => {
+            const val = e.target.value;
+            if (hexInput) hexInput.value = val;
+            settings.customization.borderColor = val;
+            applyThemeToPopup();
+        });
+        colorBtn.addEventListener('change', (e) => {
+            updateColor(e.target.value);
+        });
+    }
+
+    shadeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const hex = btn.dataset.hex;
+            if (hexInput) hexInput.value = hex;
+            if (colorBtn) colorBtn.value = hex;
+            updateColor(hex);
+        });
+    });
 }
 
 function openThemeEditor() {
@@ -1951,14 +2008,25 @@ function attachEventListeners() {
                 settings.customization.contentColor = '#1c1c1c';
                 settings.customization.headerColor = '#333333';
                 settings.customization.textColor = '#e0e0e0';
+                applyThemeToPopup();
+                renderThemeSettings();
+                await autoSave({
+                    'customization.contentColor': '#1c1c1c',
+                    'customization.headerColor': '#333333',
+                    'customization.textColor': '#e0e0e0'
+                });
             } else {
                 settings.customization.contentColor = '#f5f5f7';
                 settings.customization.headerColor = '#e8e6f0';
                 settings.customization.textColor = '#1a1a2e';
+                applyThemeToPopup();
+                renderThemeSettings();
+                await autoSave({
+                    'customization.contentColor': '#f5f5f7',
+                    'customization.headerColor': '#e8e6f0',
+                    'customization.textColor': '#1a1a2e'
+                });
             }
-            applyThemeToPopup();
-            renderThemeSettings();
-            await autoSave();
         });
     });
 
