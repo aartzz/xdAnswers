@@ -144,8 +144,8 @@
                 }
 
                 // 2. Prose header based (e.g. Qwen / Deepseek / Llama without tags):
-                // matches "Here's a thinking...", "Thinking Process:", "The user asks...", "The user is asking...", "I need to select...", "Let's think..."
-                if (!inInlineThinking && (/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking)|I need to (?:select|choose|find|determine)|Let's think)/i.test(rawContentBuffer) || /\n\s*(?:The user (?:asks|is asking)|Here's a thinking process)/i.test(rawContentBuffer))) {
+                // matches "Here's a thinking...", "Thinking Process:", "The user wants...", "The user asks...", "The user is asking...", "I need to select...", "Let's think..."
+                if (!inInlineThinking && (/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking|wants|is trying)|I need to (?:select|choose|find|determine)|Let's think)/i.test(rawContentBuffer) || /\n\s*(?:The user (?:asks|is asking|wants|is trying)|Here's a thinking process)/i.test(rawContentBuffer))) {
                     inInlineThinking = true;
                     ensureThinkingUI();
                 }
@@ -165,8 +165,8 @@
                             rawContentBuffer = '';
                         }
                     } else if (!rawContentBuffer.startsWith('<think>')) {
-                        // Check prose transition like "---" or "**Answer:**" or "\n\nAnswer:" or "FINAL_ANSWER:" or JSON start "{"
-                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+                        // Check prose transition like "---" or "**Answer:**" or "\n\nAnswer:" or "FINAL_ANSWER:" or JSON start "{" or labeled answer "Answer:" / "Відповідь:" / "C: " / "A: "
+                        const transitionMatch = rawContentBuffer.search(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\n\s*[A-DА-Яа-яІіЇїЄє]\s*:\s*\S+))/i);
                         if (transitionMatch !== -1) {
                             const thinkPart = rawContentBuffer.slice(0, transitionMatch);
                             fullThinking += thinkPart;

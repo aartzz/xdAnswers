@@ -245,17 +245,17 @@
         if (!text) return '';
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-        // Strip leading prose thinking ("Here's a thinking process...", "The user asks...", "The user is asking...", "I need to select...")
-        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking)|I need to (?:select|choose|find|determine)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+        // Strip leading prose thinking ("Here's a thinking process...", "The user asks...", "The user wants...", "The user is asking...", "I need to select...")
+        const proseMatch = cleaned.match(/^\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:asks|is asking|wants|is trying)|I need to (?:select|choose|find|determine)|Let's think)[\s\S]*?\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\n\s*[A-DА-Яа-яІіЇїЄє]\s*:\s*\S+))/i);
         if (proseMatch) {
-            const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer"))/i);
+            const transition = proseMatch[0].match(/\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\n\s*[A-DА-Яа-яІіЇїЄє]\s*:\s*\S+))/i);
             if (transition) {
                 cleaned = cleaned.substring(transition.index + 1).trim();
             }
         }
 
         // If prose thinking was appended after confidence / fields: e.g. "Confidence: 0-100 The user asks for..."
-        cleaned = cleaned.replace(/\b(The user (?:asks|is asking)[\s\S]*|Here's a thinking process[\s\S]*)/i, '').trim();
+        cleaned = cleaned.replace(/\b(The user (?:asks|is asking|wants|is trying)[\s\S]*|Here's a thinking process[\s\S]*)/i, '').trim();
 
         return cleaned || text;
     }
