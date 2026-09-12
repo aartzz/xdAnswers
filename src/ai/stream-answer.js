@@ -602,8 +602,6 @@
 
                 // Reset per-round state for the next stream
                 pendingToolCalls = {};
-                fullContent = '';
-                fullThinking = '';
                 inInlineThinking = false;
                 rawContentBuffer = '';
                 thinkingStarted = false;
@@ -621,16 +619,16 @@
                     if (inInlineThinking) {
                         const transitionMatch = rawContentBuffer.search(PROSE_TRANSITION_REGEX);
                         if (transitionMatch !== -1) {
-                            fullThinking = rawContentBuffer.slice(0, transitionMatch).replace(/^<think>/i, '').trim();
+                            fullThinking = (fullThinking ? fullThinking + '\n' : '') + rawContentBuffer.slice(0, transitionMatch).replace(/^<think>/i, '').trim();
                             fullContent += rawContentBuffer.slice(transitionMatch + 1).trim();
                         } else {
                             // Check if rawContentBuffer has any answer keywords or is purely thinking
                             const altMatch = rawContentBuffer.search(/(?:^|\n)\s*(?:(?:\*{0,2}Answer\*{0,2}\s*:)|(?:(?:Therefore|Thus|So),?\s*.*?(?:option|answer)\s*(?:is|=)\s*)|(?:Option\s+[A-D]))/i);
                             if (altMatch !== -1 && altMatch > 0) {
-                                fullThinking = rawContentBuffer.slice(0, altMatch).replace(/^<think>/i, '').trim();
+                                fullThinking = (fullThinking ? fullThinking + '\n' : '') + rawContentBuffer.slice(0, altMatch).replace(/^<think>/i, '').trim();
                                 fullContent += rawContentBuffer.slice(altMatch).trim();
                             } else {
-                                fullThinking = (fullThinking || rawContentBuffer).replace(/^<think>/i, '').replace(/<\/think>$/i, '').trim();
+                                fullThinking = ((fullThinking ? fullThinking + '\n' : '') + rawContentBuffer).replace(/^<think>/i, '').replace(/<\/think>$/i, '').trim();
                             }
                         }
                     } else {
