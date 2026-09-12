@@ -78,17 +78,17 @@ body.theme-material3 .xd-popup-version {
 body.theme-material3 .tab-buttons {
     position: fixed !important;
     bottom: var(--nav-margin) !important;
-    left: var(--nav-margin) !important;
-    right: var(--nav-margin) !important;
+    left: 20px !important;
+    right: 20px !important;
     display: flex !important;
     background: var(--m3-surface-high) !important;
-    border: 1px solid var(--m3-outline-variant) !important;
+    border: none !important;
     border-radius: var(--m3-r-xl) !important;
     padding: 5px !important;
     gap: 3px !important;
     margin: 0 !important;
     z-index: 100 !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), 0 1px 6px rgba(0, 0, 0, 0.35) !important;
     width: auto !important;
     box-sizing: border-box !important;
 }
@@ -122,7 +122,6 @@ body.theme-material3 .tab-button::before {
     font-weight: 300 !important;
     font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
     transition: font-variation-settings 0.2s var(--m3-ease), color 0.2s var(--m3-ease);
-    display: block !important;
 }
 
 body.theme-material3 .tab-button[data-tab="ai-tab"]::before        { content: "smart_toy" !important; }
@@ -222,48 +221,106 @@ body.theme-material3 input[type="password"]:hover {
 }
 
 /* ── Native <select>: M3 styled, appearance: none + custom arrow ── */
-body.theme-material3 select {
-    appearance: none !important;
-    -webkit-appearance: none !important;
+/* ── Custom M3 Select Dropdown ──────────────────────────────────── */
+/* Native <select> inside .m3-select-wrap is hidden via JS inline styles */
+
+body.theme-material3 .m3-select-wrap {
+    position: relative !important;
+    width: 100% !important;
+    display: block !important;
+}
+
+body.theme-material3 .m3-select-trigger {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
     background-color: var(--m3-surface-low) !important;
     color: var(--m3-on-surface) !important;
     border: 1px solid var(--m3-outline) !important;
     border-radius: var(--m3-r-m) !important;
-    padding: 9px 36px 9px 12px !important;
+    padding: 9px 12px !important;
     font-family: "Roboto", system-ui, sans-serif !important;
     font-size: 13px !important;
-    height: auto !important;
     min-height: 38px !important;
-    outline: none !important;
-    width: 100% !important;
     box-sizing: border-box !important;
     cursor: pointer !important;
-    transition: border-color 0.2s, box-shadow 0.2s !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%238e919a' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
+    width: 100% !important;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s !important;
+    outline: none !important;
+    user-select: none !important;
 }
 
-body.theme-material3 select:focus {
+body.theme-material3 .m3-select-trigger:hover {
+    border-color: var(--m3-on-surface-variant) !important;
+    background-color: var(--m3-surface-mid) !important;
+}
+
+body.theme-material3 .m3-select-trigger:focus,
+body.theme-material3 .m3-select-wrap.m3-open .m3-select-trigger {
     border-color: var(--m3-primary) !important;
     box-shadow: 0 0 0 1px var(--m3-primary) !important;
     background-color: var(--m3-surface-mid) !important;
 }
 
-body.theme-material3 select:hover {
-    border-color: var(--m3-on-surface-variant) !important;
+body.theme-material3 .m3-select-arrow {
+    font-family: var(--font-icon) !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    color: var(--m3-on-surface-variant) !important;
+    transition: transform 0.2s var(--m3-ease) !important;
+    flex-shrink: 0 !important;
+    margin-left: 4px !important;
 }
 
-/* option elements — limited browser support, dark bg at minimum */
-body.theme-material3 select option {
-    background-color: var(--m3-surface-high) !important;
+body.theme-material3 .m3-select-wrap.m3-open .m3-select-arrow {
+    transform: rotate(180deg) !important;
+}
+
+body.theme-material3 .m3-select-list {
+    position: absolute !important;
+    top: calc(100% + 4px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: var(--m3-surface-high) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-m) !important;
+    overflow: hidden !important;
+    overflow-y: auto !important;
+    max-height: 200px !important;
+    z-index: 200 !important;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 4px 0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    opacity: 0 !important;
+    transform: scaleY(0.85) !important;
+    transform-origin: top center !important;
+    pointer-events: none !important;
+    transition: opacity 0.15s var(--m3-ease), transform 0.15s var(--m3-ease) !important;
+}
+
+body.theme-material3 .m3-select-wrap.m3-open .m3-select-list {
+    opacity: 1 !important;
+    transform: scaleY(1) !important;
+    pointer-events: auto !important;
+}
+
+body.theme-material3 .m3-select-item {
+    padding: 9px 14px !important;
+    font-size: 13px !important;
     color: var(--m3-on-surface) !important;
-    padding: 8px 12px !important;
+    cursor: pointer !important;
+    transition: background 0.15s !important;
 }
 
-body.theme-material3 select option:checked {
-    background-color: var(--m3-primary-container) !important;
+body.theme-material3 .m3-select-item:hover {
+    background: rgba(168, 199, 250, 0.12) !important;
+}
+
+body.theme-material3 .m3-select-item.selected {
+    background: var(--m3-primary-container) !important;
     color: var(--m3-on-primary-container) !important;
+    font-weight: 500 !important;
 }
 
 /* ── Switches: override span::before (track) and span::after (knob)
