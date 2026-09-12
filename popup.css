@@ -91,6 +91,156 @@ h3 {
     display: none;
 }
 
+/* ── AOSP Settings Navigation for Legacy Theme ── */
+.aosp-search-wrapper {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 0 14px;
+    height: 38px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.aosp-search-icon {
+    font-family: 'Material Symbols Outlined';
+    font-size: 18px;
+    opacity: 0.6;
+    margin-right: 8px;
+}
+
+#settings-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--popup-text);
+    font-size: 13px;
+    font-family: inherit;
+    padding: 0;
+}
+
+#settings-search-input::placeholder {
+    color: var(--popup-text);
+    opacity: 0.5;
+}
+
+.aosp-search-clear {
+    background: none;
+    border: none;
+    color: var(--popup-text);
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0.6;
+    padding: 2px 6px;
+}
+
+.settings-categories-view {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.aosp-category-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.aosp-category-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--popup-border);
+}
+
+.aosp-category-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--popup-border);
+}
+
+.aosp-category-icon .material-icon {
+    font-family: 'Material Symbols Outlined';
+    font-size: 20px;
+}
+
+.aosp-category-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.aosp-category-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--popup-text);
+}
+
+.aosp-category-desc {
+    font-size: 11px;
+    opacity: 0.6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aosp-subpage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.aosp-back-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--popup-text);
+    transition: background 0.15s;
+}
+
+.aosp-back-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: var(--popup-border);
+}
+
+.aosp-back-btn .material-icon {
+    font-family: 'Material Symbols Outlined';
+    font-size: 18px;
+}
+
+.aosp-subpage-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--popup-text);
+}
+
+.settings-section-panel {
+    display: flex;
+    flex-direction: column;
+}
+
 .tab-content.active {
     display: flex;
     flex-direction: column;
