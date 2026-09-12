@@ -2,7 +2,7 @@
     font-family: 'Material Symbols Outlined';
     font-style: normal;
     font-weight: 400;
-    src: url('lib/beercss/material-symbols-subset.woff2') format('woff2');
+    src: url('lib/beercss/material-symbols-outlined.woff2') format('woff2');
 }
 
 :root {
