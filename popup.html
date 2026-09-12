@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>xdAnswers Settings</title>
     <link rel="stylesheet" href="popup.css">
+    <link id="beercss-stylesheet" rel="stylesheet" href="lib/beercss/beer.min.css">
+    <link id="beercss-m3-stylesheet" rel="stylesheet" href="popup-m3.css">
 </head>
 <body>
     <div class="header">
@@ -170,6 +172,15 @@
     </div>
 
     <div id="themes-tab" class="tab-content">
+        <div class="form-group theme-engine-group">
+            <label for="theme-engine-select" id="theme-engine-label">Design System / Тема:</label>
+            <select id="theme-engine-select">
+                <option value="material3">Material 3 Expressive (Beer CSS)</option>
+                <option value="legacy">Legacy (Dark Glass)</option>
+            </select>
+            <p class="field-hint" id="theme-engine-hint">Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).</p>
+        </div>
+        <hr class="separator">
         <p class="tab-description">Choose a preset or click <strong>+</strong> to build your own.</p>
         <div id="themes-grid" class="themes-grid"></div>
 
@@ -244,6 +255,7 @@
     <script src="src/core/constants.js"></script>
     <script src="src/core/settings-defaults.js"></script>
     <script src="src/ui/i18n.js"></script>
+    <script type="module" src="lib/beercss/beer.min.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

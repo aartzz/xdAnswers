@@ -66,6 +66,7 @@
         hotkey: 'Ctrl+Shift+X',
         webSearchEnabled: true,
         calculatorEnabled: true,
+        themeEngine: 'material3',
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,
         savedPosition: null,

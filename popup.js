@@ -94,6 +94,17 @@ function applyLanguage() {
     if (hotkeyClearBtn) hotkeyClearBtn.title = t('hotkeyClear');
 
     // Themes tab
+    const themeEngineLabel = document.getElementById('theme-engine-label');
+    if (themeEngineLabel) themeEngineLabel.textContent = t('themeEngineLabel');
+    const themeEngineHint = document.getElementById('theme-engine-hint');
+    if (themeEngineHint) themeEngineHint.textContent = t('themeEngineHint');
+    const themeEngineSelect = document.getElementById('theme-engine-select');
+    if (themeEngineSelect) {
+        const optM3 = themeEngineSelect.querySelector('option[value="material3"]');
+        if (optM3) optM3.textContent = t('themeEngineM3');
+        const optLegacy = themeEngineSelect.querySelector('option[value="legacy"]');
+        if (optLegacy) optLegacy.textContent = t('themeEngineLegacy');
+    }
     const themesDesc = document.querySelector('.tab-description');
     if (themesDesc) themesDesc.innerHTML = t('themesDesc');
     const editorTitle = document.querySelector('.theme-editor-title');
@@ -448,9 +459,39 @@ function isColorDark(hex) {
     return luminance < 0.45;
 }
 
+function hexToRgb(hex) {
+    const c = (hex || '#6366f1').replace('#', '');
+    const r = parseInt(c.substring(0, 2), 16) || 0;
+    const g = parseInt(c.substring(2, 4), 16) || 0;
+    const b = parseInt(c.substring(4, 6), 16) || 0;
+    return `${r}, ${g}, ${b}`;
+}
+
 function applyThemeToPopup() {
     const root = document.documentElement;
-    const c = settings.customization;
+    const c = settings.customization || {};
+    const engine = settings.themeEngine || 'material3';
+    const isM3 = engine !== 'legacy';
+
+    const beerCss = document.getElementById('beercss-stylesheet');
+    const m3Css = document.getElementById('beercss-m3-stylesheet');
+    if (beerCss) beerCss.disabled = !isM3;
+    if (m3Css) m3Css.disabled = !isM3;
+
+    document.body.classList.toggle('theme-material3', isM3);
+    document.body.classList.toggle('dark', isM3);
+    document.body.classList.toggle('theme-legacy', !isM3);
+
+    if (isM3) {
+        const primaryColor = c.borderColor || '#a8c7fa';
+        root.style.setProperty('--primary', primaryColor);
+        root.style.setProperty('--primary-container', isColorDark(primaryColor) ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.25)');
+        root.style.setProperty('--on-primary-container', isColorDark(primaryColor) ? '#ffffff' : primaryColor);
+        root.style.setProperty('--surface', c.contentColor || '#121316');
+        root.style.setProperty('--surface-container', c.headerColor || '#1e1f23');
+        root.style.setProperty('--on-surface', c.textColor || '#e2e2e6');
+    }
+
     root.style.setProperty('--popup-bg', c.contentColor);
     root.style.setProperty('--header-bg', c.headerColor);
     root.style.setProperty('--popup-text', c.textColor);
@@ -503,6 +544,8 @@ function populateUI() {
         });
     }
     if (el.rememberDragToggle) el.rememberDragToggle.checked = !!settings.rememberDragPosition;
+
+    if (el.themeEngineSelect) el.themeEngineSelect.value = settings.themeEngine || 'material3';
 
     // Hotkey display
     if (el.hotkeyRecorderKbd) el.hotkeyRecorderKbd.textContent = settings.hotkey || 'Ctrl+Shift+X';
@@ -1668,6 +1711,15 @@ function attachEventListeners() {
         autoSave();
     };
 
+    // Design system / Theme engine switch
+    if (el.themeEngineSelect) {
+        el.themeEngineSelect.onchange = () => {
+            settings.themeEngine = el.themeEngineSelect.value;
+            applyThemeToPopup();
+            autoSave({ themeEngine: el.themeEngineSelect.value });
+        };
+    }
+
     // Silent mode: checkbox toggles on/off, select chooses mode (always visible)
     el.silentModeToggle.onchange = () => {
         const isOn = el.silentModeToggle.checked;
@@ -1820,6 +1872,7 @@ async function autoSave(overrides) {
     settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
     settings.calculatorEnabled = el.calculatorToggle?.checked ?? (settings.calculatorEnabled !== false);
     settings.disablerEnabled = el.disablerToggle?.checked ?? settings.disablerEnabled;
+    settings.themeEngine = el.themeEngineSelect?.value || settings.themeEngine || 'material3';
     settings.consensus.enabled = el.consensusToggle?.checked ?? !!(settings.consensus && settings.consensus.enabled);
     settings.customization.glowEffect = el.glowEffectToggle.checked;
 
@@ -1885,6 +1938,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         positionGrid: document.getElementById('position-grid'),
         rememberDragToggle: document.getElementById('remember-drag-toggle'),
         themesGrid: document.getElementById('themes-grid'),
+        themeEngineSelect: document.getElementById('theme-engine-select'),
         glowEffectToggle: document.getElementById('glow-effect-toggle'),
         themeEditor: document.getElementById('theme-editor'),
         themeEditorClose: document.getElementById('theme-editor-close'),

@@ -103,7 +103,11 @@
             hotkeyClear: 'Скинути',
             searchProviderBadge: 'ПОШУК',
             disablerLabel: 'Disabler',
-            disablerHint: 'Відключає перевірки сайту, щоб дозволити легше списування.'
+            disablerHint: 'Відключає перевірки сайту, щоб дозволити легше списування.',
+            themeEngineLabel: 'Система дизайну / Тема:',
+            themeEngineHint: 'Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).',
+            themeEngineM3: 'Material 3 Expressive (Beer CSS)',
+            themeEngineLegacy: 'Класичний (Legacy)'
         },
         ru: {
             tabAI: 'ИИ',
@@ -203,7 +207,11 @@
             hotkeyClear: 'Сбросить',
             searchProviderBadge: 'ПОИСК',
             disablerLabel: 'Disabler',
-            disablerHint: 'Отключает проверки сайта, чтобы позволить легче списывать.'
+            disablerHint: 'Отключает проверки сайта, чтобы позволить легче списывать.',
+            themeEngineLabel: 'Система дизайна / Тема:',
+            themeEngineHint: 'Material 3 Expressive (Beer CSS) или классический стиль (Legacy).',
+            themeEngineM3: 'Material 3 Expressive (Beer CSS)',
+            themeEngineLegacy: 'Классический (Legacy)'
         },
         en: {
             tabAI: 'AI',
@@ -303,7 +311,11 @@
             hotkeyClear: 'Reset',
             searchProviderBadge: 'SEARCH',
             disablerLabel: 'Disabler',
-            disablerHint: 'Disables site checks to make cheating easier.'
+            disablerHint: 'Disables site checks to make cheating easier.',
+            themeEngineLabel: 'Design System / Theme:',
+            themeEngineHint: 'Material 3 Expressive (Beer CSS) or classic dark style (Legacy).',
+            themeEngineM3: 'Material 3 Expressive (Beer CSS)',
+            themeEngineLegacy: 'Classic (Legacy)'
         }
     };
 
