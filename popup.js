@@ -21,7 +21,19 @@ function applyLanguage() {
     // Tab buttons
     const tabs = document.querySelectorAll('.tab-button');
     const tabKeys = ['tabAI', 'tabProviders', 'tabFeatures', 'tabThemes', null]; // last = ♥ (no translation)
-    tabs.forEach((btn, i) => { if (tabKeys[i]) btn.textContent = t(tabKeys[i]); });
+    tabs.forEach((btn, i) => {
+        const text = tabKeys[i] ? t(tabKeys[i]) : '♥';
+        btn.setAttribute('title', text);
+        btn.setAttribute('aria-label', text);
+        let labelSpan = btn.querySelector('.tab-label');
+        if (!labelSpan) {
+            btn.textContent = '';
+            labelSpan = document.createElement('span');
+            labelSpan.className = 'tab-label';
+            btn.appendChild(labelSpan);
+        }
+        labelSpan.textContent = text;
+    });
 
     // AI tab
     const providerLabel = document.querySelector('label[for="active-provider-trigger"]');
@@ -498,6 +510,7 @@ function applyThemeToPopup() {
     root.style.setProperty('--popup-border', c.borderColor);
     root.classList.toggle('xd-dark-icons', isColorDark(c.contentColor));
     root.classList.toggle('xd-light-icons', !isColorDark(c.contentColor));
+    initM3Selects();
 }
 
 /**
@@ -518,10 +531,10 @@ function initM3Selects() {
         // Remove existing wrapper if switching themes
         const existingWrap = native.closest('.m3-select-wrap');
         if (existingWrap && !isM3) {
-            // Unwrap: move native back, remove wrapper
+            // Unwrap: move native back, remove wrapper, strip any leftover styles
             existingWrap.parentNode.insertBefore(native, existingWrap);
             existingWrap.remove();
-            native.style.display = '';
+            native.removeAttribute('style');
             return;
         }
         if (!isM3) return;
@@ -536,13 +549,6 @@ function initM3Selects() {
         wrap.className = 'm3-select-wrap';
         native.parentNode.insertBefore(wrap, native);
         wrap.appendChild(native);
-
-        // Hide native
-        native.style.position = 'absolute';
-        native.style.opacity = '0';
-        native.style.pointerEvents = 'none';
-        native.style.width = '0';
-        native.style.height = '0';
 
         // Trigger button
         const trigger = document.createElement('div');

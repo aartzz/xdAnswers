@@ -35,7 +35,7 @@ body.theme-material3 {
     font-family: "Roboto", system-ui, sans-serif !important;
     background-color: var(--m3-surface) !important;
     color: var(--m3-on-surface) !important;
-    padding-bottom: calc(var(--nav-height) + var(--nav-margin) * 2) !important;
+    padding-bottom: 0 !important;
     overflow-x: hidden !important;
 }
 
@@ -77,9 +77,9 @@ body.theme-material3 .xd-popup-version {
 /* ── Floating Bottom Navigation Bar ── */
 body.theme-material3 .tab-buttons {
     position: fixed !important;
-    bottom: var(--nav-margin) !important;
-    left: 20px !important;
-    right: 20px !important;
+    bottom: 14px !important;
+    left: 26px !important;
+    right: 26px !important;
     display: flex !important;
     background: var(--m3-surface-high) !important;
     border: none !important;
@@ -88,7 +88,7 @@ body.theme-material3 .tab-buttons {
     gap: 3px !important;
     margin: 0 !important;
     z-index: 100 !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.55), 0 1px 6px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     width: auto !important;
     box-sizing: border-box !important;
 }
@@ -98,26 +98,41 @@ body.theme-material3 .tab-button {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 7px 4px !important;
+    padding: 8px 0 !important;
     border-radius: var(--m3-r-l) !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
     border: none !important;
     cursor: pointer !important;
     font-size: 0 !important;
+    line-height: 0 !important;
+    letter-spacing: 0 !important;
+    gap: 0 !important;
+    margin: 0 !important;
     opacity: 1 !important;
     border-bottom: none !important;
     transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
     min-width: 0 !important;
     height: auto !important;
     box-sizing: border-box !important;
+    text-align: center !important;
+}
+
+body.theme-material3 .tab-button .tab-label {
+    display: none !important;
 }
 
 /* Material Symbol icons via ::before */
 body.theme-material3 .tab-button::before {
     font-family: var(--font-icon) !important;
     font-size: 22px !important;
-    line-height: 1 !important;
+    line-height: 22px !important;
+    width: 22px !important;
+    height: 22px !important;
+    display: inline-block !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
     font-style: normal !important;
     font-weight: 300 !important;
     font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
@@ -146,7 +161,7 @@ body.theme-material3 .tab-button.active::before {
 
 /* ── Tab Content ── */
 body.theme-material3 .tab-content {
-    padding: 12px 14px !important;
+    padding: 12px 14px 84px !important;
     overflow-x: hidden !important;
 }
 
@@ -228,6 +243,17 @@ body.theme-material3 .m3-select-wrap {
     position: relative !important;
     width: 100% !important;
     display: block !important;
+}
+
+body.theme-material3 .m3-select-wrap select {
+    position: absolute !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 body.theme-material3 .m3-select-trigger {
