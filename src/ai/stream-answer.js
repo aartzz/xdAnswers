@@ -128,8 +128,8 @@
             let inInlineThinking = false;
             let rawContentBuffer = '';
 
-            const PROSE_THINKING_ANYWHERE_REGEX = /(?:^|\n)\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze)/i;
-            const PROSE_TRANSITION_REGEX = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
+            const PROSE_THINKING_ANYWHERE_REGEX = /(?:^|\n)\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze|We need to (?:answer|find|determine|identify|select|choose))/i;
+            const PROSE_TRANSITION_REGEX = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+(?:is|=)\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
 
             function checkAndExtractInlineThinking(newText) {
                 rawContentBuffer += newText;
@@ -152,7 +152,7 @@
                         // At stream beginning, hold buffer if it could be start of prose thinking header
                         if (rawContentBuffer.length < 30) {
                             const prefix = rawContentBuffer.trimStart();
-                            const possiblePrefixes = ["here", "thinking", "the", "i need", "let", "first"];
+                            const possiblePrefixes = ["here", "thinking", "the", "i need", "let", "first", "we need"];
                             const isCandidate = possiblePrefixes.some(p => p.startsWith(prefix.toLowerCase()) || prefix.toLowerCase().startsWith(p));
                             if (isCandidate) {
                                 return; // hold buffer for more chunks
@@ -604,10 +604,23 @@
 
             function finishStream() {
                 stopStreamTimer();
-                // If stream ended while still in inline thinking buffer, flush it
+                // If stream ended while still in inline thinking buffer, inspect if it contains transition or is entirely thinking
                 if (rawContentBuffer) {
                     if (inInlineThinking) {
-                        fullThinking = (fullThinking || rawContentBuffer).replace(/^<think>/i, '').replace(/<\/think>$/i, '');
+                        const transitionMatch = rawContentBuffer.search(PROSE_TRANSITION_REGEX);
+                        if (transitionMatch !== -1) {
+                            fullThinking = rawContentBuffer.slice(0, transitionMatch).replace(/^<think>/i, '').trim();
+                            fullContent += rawContentBuffer.slice(transitionMatch + 1).trim();
+                        } else {
+                            // Check if rawContentBuffer has any answer keywords or is purely thinking
+                            const altMatch = rawContentBuffer.search(/(?:^|\n)\s*(?:(?:\*{0,2}Answer\*{0,2}\s*:)|(?:(?:Therefore|Thus|So),?\s*.*?(?:option|answer)\s*(?:is|=)\s*)|(?:Option\s+[A-D]))/i);
+                            if (altMatch !== -1 && altMatch > 0) {
+                                fullThinking = rawContentBuffer.slice(0, altMatch).replace(/^<think>/i, '').trim();
+                                fullContent += rawContentBuffer.slice(altMatch).trim();
+                            } else {
+                                fullThinking = (fullThinking || rawContentBuffer).replace(/^<think>/i, '').replace(/<\/think>$/i, '').trim();
+                            }
+                        }
                     } else {
                         fullContent += rawContentBuffer;
                     }

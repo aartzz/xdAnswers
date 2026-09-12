@@ -226,7 +226,8 @@
         if (!m) m = text.match(/Відповідь:\s*(.+?)(?:\n|$)/i);
         if (!m) m = text.match(/Ответ:\s*(.+?)(?:\n|$)/i);
         if (!m) m = text.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
-        if (!m) m = text.match(/(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?answer\s+is\s*:?\s*(.+?)(?:\n|$)/i);
+        if (!m) m = text.match(/(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s*(?:is|=)\s*:?\s*(.+?)(?:\n|$)/i);
+        if (!m) m = text.match(/(?:Option|Варіант)\s+([A-DА-Яа-яІіЇїЄє0-9])\s*(?:is\s+correct|є\s+правильн)/i);
         if (!m) return null;
 
         var answer = m[1].trim();
@@ -248,8 +249,8 @@
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
-        const proseHeaderRegex = /(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze)/i;
-        const proseTransitionRegex = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
+        const proseHeaderRegex = /(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze|We need to (?:answer|find|determine|identify|select|choose))/i;
+        const proseTransitionRegex = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+(?:is|=)\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
 
         // 1. Strip leading prose thinking when transition to answer exists
         if (proseHeaderRegex.test(cleaned)) {
