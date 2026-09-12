@@ -95,7 +95,7 @@
                     s.providers = s.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
                     // Додати Exa якщо відсутній серед search-провайдерів
                     if (!s.providers.some(pr => pr.type === 'exa')) {
-                        s.providers.unshift({
+                        s.providers.push({
                             id: 'exa-default',
                             kind: 'search',
                             type: 'exa',
@@ -110,6 +110,12 @@
                 if (!s.providers || s.providers.length === 0) {
                     s.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
                     s.activeProviderId = DEFAULT_SETTINGS.activeProviderId;
+                }
+
+                const activePr = s.providers.find(p => p.id === s.activeProviderId);
+                if (!activePr || activePr.kind === 'search') {
+                    const nonSearch = s.providers.filter(p => p.kind !== 'search');
+                    s.activeProviderId = nonSearch[0]?.id || DEFAULT_SETTINGS.activeProviderId;
                 }
                 if (typeof s.promptPrefix !== 'string' || !s.promptPrefix.trim()) {
                     s.promptPrefix = DEFAULT_SETTINGS.promptPrefix;

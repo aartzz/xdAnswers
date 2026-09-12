@@ -441,7 +441,7 @@ async function loadSettings() {
                 loaded.providers = loaded.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
                 // Додати Exa якщо відсутній серед search-провайдерів
                 if (!loaded.providers.some(pr => pr.type === 'exa')) {
-                    loaded.providers.unshift({
+                    loaded.providers.push({
                         id: 'exa-default',
                         kind: 'search',
                         type: 'exa',
@@ -456,6 +456,12 @@ async function loadSettings() {
             if (!loaded.providers || loaded.providers.length === 0) {
                 loaded.providers = JSON.parse(JSON.stringify(window.xdAnswers._internal.DEFAULT_SETTINGS.providers));
                 loaded.activeProviderId = window.xdAnswers._internal.DEFAULT_SETTINGS.activeProviderId;
+            }
+
+            const activePr = loaded.providers.find(p => p.id === loaded.activeProviderId);
+            if (!activePr || activePr.kind === 'search') {
+                const nonSearch = loaded.providers.filter(p => p.kind !== 'search');
+                loaded.activeProviderId = nonSearch[0]?.id || window.xdAnswers._internal.DEFAULT_SETTINGS.activeProviderId;
             }
             if (typeof loaded.promptPrefix !== 'string' || !loaded.promptPrefix.trim()) {
                 loaded.promptPrefix = window.xdAnswers._internal.DEFAULT_SETTINGS.promptPrefix;
@@ -942,7 +948,8 @@ function attachProviderCardListeners(container) {
         btn.addEventListener('click', async () => {
             settings.providers = settings.providers.filter(p => p.id !== btn.dataset.id);
             if (settings.activeProviderId === btn.dataset.id) {
-                settings.activeProviderId = settings.providers[0]?.id || '';
+                const nonSearch = settings.providers.filter(p => p.kind !== 'search');
+                settings.activeProviderId = nonSearch[0]?.id || settings.providers[0]?.id || '';
             }
             renderProvidersTab();
             renderActiveProviderSelector();
