@@ -203,11 +203,16 @@ body.theme-material3 .tab-button.active::before {
 
 /* ── Tab Content ── */
 body.theme-material3 .tab-content {
+    display: none;
     padding: 12px 14px 84px !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
 }
 
 body.theme-material3 .tab-content.active {
+    display: block !important;
     animation: m3FadeSlide 0.2s var(--m3-ease);
 }
 
@@ -233,7 +238,11 @@ body.theme-material3 .tab-content > .m3-section-title:first-child {
 }
 
 body.theme-material3 .settings-card {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
     background: var(--m3-surface-low) !important;
     border: 1px solid var(--m3-outline-variant) !important;
     border-radius: var(--m3-r-l) !important;
@@ -255,6 +264,12 @@ body.theme-material3 .settings-card > .form-group {
     border-bottom: 1px solid var(--m3-outline-variant) !important;
     position: relative !important;
     box-sizing: border-box !important;
+    flex-shrink: 0 !important;
+    width: 100% !important;
+}
+
+body.theme-material3 .settings-card > .form-group:last-child {
+    border-bottom: none !important;
 }
 
 body.theme-material3 .settings-card > .form-group:not(.toggle-group) {
@@ -319,6 +334,10 @@ body.theme-material3 .settings-card > .form-group.toggle-group label {
     width: 100% !important;
     display: block !important;
     cursor: pointer !important;
+    text-transform: none !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    letter-spacing: normal !important;
 }
 
 body.theme-material3 .settings-card > .form-group.toggle-group label input[type="checkbox"] {
@@ -467,8 +486,8 @@ body.theme-material3 .form-group {
     margin-bottom: 12px !important;
 }
 
-body.theme-material3 .form-group > label:first-child,
-body.theme-material3 .form-group > label:not(.toggle-group label):first-child {
+body.theme-material3 .form-group:not(.settings-card .form-group) > label:first-child,
+body.theme-material3 .form-group:not(.settings-card .form-group) > label:not(.toggle-group label):first-child {
     font-size: 11px !important;
     font-weight: 600 !important;
     color: var(--m3-on-surface-variant) !important;
