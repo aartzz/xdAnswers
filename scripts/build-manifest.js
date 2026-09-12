@@ -43,4 +43,11 @@ const finalManifest = { ...commonManifest, ...browserSpecifics };
 
 fs.writeFileSync(finalManifestPath, JSON.stringify(finalManifest, null, 2), 'utf-8');
 
+// Ensure version.js exists if referenced by content_scripts
+const versionPath = path.join(__dirname, '..', 'version.js');
+if (!fs.existsSync(versionPath)) {
+  const manifestVersion = commonManifest.version || '0.0.0';
+  fs.writeFileSync(versionPath, `// Auto-generated fallback — DO NOT EDIT\nwindow.xdAnswers = window.xdAnswers || {};\nwindow.xdAnswers._buildVersion = 'v${manifestVersion}';\n`, 'utf-8');
+}
+
 console.log(`Successfully created manifest.json for ${targetBrowser}`);
