@@ -1,0 +1,664 @@
+/* popup-m3.css - Material 3 Expressive theme for xdAnswers (Beer CSS powered) */
+
+:root,
+body.theme-material3 {
+    --font: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-icon: "Material Symbols Outlined";
+    --primary: #a8c7fa;
+    --on-primary: #042f66;
+    --primary-container: #0842a0;
+    --on-primary-container: #d3e3fd;
+    --secondary: #c2e7ff;
+    --on-secondary: #003354;
+    --secondary-container: #004a75;
+    --on-secondary-container: #c2e7ff;
+    --surface: #121316;
+    --on-surface: #e2e2e6;
+    --surface-variant: #44474f;
+    --on-surface-variant: #c4c6d0;
+    --surface-container-lowest: #0c0e11;
+    --surface-container-low: #1a1b1f;
+    --surface-container: #1e1f23;
+    --surface-container-high: #282a2e;
+    --surface-container-highest: #333539;
+    --outline: #8e919a;
+    --outline-variant: #44474f;
+    --m3-radius-s: 8px;
+    --m3-radius-m: 12px;
+    --m3-radius-l: 16px;
+    --m3-radius-xl: 24px;
+    --m3-radius-full: 9999px;
+    --m3-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ── Body: override only visuals, keep popup.css flex structure ── */
+body.theme-material3 {
+    font-family: var(--font);
+    background: var(--surface) !important;
+    color: var(--on-surface) !important;
+    /* Do NOT override width/height/display/flex-direction — popup.css owns the shell */
+    padding: 12px !important;
+    box-sizing: border-box;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--outline-variant) transparent;
+}
+
+body.theme-material3::-webkit-scrollbar {
+    width: 6px;
+}
+body.theme-material3::-webkit-scrollbar-thumb {
+    background: var(--outline-variant);
+    border-radius: 3px;
+}
+
+/* ── Top App Bar (Header) ── */
+body.theme-material3 .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    flex-shrink: 0;
+}
+
+body.theme-material3 .header h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    color: var(--on-surface);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+body.theme-material3 .xd-popup-version {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    background: var(--surface-container-highest);
+    color: var(--primary);
+    border-radius: var(--m3-radius-full);
+    border: 1px solid var(--outline-variant);
+}
+
+/* ── M3 Navigation Tabs — icons only ── */
+body.theme-material3 .tab-buttons {
+    display: flex;
+    background: var(--surface-container);
+    border-radius: var(--m3-radius-l);
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 12px;
+    border: 1px solid var(--outline-variant);
+    flex-shrink: 0;
+}
+
+body.theme-material3 .tab-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border-radius: var(--m3-radius-m);
+    background: transparent;
+    color: var(--on-surface-variant);
+    font-family: var(--font-icon);
+    font-size: 0; /* hide HTML text */
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease);
+    user-select: none;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* Icon via ::before, visible regardless of font-size: 0 on button text */
+body.theme-material3 .tab-button::before {
+    font-family: var(--font-icon);
+    font-size: 20px;
+    line-height: 1;
+    font-style: normal;
+    font-weight: 400;
+    display: block;
+    /* Material Symbols rendering */
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    transition: font-variation-settings 0.2s var(--m3-ease);
+}
+
+body.theme-material3 .tab-button[data-tab="ai-tab"]::before { content: "smart_toy"; }
+body.theme-material3 .tab-button[data-tab="providers-tab"]::before { content: "hub"; }
+body.theme-material3 .tab-button[data-tab="features-tab"]::before { content: "tune"; }
+body.theme-material3 .tab-button[data-tab="themes-tab"]::before { content: "palette"; }
+body.theme-material3 .tab-button[data-tab="donate-tab"]::before { content: "favorite"; }
+
+body.theme-material3 .tab-button:hover {
+    background: var(--surface-container-high);
+    color: var(--on-surface);
+}
+
+body.theme-material3 .tab-button.active {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+body.theme-material3 .tab-button.active::before {
+    font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ── M3 Cards & Containers ── */
+body.theme-material3 .tab-content {
+    display: none;
+    animation: m3FadeIn 0.18s var(--m3-ease);
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+body.theme-material3 .tab-content.active {
+    display: block;
+}
+
+@keyframes m3FadeIn {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+body.theme-material3 .form-group {
+    margin-bottom: 12px;
+}
+
+body.theme-material3 .form-group > label:first-child {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--on-surface-variant);
+    margin-bottom: 5px;
+    letter-spacing: 0.1px;
+}
+
+body.theme-material3 .field-hint {
+    font-size: 11px;
+    color: var(--on-surface-variant);
+    line-height: 1.4;
+    margin: 4px 0 0 0;
+    opacity: 0.85;
+}
+
+body.theme-material3 .separator {
+    border: none;
+    border-top: 1px solid var(--outline-variant);
+    margin: 12px 0;
+    opacity: 0.5;
+}
+
+/* ── M3 Text Inputs & Selects ── */
+body.theme-material3 input[type="text"],
+body.theme-material3 input[type="number"],
+body.theme-material3 input[type="password"],
+body.theme-material3 select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    background: var(--surface-container-low);
+    color: var(--on-surface);
+    border: 1px solid var(--outline);
+    border-radius: var(--m3-radius-m);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s var(--m3-ease), box-shadow 0.2s var(--m3-ease), background 0.2s;
+}
+
+body.theme-material3 input[type="text"]:hover,
+body.theme-material3 input[type="number"]:hover,
+body.theme-material3 input[type="password"]:hover,
+body.theme-material3 select:hover {
+    border-color: var(--on-surface-variant);
+    background: var(--surface-container);
+}
+
+body.theme-material3 input[type="text"]:focus,
+body.theme-material3 input[type="number"]:focus,
+body.theme-material3 input[type="password"]:focus,
+body.theme-material3 select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary);
+    background: var(--surface-container);
+}
+
+/* ── M3 Switches ──
+   HTML structure:
+     label
+       input[type=checkbox]
+       span (label text)
+
+   popup.css uses padding-left: 42px on span for the native checkbox hidden offscreen.
+   We hide that native checkbox and build a custom track+knob using the label's ::before/::after,
+   then use a wrapper approach that doesn't conflict with popup.css padding-left logic.
+
+   Strategy: override the toggle-group label entirely with a proper flex layout.
+   The span (label text) goes left, custom switch track+knob goes right via ::after on label.
+─────────────────────────────────────────────────────────────── */
+
+body.theme-material3 .toggle-group {
+    padding: 2px 0;
+}
+
+/* Reset padding-left that popup.css sets */
+body.theme-material3 .toggle-group label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+    padding: 4px 0 !important;
+    padding-left: 0 !important;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--on-surface);
+    gap: 12px;
+    position: relative;
+}
+
+/* Hide native checkbox (popup.css hides it too, but reinforce) */
+body.theme-material3 .toggle-group label input[type="checkbox"] {
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+}
+
+/* Span = label text, takes available space */
+body.theme-material3 .toggle-group label span {
+    flex: 1;
+    min-width: 0;
+    padding-left: 0 !important;
+    /* Reset any popup.css padding-left on span */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Track via label ::before — always on right */
+body.theme-material3 .toggle-group label::before {
+    content: "";
+    order: 2;
+    flex-shrink: 0;
+    width: 44px;
+    height: 26px;
+    background: var(--surface-container-highest);
+    border: 2px solid var(--outline);
+    border-radius: 13px;
+    transition: background 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease);
+    box-sizing: border-box;
+}
+
+/* Knob via label ::after — positioned relative to label,
+   calculated: track is 44px wide, on the right edge of label.
+   We use right-based absolute positioning. */
+body.theme-material3 .toggle-group label::after {
+    content: "";
+    position: absolute;
+    right: 6px; /* inside track from right: track right edge = label right, knob right = 6px from right */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--outline);
+    transition:
+        right 0.25s var(--m3-ease),
+        width 0.2s var(--m3-ease),
+        height 0.2s var(--m3-ease),
+        background 0.2s var(--m3-ease),
+        top 0.2s var(--m3-ease);
+    pointer-events: none;
+}
+
+/* Checked state: track fills, knob moves left within track */
+body.theme-material3 .toggle-group label:has(input[type="checkbox"]:checked)::before {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+body.theme-material3 .toggle-group label:has(input[type="checkbox"]:checked)::after {
+    right: 4px; /* knob shifts left = closer to left side = checked right-side track */
+    /* For checked: knob on right of track. Track right edge = label right.
+       Knob at right:4px means 4px from label right = inside track right area. */
+    width: 18px;
+    height: 18px;
+    background: var(--on-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Hover: unchecked track border darkens */
+body.theme-material3 .toggle-group label:hover:not(:has(input:checked))::before {
+    border-color: var(--on-surface);
+}
+
+/* ── M3 Buttons ── */
+body.theme-material3 button {
+    font-family: var(--font);
+}
+
+body.theme-material3 .add-consensus-run-btn,
+body.theme-material3 .add-provider-btn {
+    width: 100%;
+    padding: 9px 16px;
+    background: var(--surface-container-high);
+    color: var(--primary);
+    border: 1px dashed var(--outline);
+    border-radius: var(--m3-radius-m);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s var(--m3-ease);
+    margin-top: 6px;
+}
+
+body.theme-material3 .add-consensus-run-btn:hover,
+body.theme-material3 .add-provider-btn:hover {
+    background: var(--surface-container-highest);
+    border-color: var(--primary);
+}
+
+/* ── Provider & Model Panels ── */
+body.theme-material3 .provider-select-wrapper {
+    position: relative;
+}
+
+body.theme-material3 .provider-select-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface-container-low);
+    color: var(--on-surface);
+    border: 1px solid var(--outline);
+    border-radius: var(--m3-radius-m);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s var(--m3-ease);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.theme-material3 .provider-select-trigger:hover {
+    background: var(--surface-container);
+    border-color: var(--on-surface-variant);
+}
+
+body.theme-material3 .provider-dropdown {
+    background: var(--surface-container-high);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-m);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+}
+
+body.theme-material3 .fetch-models-btn {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: var(--m3-radius-s);
+    background: var(--surface-container-high);
+    color: var(--primary);
+    transition: transform 0.3s var(--m3-ease), background 0.2s;
+}
+
+body.theme-material3 .fetch-models-btn:hover {
+    background: var(--surface-container-highest);
+    transform: rotate(90deg);
+}
+
+body.theme-material3 .model-panel {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-l);
+    overflow: hidden;
+}
+
+body.theme-material3 .model-panel-search input {
+    border: none !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--outline-variant) !important;
+    border-radius: 0 !important;
+}
+
+body.theme-material3 .model-item {
+    padding: 8px 12px;
+    border-radius: var(--m3-radius-s);
+    margin: 2px 4px;
+    transition: background 0.15s;
+}
+
+body.theme-material3 .model-item:hover {
+    background: var(--surface-container-high);
+}
+
+body.theme-material3 .model-item.selected {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+}
+
+body.theme-material3 .model-badge {
+    border-radius: var(--m3-radius-full);
+    font-size: 10px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+}
+
+/* ── Provider Cards in Providers tab ── */
+body.theme-material3 .provider-card {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-l);
+    padding: 12px;
+    margin-bottom: 10px;
+    transition: all 0.2s var(--m3-ease);
+}
+
+body.theme-material3 .provider-card.active {
+    border-color: var(--primary);
+    background: var(--surface-container);
+}
+
+body.theme-material3 .provider-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+body.theme-material3 .provider-card-header > *:first-child {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.theme-material3 .provider-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--m3-radius-full);
+    background: var(--secondary-container);
+    color: var(--on-secondary-container);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* ── Consensus Run Cards ── */
+body.theme-material3 .consensus-run-card {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-l);
+    padding: 10px;
+    margin-bottom: 8px;
+}
+
+/* ── Hotkey Recorder & Position Grid ── */
+body.theme-material3 .hotkey-recorder {
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline);
+    border-radius: var(--m3-radius-m);
+    padding: 8px 14px;
+    color: var(--on-surface);
+}
+
+body.theme-material3 .hotkey-clear {
+    background: var(--surface-container-high);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-m);
+    color: var(--on-surface);
+}
+
+body.theme-material3 .position-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    background: var(--surface-container-low);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--m3-radius-m);
+    padding: 8px;
+}
+
+body.theme-material3 .position-cell {
+    height: 28px;
+    border-radius: var(--m3-radius-s);
+    background: var(--surface-container-high);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s var(--m3-ease);
+}
+
+body.theme-material3 .position-cell:hover {
+    background: var(--surface-container-highest);
+    border-color: var(--outline);
+}
+
+body.theme-material3 .position-cell.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-container);
+}
+
+/* ── Themes Grid ── */
+body.theme-material3 .themes-grid {
+    gap: 10px;
+}
+
+body.theme-material3 .theme-card {
+    border-radius: var(--m3-radius-l);
+    border: 2px solid var(--outline-variant);
+    background: var(--surface-container-low);
+    transition: all 0.2s var(--m3-ease);
+}
+
+body.theme-material3 .theme-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+}
+
+body.theme-material3 .theme-card.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-container);
+}
+
+/* ── Theme Editor (M3 Dialog) ── */
+body.theme-material3 .theme-editor-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+body.theme-material3 .theme-editor-card {
+    background: var(--surface-container);
+    border-radius: var(--m3-radius-xl);
+    border: 1px solid var(--outline-variant);
+    padding: 20px;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.theme-material3 .theme-editor-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--on-surface);
+}
+
+body.theme-material3 .theme-editor-card .color-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+body.theme-material3 .theme-editor-card .color-swatch {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--outline);
+    border-radius: var(--m3-radius-s);
+    cursor: pointer;
+    background: transparent;
+}
+
+body.theme-material3 .theme-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+body.theme-material3 .theme-editor-close {
+    background: transparent;
+    border: none;
+    color: var(--on-surface-variant);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+body.theme-material3 .theme-editor-btn.primary {
+    background: var(--primary);
+    color: var(--on-primary);
+    border-radius: var(--m3-radius-full);
+    font-weight: 600;
+}
+
+body.theme-material3 .theme-editor-btn.secondary {
+    background: var(--surface-container-highest);
+    color: var(--on-surface);
+    border-radius: var(--m3-radius-full);
+}
+
+/* ── Donate Button (M3 Extended FAB) ── */
+body.theme-material3 .donate-button.telegram {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    border-radius: var(--m3-radius-full);
+    padding: 12px 20px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s var(--m3-ease);
+}
+
+body.theme-material3 .donate-button.telegram:hover {
+    background: var(--primary);
+    color: var(--on-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
