@@ -210,41 +210,53 @@ h3 {
 .aosp-subpage-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 4px;
 }
 
 .aosp-back-btn {
+    all: unset;
+    box-sizing: border-box;
     background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: none;
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    max-width: 36px;
+    flex: 0 0 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--popup-text);
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.1s;
+    padding: 0;
+    margin: 0;
 }
 
 .aosp-back-btn:hover {
     background: rgba(255, 255, 255, 0.16);
-    border-color: var(--popup-border);
+}
+
+.aosp-back-btn:active {
+    transform: scale(0.92);
 }
 
 .aosp-back-btn .material-icon {
     font-family: 'Material Symbols Outlined';
-    font-size: 18px;
+    font-size: 20px;
+    line-height: 1;
 }
 
 .aosp-subpage-title {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     color: var(--popup-text);
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .settings-section-panel {

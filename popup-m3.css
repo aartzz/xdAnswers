@@ -394,21 +394,65 @@ body.theme-material3 .aosp-category-desc {
     opacity: 0.85 !important;
 }
 
-/* Subpage Header with MD3 Back Button */
+/* Subpage Header with MD3 Back Button (AOSP Top App Bar) */
+body.theme-material3 .settings-subpage-view {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    animation: m3SubpageIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+}
+
+@keyframes m3SubpageIn {
+    from {
+        opacity: 0;
+        transform: translateX(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes m3CatFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+body.theme-material3 .settings-categories-view.aosp-anim-in {
+    animation: m3CatFadeIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+}
+
 body.theme-material3 .aosp-subpage-header {
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
-    margin-bottom: 12px !important;
-    padding: 4px 0 !important;
+    margin: 2px 0 16px !important;
+    padding: 2px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 body.theme-material3 .aosp-back-btn {
+    all: unset !important;
+    box-sizing: border-box !important;
     width: 38px !important;
     height: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    flex: 0 0 38px !important;
     border-radius: 50% !important;
     background: var(--m3-surface-high) !important;
     border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -416,6 +460,8 @@ body.theme-material3 .aosp-back-btn {
     color: var(--m3-on-surface) !important;
     transition: background 0.15s var(--m3-ease), transform 0.1s var(--m3-ease) !important;
     padding: 0 !important;
+    margin: 0 !important;
+    line-height: 1 !important;
 }
 
 body.theme-material3.light .aosp-back-btn {
@@ -426,29 +472,37 @@ body.theme-material3 .aosp-back-btn:hover {
     background: var(--m3-surface-highest) !important;
 }
 
+body.theme-material3.light .aosp-back-btn:hover {
+    background: #dedce1 !important;
+}
+
 body.theme-material3 .aosp-back-btn:active {
     transform: scale(0.92) !important;
 }
 
 body.theme-material3 .aosp-back-btn .material-icon {
     font-family: 'Material Symbols Outlined' !important;
-    font-size: 20px !important;
+    font-size: 22px !important;
     line-height: 1 !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 body.theme-material3 .aosp-subpage-title {
-    font-size: 16px !important;
+    font-size: 18px !important;
     font-weight: 600 !important;
     color: var(--m3-on-surface) !important;
     margin: 0 !important;
-    flex: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    letter-spacing: -0.2px !important;
 }
 
 body.theme-material3 .settings-section-panel {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    animation: m3FadeSlide 0.2s var(--m3-ease) !important;
 }
 
 /* ── Android 14/15 Grouped Settings Cards & Section Titles ── */

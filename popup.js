@@ -1998,6 +1998,7 @@ function initAospSettingsNavigation() {
         const sec = sections[catKey];
         if (!sec || !sec.el) return;
         catView.classList.add('hidden');
+        catView.classList.remove('aosp-anim-in');
         catView.style.display = 'none';
         subView.classList.remove('hidden');
         subView.style.display = 'flex';
@@ -2021,6 +2022,11 @@ function initAospSettingsNavigation() {
         subView.style.display = 'none';
         catView.classList.remove('hidden');
         catView.style.display = 'flex';
+        catView.classList.remove('aosp-anim-in');
+        // Trigger reflow to restart CSS animation
+        void catView.offsetWidth;
+        catView.classList.add('aosp-anim-in');
+
         Object.values(sections).forEach(s => {
             if (s.el) {
                 s.el.classList.add('hidden');
