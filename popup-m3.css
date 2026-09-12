@@ -1,664 +1,620 @@
-/* popup-m3.css - Material 3 Expressive theme for xdAnswers (Beer CSS powered) */
+/* popup-m3.css — Material 3 Expressive theme for xdAnswers */
 
+/* ── M3 Design Tokens ── */
 :root,
 body.theme-material3 {
-    --font: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    --font-icon: "Material Symbols Outlined";
-    --primary: #a8c7fa;
-    --on-primary: #042f66;
-    --primary-container: #0842a0;
-    --on-primary-container: #d3e3fd;
-    --secondary: #c2e7ff;
-    --on-secondary: #003354;
-    --secondary-container: #004a75;
-    --on-secondary-container: #c2e7ff;
-    --surface: #121316;
-    --on-surface: #e2e2e6;
-    --surface-variant: #44474f;
-    --on-surface-variant: #c4c6d0;
-    --surface-container-lowest: #0c0e11;
-    --surface-container-low: #1a1b1f;
-    --surface-container: #1e1f23;
-    --surface-container-high: #282a2e;
-    --surface-container-highest: #333539;
-    --outline: #8e919a;
-    --outline-variant: #44474f;
-    --m3-radius-s: 8px;
-    --m3-radius-m: 12px;
-    --m3-radius-l: 16px;
-    --m3-radius-xl: 24px;
-    --m3-radius-full: 9999px;
+    --m3-primary: #a8c7fa;
+    --m3-on-primary: #042f66;
+    --m3-primary-container: #0842a0;
+    --m3-on-primary-container: #d3e3fd;
+    --m3-secondary-container: #004a75;
+    --m3-on-secondary-container: #c2e7ff;
+    --m3-surface: #121316;
+    --m3-on-surface: #e2e2e6;
+    --m3-surface-variant: #44474f;
+    --m3-on-surface-variant: #c4c6d0;
+    --m3-surface-low: #1a1b1f;
+    --m3-surface-mid: #1e1f23;
+    --m3-surface-high: #282a2e;
+    --m3-surface-highest: #333539;
+    --m3-outline: #8e919a;
+    --m3-outline-variant: #44474f;
+    --m3-r-s: 8px;
+    --m3-r-m: 12px;
+    --m3-r-l: 16px;
+    --m3-r-xl: 24px;
+    --m3-r-full: 9999px;
     --m3-ease: cubic-bezier(0.2, 0, 0, 1);
+    --font-icon: "Material Symbols Outlined";
 }
 
-/* ── Body: override only visuals, keep popup.css flex structure ── */
+/* ── Body: only visual override, keep popup.css shell ── */
 body.theme-material3 {
-    font-family: var(--font);
-    background: var(--surface) !important;
-    color: var(--on-surface) !important;
-    /* Do NOT override width/height/display/flex-direction — popup.css owns the shell */
-    padding: 12px !important;
-    box-sizing: border-box;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    scrollbar-width: thin;
-    scrollbar-color: var(--outline-variant) transparent;
+    font-family: "Roboto", system-ui, sans-serif !important;
+    background-color: var(--m3-surface) !important;
+    color: var(--m3-on-surface) !important;
+    padding-bottom: 60px !important; /* space for bottom nav bar */
 }
 
-body.theme-material3::-webkit-scrollbar {
-    width: 6px;
-}
-body.theme-material3::-webkit-scrollbar-thumb {
-    background: var(--outline-variant);
-    border-radius: 3px;
-}
-
-/* ── Top App Bar (Header) ── */
+/* ── Header ── */
 body.theme-material3 .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    padding-bottom: 4px;
+    padding: 10px 14px 6px;
+    border-bottom: 1px solid var(--m3-outline-variant);
     flex-shrink: 0;
 }
 
 body.theme-material3 .header h3 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-    color: var(--on-surface);
+    color: var(--m3-on-surface);
+    font-size: 16px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 body.theme-material3 .xd-popup-version {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 2px 8px;
-    background: var(--surface-container-highest);
-    color: var(--primary);
-    border-radius: var(--m3-radius-full);
-    border: 1px solid var(--outline-variant);
+    padding: 2px 7px;
+    background: var(--m3-surface-highest);
+    color: var(--m3-primary);
+    border-radius: var(--m3-r-full);
+    border: 1px solid var(--m3-outline-variant);
 }
 
-/* ── M3 Navigation Tabs — icons only ── */
+/* ── Bottom Navigation Bar ── */
 body.theme-material3 .tab-buttons {
-    display: flex;
-    background: var(--surface-container);
-    border-radius: var(--m3-radius-l);
-    padding: 4px;
-    gap: 4px;
-    margin-bottom: 12px;
-    border: 1px solid var(--outline-variant);
-    flex-shrink: 0;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    display: flex !important;
+    background: var(--m3-surface-mid) !important;
+    border-top: 1px solid var(--m3-outline-variant) !important;
+    border-bottom: none !important;
+    border-radius: var(--m3-r-l) var(--m3-r-l) 0 0 !important;
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    z-index: 100 !important;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3) !important;
+    width: auto !important;
+    box-sizing: border-box !important;
 }
 
 body.theme-material3 .tab-button {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 4px;
-    border-radius: var(--m3-radius-m);
-    background: transparent;
-    color: var(--on-surface-variant);
-    font-family: var(--font-icon);
-    font-size: 0; /* hide HTML text */
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease);
-    user-select: none;
-    min-width: 0;
-    overflow: hidden;
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 8px 4px !important;
+    border-radius: var(--m3-r-m) !important;
+    background: transparent !important;
+    color: var(--m3-on-surface-variant) !important;
+    border: none !important;
+    cursor: pointer !important;
+    font-size: 0 !important; /* hide HTML text */
+    opacity: 1 !important;
+    border-bottom: none !important;
+    transition: background 0.2s var(--m3-ease), color 0.2s var(--m3-ease) !important;
 }
 
-/* Icon via ::before, visible regardless of font-size: 0 on button text */
+/* Material Symbol icons */
 body.theme-material3 .tab-button::before {
-    font-family: var(--font-icon);
-    font-size: 20px;
-    line-height: 1;
-    font-style: normal;
-    font-weight: 400;
-    display: block;
-    /* Material Symbols rendering */
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    transition: font-variation-settings 0.2s var(--m3-ease);
+    font-family: var(--font-icon) !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+    font-style: normal !important;
+    font-weight: 300 !important;
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+    transition: font-variation-settings 0.2s var(--m3-ease), color 0.2s var(--m3-ease);
+    display: block !important;
 }
 
-body.theme-material3 .tab-button[data-tab="ai-tab"]::before { content: "smart_toy"; }
-body.theme-material3 .tab-button[data-tab="providers-tab"]::before { content: "hub"; }
-body.theme-material3 .tab-button[data-tab="features-tab"]::before { content: "tune"; }
-body.theme-material3 .tab-button[data-tab="themes-tab"]::before { content: "palette"; }
-body.theme-material3 .tab-button[data-tab="donate-tab"]::before { content: "favorite"; }
+body.theme-material3 .tab-button[data-tab="ai-tab"]::before     { content: "smart_toy" !important; }
+body.theme-material3 .tab-button[data-tab="providers-tab"]::before { content: "hub" !important; }
+body.theme-material3 .tab-button[data-tab="features-tab"]::before  { content: "tune" !important; }
+body.theme-material3 .tab-button[data-tab="themes-tab"]::before    { content: "palette" !important; }
+body.theme-material3 .tab-button[data-tab="donate-tab"]::before    { content: "favorite" !important; }
 
 body.theme-material3 .tab-button:hover {
-    background: var(--surface-container-high);
-    color: var(--on-surface);
+    background: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface) !important;
 }
 
 body.theme-material3 .tab-button.active {
-    background: var(--primary-container);
-    color: var(--on-primary-container);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
 }
 
 body.theme-material3 .tab-button.active::before {
     font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
 }
 
-/* ── M3 Cards & Containers ── */
+/* ── Tab Content ── */
 body.theme-material3 .tab-content {
-    display: none;
-    animation: m3FadeIn 0.18s var(--m3-ease);
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
+    padding: 12px 14px !important;
 }
+
 body.theme-material3 .tab-content.active {
-    display: block;
+    animation: m3FadeSlide 0.2s var(--m3-ease);
 }
 
-@keyframes m3FadeIn {
-    from { opacity: 0; transform: translateY(3px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes m3FadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── Forms ── */
 body.theme-material3 .form-group {
     margin-bottom: 12px;
 }
 
-body.theme-material3 .form-group > label:first-child {
-    display: block;
-    font-size: 12px;
+body.theme-material3 .form-group > label:first-child,
+body.theme-material3 .form-group > label:not(.toggle-group label):first-child {
+    font-size: 11px;
     font-weight: 600;
-    color: var(--on-surface-variant);
+    color: var(--m3-on-surface-variant);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
     margin-bottom: 5px;
-    letter-spacing: 0.1px;
+    display: block;
 }
 
 body.theme-material3 .field-hint {
     font-size: 11px;
-    color: var(--on-surface-variant);
-    line-height: 1.4;
-    margin: 4px 0 0 0;
-    opacity: 0.85;
+    color: var(--m3-on-surface-variant);
+    opacity: 0.8;
+    margin-top: 4px;
 }
 
 body.theme-material3 .separator {
     border: none;
-    border-top: 1px solid var(--outline-variant);
-    margin: 12px 0;
+    border-top: 1px solid var(--m3-outline-variant);
+    margin: 10px 0;
     opacity: 0.5;
 }
 
-/* ── M3 Text Inputs & Selects ── */
+/* ── Inputs & Selects ── */
 body.theme-material3 input[type="text"],
 body.theme-material3 input[type="number"],
 body.theme-material3 input[type="password"],
 body.theme-material3 select {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 9px 12px;
-    background: var(--surface-container-low);
-    color: var(--on-surface);
-    border: 1px solid var(--outline);
-    border-radius: var(--m3-radius-m);
-    font-family: var(--font);
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s var(--m3-ease), box-shadow 0.2s var(--m3-ease), background 0.2s;
-}
-
-body.theme-material3 input[type="text"]:hover,
-body.theme-material3 input[type="number"]:hover,
-body.theme-material3 input[type="password"]:hover,
-body.theme-material3 select:hover {
-    border-color: var(--on-surface-variant);
-    background: var(--surface-container);
+    background: var(--m3-surface-low) !important;
+    color: var(--m3-on-surface) !important;
+    border: 1px solid var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    padding: 9px 12px !important;
+    font-family: "Roboto", system-ui, sans-serif !important;
+    font-size: 13px !important;
+    outline: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 body.theme-material3 input[type="text"]:focus,
 body.theme-material3 input[type="number"]:focus,
 body.theme-material3 input[type="password"]:focus,
 body.theme-material3 select:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 1px var(--primary);
-    background: var(--surface-container);
+    border-color: var(--m3-primary) !important;
+    box-shadow: 0 0 0 1px var(--m3-primary) !important;
+    background: var(--m3-surface-mid) !important;
 }
 
-/* ── M3 Switches ──
-   HTML structure:
-     label
-       input[type=checkbox]
-       span (label text)
-
-   popup.css uses padding-left: 42px on span for the native checkbox hidden offscreen.
-   We hide that native checkbox and build a custom track+knob using the label's ::before/::after,
-   then use a wrapper approach that doesn't conflict with popup.css padding-left logic.
-
-   Strategy: override the toggle-group label entirely with a proper flex layout.
-   The span (label text) goes left, custom switch track+knob goes right via ::after on label.
-─────────────────────────────────────────────────────────────── */
-
-body.theme-material3 .toggle-group {
-    padding: 2px 0;
+body.theme-material3 input[type="text"]:hover,
+body.theme-material3 input[type="number"]:hover,
+body.theme-material3 input[type="password"]:hover,
+body.theme-material3 select:hover {
+    border-color: var(--m3-on-surface-variant) !important;
 }
 
-/* Reset padding-left that popup.css sets */
+/* ── Switches: override span::before (track) and span::after (knob) ──
+   popup.css renders the switch via:
+     input + span { padding-left: 42px }
+     input + span::before = track (absolute left:0)
+     input + span::after  = knob  (absolute left:3px)
+   We override only visuals, keeping geometry compatible.
+─────────────────────────────────────────────────────── */
 body.theme-material3 .toggle-group label {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    cursor: pointer;
-    user-select: none;
-    margin: 0;
-    padding: 4px 0 !important;
-    padding-left: 0 !important;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--on-surface);
-    gap: 12px;
-    position: relative;
+    color: var(--m3-on-surface) !important;
 }
 
-/* Hide native checkbox (popup.css hides it too, but reinforce) */
-body.theme-material3 .toggle-group label input[type="checkbox"] {
-    position: absolute !important;
-    opacity: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    pointer-events: none !important;
-    margin: 0 !important;
+/* Track */
+body.theme-material3 .toggle-group label input[type="checkbox"] + span::before {
+    width: 40px !important;
+    height: 22px !important;
+    background: var(--m3-surface-highest) !important;
+    border: 2px solid var(--m3-outline) !important;
+    border-radius: 11px !important;
+    transition: background 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease) !important;
 }
 
-/* Span = label text, takes available space */
-body.theme-material3 .toggle-group label span {
-    flex: 1;
-    min-width: 0;
-    padding-left: 0 !important;
-    /* Reset any popup.css padding-left on span */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* Knob */
+body.theme-material3 .toggle-group label input[type="checkbox"] + span::after {
+    width: 14px !important;
+    height: 14px !important;
+    left: 4px !important;
+    background: var(--m3-outline) !important;
+    box-shadow: none !important;
+    transition: left 0.25s var(--m3-ease), background 0.2s var(--m3-ease), width 0.15s, height 0.15s !important;
 }
 
-/* Track via label ::before — always on right */
-body.theme-material3 .toggle-group label::before {
-    content: "";
-    order: 2;
-    flex-shrink: 0;
-    width: 44px;
-    height: 26px;
-    background: var(--surface-container-highest);
-    border: 2px solid var(--outline);
-    border-radius: 13px;
-    transition: background 0.25s var(--m3-ease), border-color 0.25s var(--m3-ease);
-    box-sizing: border-box;
+/* Checked: track */
+body.theme-material3 .toggle-group label input[type="checkbox"]:checked + span::before {
+    background: var(--m3-primary) !important;
+    border-color: var(--m3-primary) !important;
 }
 
-/* Knob via label ::after — positioned relative to label,
-   calculated: track is 44px wide, on the right edge of label.
-   We use right-based absolute positioning. */
-body.theme-material3 .toggle-group label::after {
-    content: "";
-    position: absolute;
-    right: 6px; /* inside track from right: track right edge = label right, knob right = 6px from right */
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--outline);
-    transition:
-        right 0.25s var(--m3-ease),
-        width 0.2s var(--m3-ease),
-        height 0.2s var(--m3-ease),
-        background 0.2s var(--m3-ease),
-        top 0.2s var(--m3-ease);
-    pointer-events: none;
+/* Checked: knob */
+body.theme-material3 .toggle-group label input[type="checkbox"]:checked + span::after {
+    left: 22px !important;
+    width: 16px !important;
+    height: 16px !important;
+    background: var(--m3-on-primary) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Checked state: track fills, knob moves left within track */
-body.theme-material3 .toggle-group label:has(input[type="checkbox"]:checked)::before {
-    background: var(--primary);
-    border-color: var(--primary);
+/* Hover on unchecked track */
+body.theme-material3 .toggle-group label:hover input[type="checkbox"]:not(:checked) + span::before {
+    border-color: var(--m3-on-surface) !important;
 }
 
-body.theme-material3 .toggle-group label:has(input[type="checkbox"]:checked)::after {
-    right: 4px; /* knob shifts left = closer to left side = checked right-side track */
-    /* For checked: knob on right of track. Track right edge = label right.
-       Knob at right:4px means 4px from label right = inside track right area. */
-    width: 18px;
-    height: 18px;
-    background: var(--on-primary);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-/* Hover: unchecked track border darkens */
-body.theme-material3 .toggle-group label:hover:not(:has(input:checked))::before {
-    border-color: var(--on-surface);
-}
-
-/* ── M3 Buttons ── */
-body.theme-material3 button {
-    font-family: var(--font);
-}
-
-body.theme-material3 .add-consensus-run-btn,
-body.theme-material3 .add-provider-btn {
-    width: 100%;
-    padding: 9px 16px;
-    background: var(--surface-container-high);
-    color: var(--primary);
-    border: 1px dashed var(--outline);
-    border-radius: var(--m3-radius-m);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s var(--m3-ease);
-    margin-top: 6px;
-}
-
-body.theme-material3 .add-consensus-run-btn:hover,
-body.theme-material3 .add-provider-btn:hover {
-    background: var(--surface-container-highest);
-    border-color: var(--primary);
-}
-
-/* ── Provider & Model Panels ── */
-body.theme-material3 .provider-select-wrapper {
-    position: relative;
-}
-
+/* ── Provider Select Trigger ── */
 body.theme-material3 .provider-select-trigger {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    background: var(--surface-container-low);
-    color: var(--on-surface);
-    border: 1px solid var(--outline);
-    border-radius: var(--m3-radius-m);
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s var(--m3-ease);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    color: var(--m3-on-surface) !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+    min-width: 0 !important;
 }
 
 body.theme-material3 .provider-select-trigger:hover {
-    background: var(--surface-container);
-    border-color: var(--on-surface-variant);
+    background: var(--m3-surface-mid) !important;
+    border-color: var(--m3-on-surface-variant) !important;
 }
 
 body.theme-material3 .provider-dropdown {
-    background: var(--surface-container-high);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-m);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: 100;
+    background: var(--m3-surface-high) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-m) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
 }
 
-body.theme-material3 .fetch-models-btn {
-    cursor: pointer;
-    font-size: 14px;
-    padding: 2px 6px;
-    border-radius: var(--m3-radius-s);
-    background: var(--surface-container-high);
-    color: var(--primary);
-    transition: transform 0.3s var(--m3-ease), background 0.2s;
-}
-
-body.theme-material3 .fetch-models-btn:hover {
-    background: var(--surface-container-highest);
-    transform: rotate(90deg);
-}
-
+/* ── Model Panel ── */
 body.theme-material3 .model-panel {
-    background: var(--surface-container-low);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-l);
-    overflow: hidden;
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-l) !important;
 }
 
 body.theme-material3 .model-panel-search input {
     border: none !important;
     background: transparent !important;
-    border-bottom: 1px solid var(--outline-variant) !important;
+    border-bottom: 1px solid var(--m3-outline-variant) !important;
     border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 body.theme-material3 .model-item {
-    padding: 8px 12px;
-    border-radius: var(--m3-radius-s);
-    margin: 2px 4px;
-    transition: background 0.15s;
+    border-radius: var(--m3-r-s) !important;
+    margin: 2px 4px !important;
 }
 
 body.theme-material3 .model-item:hover {
-    background: var(--surface-container-high);
+    background: var(--m3-surface-high) !important;
 }
 
 body.theme-material3 .model-item.selected {
-    background: var(--primary-container);
-    color: var(--on-primary-container);
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .model-badges {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 3px !important;
 }
 
 body.theme-material3 .model-badge {
-    border-radius: var(--m3-radius-full);
-    font-size: 10px;
-    padding: 2px 6px;
-    flex-shrink: 0;
+    border-radius: var(--m3-r-full) !important;
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
 }
 
-/* ── Provider Cards in Providers tab ── */
+body.theme-material3 .fetch-models-btn {
+    color: var(--m3-primary) !important;
+    background: var(--m3-surface-high) !important;
+    border-radius: var(--m3-r-s) !important;
+    transition: transform 0.3s var(--m3-ease) !important;
+}
+
+body.theme-material3 .fetch-models-btn:hover {
+    transform: rotate(90deg) !important;
+    background: var(--m3-surface-highest) !important;
+}
+
+/* ── Provider Cards ── */
 body.theme-material3 .provider-card {
-    background: var(--surface-container-low);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-l);
-    padding: 12px;
-    margin-bottom: 10px;
-    transition: all 0.2s var(--m3-ease);
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-l) !important;
+    padding: 10px 12px !important;
+    margin-bottom: 8px !important;
+    transition: border-color 0.2s !important;
 }
 
 body.theme-material3 .provider-card.active {
-    border-color: var(--primary);
-    background: var(--surface-container);
+    border-color: var(--m3-primary) !important;
+    background: var(--m3-surface-mid) !important;
 }
 
 body.theme-material3 .provider-card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    min-width: 0;
-    flex-wrap: wrap;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
 }
 
-body.theme-material3 .provider-card-header > *:first-child {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+body.theme-material3 .provider-card-info {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
 }
 
-body.theme-material3 .provider-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: var(--m3-radius-full);
-    background: var(--secondary-container);
-    color: var(--on-secondary-container);
-    flex-shrink: 0;
-    white-space: nowrap;
+body.theme-material3 .provider-card-name {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: var(--m3-on-surface) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
 }
 
-/* ── Consensus Run Cards ── */
+body.theme-material3 .provider-card-url,
+body.theme-material3 .provider-card-key {
+    font-size: 10px !important;
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.6 !important;
+}
+
+body.theme-material3 .provider-active-badge {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    border-radius: var(--m3-r-full) !important;
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+}
+
+body.theme-material3 .provider-search-badge {
+    font-size: 9px !important;
+    padding: 2px 6px !important;
+    border-radius: var(--m3-r-full) !important;
+    background: rgba(234, 179, 8, 0.15) !important;
+    color: #eab308 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    margin-left: 0 !important;
+}
+
+body.theme-material3 .provider-card-actions {
+    display: flex !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+}
+
+body.theme-material3 .provider-card-btn {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: var(--m3-r-s) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    background: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface-variant) !important;
+    font-size: 13px !important;
+    opacity: 0.8 !important;
+    transition: opacity 0.15s, background 0.15s !important;
+}
+
+body.theme-material3 .provider-card-btn:hover {
+    opacity: 1 !important;
+    background: var(--m3-surface-highest) !important;
+    border-color: var(--m3-outline) !important;
+}
+
+/* ── Add Provider / Consensus Buttons ── */
+body.theme-material3 .add-provider-btn,
+body.theme-material3 .add-consensus-run-btn {
+    background: var(--m3-surface-high) !important;
+    border: 1px dashed var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    color: var(--m3-primary) !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    padding: 9px !important;
+    opacity: 1 !important;
+    transition: background 0.2s, border-color 0.2s !important;
+}
+
+body.theme-material3 .add-provider-btn:hover,
+body.theme-material3 .add-consensus-run-btn:hover {
+    background: var(--m3-surface-highest) !important;
+    border-color: var(--m3-primary) !important;
+}
+
+/* ── Consensus Run Card ── */
 body.theme-material3 .consensus-run-card {
-    background: var(--surface-container-low);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-l);
-    padding: 10px;
-    margin-bottom: 8px;
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-l) !important;
 }
 
-/* ── Hotkey Recorder & Position Grid ── */
+/* ── Hotkey Recorder ── */
 body.theme-material3 .hotkey-recorder {
-    background: var(--surface-container-low);
-    border: 1px solid var(--outline);
-    border-radius: var(--m3-radius-m);
-    padding: 8px 14px;
-    color: var(--on-surface);
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline) !important;
+    border-radius: var(--m3-r-m) !important;
+    color: var(--m3-on-surface) !important;
 }
 
 body.theme-material3 .hotkey-clear {
-    background: var(--surface-container-high);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-m);
-    color: var(--on-surface);
+    background: var(--m3-surface-high) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-m) !important;
+    color: var(--m3-on-surface) !important;
 }
 
+/* ── Position Grid ── */
 body.theme-material3 .position-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    background: var(--surface-container-low);
-    border: 1px solid var(--outline-variant);
-    border-radius: var(--m3-radius-m);
-    padding: 8px;
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-m) !important;
 }
 
 body.theme-material3 .position-cell {
-    height: 28px;
-    border-radius: var(--m3-radius-s);
-    background: var(--surface-container-high);
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.2s var(--m3-ease);
+    border-radius: var(--m3-r-s) !important;
+    background: var(--m3-surface-high) !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s !important;
 }
 
 body.theme-material3 .position-cell:hover {
-    background: var(--surface-container-highest);
-    border-color: var(--outline);
+    background: var(--m3-surface-highest) !important;
+    border-color: var(--m3-outline) !important;
 }
 
 body.theme-material3 .position-cell.active {
-    background: var(--primary);
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-container);
+    background: var(--m3-primary-container) !important;
+    border-color: var(--m3-primary) !important;
 }
 
 /* ── Themes Grid ── */
-body.theme-material3 .themes-grid {
-    gap: 10px;
-}
-
 body.theme-material3 .theme-card {
-    border-radius: var(--m3-radius-l);
-    border: 2px solid var(--outline-variant);
-    background: var(--surface-container-low);
-    transition: all 0.2s var(--m3-ease);
+    border-radius: var(--m3-r-l) !important;
+    border: 2px solid var(--m3-outline-variant) !important;
+    background: var(--m3-surface-low) !important;
+    transition: border-color 0.2s, transform 0.2s !important;
 }
 
 body.theme-material3 .theme-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--primary);
+    border-color: var(--m3-primary) !important;
+    transform: translateY(-1px) !important;
 }
 
 body.theme-material3 .theme-card.active {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-container);
+    border-color: var(--m3-primary) !important;
+    box-shadow: 0 0 0 2px var(--m3-primary-container) !important;
 }
 
-/* ── Theme Editor (M3 Dialog) ── */
+/* ── Provider Form Modal (M3 dialog) ── */
+body.theme-material3 .provider-form-overlay {
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    animation: m3OverlayIn 0.2s var(--m3-ease) !important;
+}
+
+@keyframes m3OverlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+body.theme-material3 .provider-form-overlay .provider-form {
+    background: var(--m3-surface-mid) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-xl) !important;
+    padding: 20px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+    animation: m3DialogIn 0.25s var(--m3-ease) !important;
+}
+
+@keyframes m3DialogIn {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+body.theme-material3 .provider-form-actions {
+    margin-top: 14px !important;
+    gap: 8px !important;
+}
+
+body.theme-material3 .pf-save-btn {
+    background: var(--m3-primary) !important;
+    border-color: var(--m3-primary) !important;
+    color: var(--m3-on-primary) !important;
+    border-radius: var(--m3-r-full) !important;
+    font-weight: 600 !important;
+}
+
+body.theme-material3 .pf-cancel-btn {
+    background: var(--m3-surface-highest) !important;
+    border-color: var(--m3-outline-variant) !important;
+    color: var(--m3-on-surface) !important;
+    border-radius: var(--m3-r-full) !important;
+}
+
+/* ── Theme Editor Modal ── */
 body.theme-material3 .theme-editor-overlay {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.65) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
 }
 
 body.theme-material3 .theme-editor-card {
-    background: var(--surface-container);
-    border-radius: var(--m3-radius-xl);
-    border: 1px solid var(--outline-variant);
-    padding: 20px;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5);
-}
-
-body.theme-material3 .theme-editor-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--on-surface);
-}
-
-body.theme-material3 .theme-editor-card .color-input-wrapper {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-body.theme-material3 .theme-editor-card .color-swatch {
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: 1px solid var(--outline);
-    border-radius: var(--m3-radius-s);
-    cursor: pointer;
-    background: transparent;
-}
-
-body.theme-material3 .theme-editor-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 16px;
-}
-
-body.theme-material3 .theme-editor-close {
-    background: transparent;
-    border: none;
-    color: var(--on-surface-variant);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 50%;
-    line-height: 1;
+    background: var(--m3-surface-mid) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-xl) !important;
+    padding: 20px !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
 }
 
 body.theme-material3 .theme-editor-btn.primary {
-    background: var(--primary);
-    color: var(--on-primary);
-    border-radius: var(--m3-radius-full);
-    font-weight: 600;
+    background: var(--m3-primary) !important;
+    color: var(--m3-on-primary) !important;
+    border-radius: var(--m3-r-full) !important;
+    font-weight: 600 !important;
 }
 
 body.theme-material3 .theme-editor-btn.secondary {
-    background: var(--surface-container-highest);
-    color: var(--on-surface);
-    border-radius: var(--m3-radius-full);
+    background: var(--m3-surface-highest) !important;
+    color: var(--m3-on-surface) !important;
+    border-radius: var(--m3-r-full) !important;
 }
 
-/* ── Donate Button (M3 Extended FAB) ── */
+body.theme-material3 .theme-editor-close {
+    background: transparent !important;
+    border: none !important;
+    color: var(--m3-on-surface-variant) !important;
+    font-size: 20px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+}
+
+/* ── Donate Button ── */
 body.theme-material3 .donate-button.telegram {
-    background: var(--primary-container);
-    color: var(--on-primary-container);
-    border-radius: var(--m3-radius-full);
-    padding: 12px 20px;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s var(--m3-ease);
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+    border-radius: var(--m3-r-full) !important;
+    padding: 12px 20px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s var(--m3-ease) !important;
 }
 
 body.theme-material3 .donate-button.telegram:hover {
-    background: var(--primary);
-    color: var(--on-primary);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    background: var(--m3-primary) !important;
+    color: var(--m3-on-primary) !important;
+    transform: translateY(-1px) !important;
 }
