@@ -88,6 +88,14 @@
             '.xd-search-entry{padding:3px 0 !important;font-size:12px !important;opacity:0.8 !important;}' +
             '.xd-searching-query{font-style:normal !important;font-weight:500 !important;opacity:0.85 !important;}' +
             '.xd-searching-count{font-style:normal !important;opacity:0.5 !important;font-size:11px !important;}' +
+            '.xd-calc-block{margin-bottom:10px !important;padding:8px !important;background:rgba(255,255,255,0.03) !important;border-radius:6px !important;border-left:3px solid rgba(56,189,248,0.4) !important;}' +
+            '.xd-calc-header{color:#38bdf8 !important;font-style:italic !important;font-size:12px !important;display:flex !important;align-items:center !important;gap:6px !important;}' +
+            '.xd-calc-count{font-style:normal !important;font-weight:500 !important;opacity:0.7 !important;}' +
+            '.xd-calc-toggle{font-style:normal !important;opacity:0.5 !important;font-size:10px !important;margin-left:auto !important;}' +
+            '.xd-calc-content{font-size:12px !important;opacity:0.7 !important;margin-top:6px !important;}' +
+            '.xd-calc-entry{padding:3px 0 !important;font-size:12px !important;opacity:0.85 !important;}' +
+            '.xd-calc-expr{font-family:"Fira Code",Consolas,monospace !important;opacity:0.85 !important;}' +
+            '.xd-calc-result{color:#38bdf8 !important;font-family:"Fira Code",Consolas,monospace !important;margin-left:4px !important;}' +
             '.xd-error{color:#f87171 !important;font-size:13px !important;padding:8px !important;background:rgba(248,113,113,0.08) !important;border-radius:6px !important;border-left:3px solid #f87171 !important;}' +
             '.xd-elapsed{display:none !important;}' +
             '.xd-status{text-align:center !important;font-size:12px !important;opacity:0.5 !important;margin-top:8px !important;}' +

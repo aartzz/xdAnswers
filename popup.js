@@ -74,6 +74,10 @@ function applyLanguage() {
     if (webSearchSpan) webSearchSpan.textContent = t('webSearchLabel');
     const webSearchHintEl = document.getElementById('web-search-hint');
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
+    const calcSpan = document.querySelector('#calculator-toggle + span');
+    if (calcSpan) calcSpan.textContent = t('calculatorLabel');
+    const calcHintEl = document.getElementById('calculator-hint');
+    if (calcHintEl) calcHintEl.textContent = t('calculatorHint');
     const disablerSpan = document.querySelector('#disabler-toggle + span');
     if (disablerSpan) disablerSpan.textContent = t('disablerLabel');
     const disablerHintEl = document.getElementById('disabler-hint');
@@ -474,6 +478,9 @@ function populateUI() {
 
     // Web search toggle
     if (el.webSearchToggle) el.webSearchToggle.checked = !!settings.webSearchEnabled;
+
+    // Calculator toggle
+    if (el.calculatorToggle) el.calculatorToggle.checked = settings.calculatorEnabled !== false;
 
     // Disabler toggle
     if (el.disablerToggle) el.disablerToggle.checked = !!settings.disablerEnabled;
@@ -1594,6 +1601,7 @@ function attachEventListeners() {
         { el: el.glowEffectToggle, key: 'customization.glowEffect' },
         { el: el.rememberDragToggle, key: 'rememberDragPosition' },
         { el: el.webSearchToggle, key: 'webSearchEnabled' },
+        { el: el.calculatorToggle, key: 'calculatorEnabled' },
         { el: el.disablerToggle, key: 'disablerEnabled' }
     ];
     for (const { el: toggle, key } of autoToggles) {
@@ -1810,6 +1818,7 @@ async function autoSave(overrides) {
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';
     settings._silentModePreselect = el.silentModeSelect.value || 'indicators';
     settings.webSearchEnabled = el.webSearchToggle?.checked ?? settings.webSearchEnabled;
+    settings.calculatorEnabled = el.calculatorToggle?.checked ?? (settings.calculatorEnabled !== false);
     settings.disablerEnabled = el.disablerToggle?.checked ?? settings.disablerEnabled;
     settings.consensus.enabled = el.consensusToggle?.checked ?? !!(settings.consensus && settings.consensus.enabled);
     settings.customization.glowEffect = el.glowEffectToggle.checked;
@@ -1869,6 +1878,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         silentModeSelect: document.getElementById('silent-mode-select'),
         silentModeSelectGroup: document.getElementById('silent-mode-select-group'),
         webSearchToggle: document.getElementById('web-search-toggle'),
+        calculatorToggle: document.getElementById('calculator-toggle'),
         consensusToggle: document.getElementById('consensus-toggle'),
         consensusRunsContainer: document.getElementById('consensus-runs-container'),
         addConsensusRunBtn: document.getElementById('add-consensus-run-btn'),
