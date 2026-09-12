@@ -78,14 +78,14 @@ body.theme-material3 .xd-popup-version {
 body.theme-material3 .tab-buttons {
     position: fixed !important;
     bottom: 14px !important;
-    left: 26px !important;
-    right: 26px !important;
+    left: 45px !important;
+    right: 45px !important;
     display: flex !important;
     background: var(--m3-surface-high) !important;
     border: none !important;
-    border-radius: var(--m3-r-xl) !important;
-    padding: 5px !important;
-    gap: 3px !important;
+    border-radius: var(--m3-r-full) !important;
+    padding: 4px 6px !important;
+    gap: 4px !important;
     margin: 0 !important;
     z-index: 100 !important;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
@@ -98,8 +98,8 @@ body.theme-material3 .tab-button {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 8px 0 !important;
-    border-radius: var(--m3-r-l) !important;
+    padding: 7px 0 !important;
+    border-radius: var(--m3-r-full) !important;
     background: transparent !important;
     color: var(--m3-on-surface-variant) !important;
     border: none !important;
