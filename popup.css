@@ -76,6 +76,14 @@ h3 {
     min-height: 0;
 }
 
+.settings-card {
+    display: contents;
+}
+
+.m3-section-title {
+    display: none;
+}
+
 .tab-content.active {
     display: flex;
     flex-direction: column;

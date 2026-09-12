@@ -21,31 +21,35 @@
     </div>
 
     <div id="ai-tab" class="tab-content active">
-        <div class="form-group provider-select-group">
-            <label for="active-provider-trigger">Provider:</label>
-            <div class="provider-select-wrapper">
-                <button type="button" id="active-provider-trigger" class="provider-select-trigger"></button>
-                <div id="active-provider-dropdown" class="provider-dropdown hidden"></div>
-            </div>
-        </div>
-        <div class="form-group model-select-group">
-            <label><span id="models-label-text">Models:</span> <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
-            <div class="model-panel">
-                <div class="model-panel-search">
-                    <input type="text" id="model-name" placeholder="Search or type custom model..." autocomplete="off">
+        <div class="settings-card">
+            <div class="form-group provider-select-group">
+                <label for="active-provider-trigger">Provider:</label>
+                <div class="provider-select-wrapper">
+                    <button type="button" id="active-provider-trigger" class="provider-select-trigger"></button>
+                    <div id="active-provider-dropdown" class="provider-dropdown hidden"></div>
                 </div>
-                <div id="model-list" class="model-list"></div>
+            </div>
+            <div class="form-group model-select-group">
+                <label><span id="models-label-text">Models:</span> <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
+                <div class="model-panel">
+                    <div class="model-panel-search">
+                        <input type="text" id="model-name" placeholder="Search or type custom model..." autocomplete="off">
+                    </div>
+                    <div id="model-list" class="model-list"></div>
+                </div>
             </div>
         </div>
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="consensus-toggle">
-                <span id="consensus-label-text">Consensus mode</span>
-            </label>
+
+        <div class="settings-card">
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="consensus-toggle">
+                    <span id="consensus-label-text">Consensus mode</span>
+                </label>
+            </div>
+            <div id="consensus-runs-container" class="consensus-runs-container"></div>
+            <button type="button" id="add-consensus-run-btn" class="add-consensus-run-btn">+ Add model</button>
         </div>
-        <hr class="separator consensus-separator">
-        <div id="consensus-runs-container" class="consensus-runs-container"></div>
-        <button type="button" id="add-consensus-run-btn" class="add-consensus-run-btn">+ Add model</button>
     </div>
 
     <div id="providers-tab" class="tab-content">
@@ -53,164 +57,174 @@
     </div>
 
     <div id="features-tab" class="tab-content">
-        <div class="form-group">
-            <label for="language-select">Language / Мова / Язык:</label>
-            <select id="language-select">
-                <option value="uk">Українська</option>
-                <option value="ru">Русский</option>
-                <option value="en">English</option>
-            </select>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="auto-answer-toggle">
-                <span>Auto-answer</span>
-            </label>
-            <p class="field-hint">Automatically select the correct answer on the page.</p>
-        </div>
-        <div class="form-group" id="cooldown-group">
-            <label for="auto-answer-cooldown">Cooldown (ms):</label>
-            <input type="number" id="auto-answer-cooldown" min="0" step="100" placeholder="1500">
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="highlight-correct-toggle">
-                <span>Highlight correct answer</span>
-            </label>
-            <p class="field-hint">Highlight the correct option with a green border when UI is visible.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="show-answer-only-toggle">
-                <span>Show answer only</span>
-            </label>
-            <p class="field-hint">Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="silent-mode-toggle">
-                <span>Silent mode</span>
-            </label>
-        </div>
-        <div class="form-group" id="silent-mode-select-group">
-            <label for="silent-mode-select">Mode:</label>
-            <select id="silent-mode-select">
-                <option value="indicators">Indicators</option>
-                <option value="ghost">Page title</option>
-                <option value="stealth">Stealth</option>
-                <option value="oneclick">One-click</option>
-            </select>
-            <p class="field-hint">
-                <strong>Indicators:</strong> Overlay dot next to the correct answer.<br>
-                <strong>Page title:</strong> Hide window. Answer shown only in browser tab title.<br>
-                <strong>Stealth:</strong> Completely invisible. Answer auto-copied to clipboard.<br>
-                <strong>One-click:</strong> Click on a question to instantly select the correct answer.
-            </p>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="web-search-toggle">
-                <span id="web-search-label">Web Search</span>
-            </label>
-            <p class="field-hint" id="web-search-hint">Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="calculator-toggle">
-                <span id="calculator-label">Calculator (LaTeX/Math)</span>
-            </label>
-            <p class="field-hint" id="calculator-hint">Allow AI to use built-in math calculator for precise evaluations and LaTeX formulas.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="disabler-toggle">
-                <span id="disabler-label">Disabler</span>
-            </label>
-            <p class="field-hint" id="disabler-hint">Відключає перевірки сайту, щоб дозволити легше списування.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group">
-            <label id="hotkey-label">Hotkey</label>
-            <div class="hotkey-recorder-wrapper">
-                <button type="button" id="hotkey-recorder" class="hotkey-recorder" title="Click to record a new shortcut">
-                    <kbd id="hotkey-recorder-kbd">Ctrl+Shift+X</kbd>
-                </button>
-                <button type="button" id="hotkey-clear" class="hotkey-clear" title="Reset to default">↺</button>
+        <div class="m3-section-title">General</div>
+        <div class="settings-card">
+            <div class="form-group">
+                <label for="language-select">Language / Мова / Язык:</label>
+                <select id="language-select">
+                    <option value="uk">Українська</option>
+                    <option value="ru">Русский</option>
+                    <option value="en">English</option>
+                </select>
             </div>
-            <p class="field-hint" id="hotkey-hint">Click the key combination above to rebind.</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group">
-            <label>Default position</label>
-            <div id="position-grid" class="position-grid" role="radiogroup" aria-label="Default helper position">
-                <button type="button" class="position-cell" data-position="top-left" role="radio" aria-label="Top left" title="Top left"></button>
-                <button type="button" class="position-cell" data-position="top-center" role="radio" aria-label="Top center" title="Top center"></button>
-                <button type="button" class="position-cell" data-position="top-right" role="radio" aria-label="Top right" title="Top right"></button>
-                <button type="button" class="position-cell" data-position="middle-left" role="radio" aria-label="Middle left" title="Middle left"></button>
-                <button type="button" class="position-cell" data-position="center" role="radio" aria-label="Center" title="Center"></button>
-                <button type="button" class="position-cell" data-position="middle-right" role="radio" aria-label="Middle right" title="Middle right"></button>
-                <button type="button" class="position-cell" data-position="bottom-left" role="radio" aria-label="Bottom left" title="Bottom left"></button>
-                <button type="button" class="position-cell" data-position="bottom-center" role="radio" aria-label="Bottom center" title="Bottom center"></button>
-                <button type="button" class="position-cell" data-position="bottom-right" role="radio" aria-label="Bottom right" title="Bottom right"></button>
+            <div class="form-group">
+                <label id="hotkey-label">Hotkey</label>
+                <div class="hotkey-recorder-wrapper">
+                    <button type="button" id="hotkey-recorder" class="hotkey-recorder" title="Click to record a new shortcut">
+                        <kbd id="hotkey-recorder-kbd">Ctrl+Shift+X</kbd>
+                    </button>
+                    <button type="button" id="hotkey-clear" class="hotkey-clear" title="Reset to default">↺</button>
+                </div>
+                <p class="field-hint" id="hotkey-hint">Click the key combination above to rebind.</p>
             </div>
-            <p class="field-hint">Where the answer card appears when it opens.</p>
+            <div class="form-group">
+                <label>Default position</label>
+                <div id="position-grid" class="position-grid" role="radiogroup" aria-label="Default helper position">
+                    <button type="button" class="position-cell" data-position="top-left" role="radio" aria-label="Top left" title="Top left"></button>
+                    <button type="button" class="position-cell" data-position="top-center" role="radio" aria-label="Top center" title="Top center"></button>
+                    <button type="button" class="position-cell" data-position="top-right" role="radio" aria-label="Top right" title="Top right"></button>
+                    <button type="button" class="position-cell" data-position="middle-left" role="radio" aria-label="Middle left" title="Middle left"></button>
+                    <button type="button" class="position-cell" data-position="center" role="radio" aria-label="Center" title="Center"></button>
+                    <button type="button" class="position-cell" data-position="middle-right" role="radio" aria-label="Middle right" title="Middle right"></button>
+                    <button type="button" class="position-cell" data-position="bottom-left" role="radio" aria-label="Bottom left" title="Bottom left"></button>
+                    <button type="button" class="position-cell" data-position="bottom-center" role="radio" aria-label="Bottom center" title="Bottom center"></button>
+                    <button type="button" class="position-cell" data-position="bottom-right" role="radio" aria-label="Bottom right" title="Bottom right"></button>
+                </div>
+                <p class="field-hint">Where the answer card appears when it opens.</p>
+            </div>
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="remember-drag-toggle">
+                    <span>Remember dragged position</span>
+                </label>
+                <p class="field-hint">If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.</p>
+            </div>
         </div>
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="remember-drag-toggle">
-                <span>Remember dragged position</span>
-            </label>
-            <p class="field-hint">If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.</p>
+
+        <div class="m3-section-title">Automation & Answers</div>
+        <div class="settings-card">
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="auto-answer-toggle">
+                    <span>Auto-answer</span>
+                </label>
+                <p class="field-hint">Automatically select the correct answer on the page.</p>
+            </div>
+            <div class="form-group" id="cooldown-group">
+                <label for="auto-answer-cooldown">Cooldown (ms):</label>
+                <input type="number" id="auto-answer-cooldown" min="0" step="100" placeholder="1500">
+            </div>
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="highlight-correct-toggle">
+                    <span>Highlight correct answer</span>
+                </label>
+                <p class="field-hint">Highlight the correct option with a green border when UI is visible.</p>
+            </div>
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="show-answer-only-toggle">
+                    <span>Show answer only</span>
+                </label>
+                <p class="field-hint">Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.</p>
+            </div>
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="disabler-toggle">
+                    <span id="disabler-label">Disabler</span>
+                </label>
+                <p class="field-hint" id="disabler-hint">Відключає перевірки сайту, щоб дозволити легше списування.</p>
+            </div>
+        </div>
+
+        <div class="m3-section-title">AI Tools</div>
+        <div class="settings-card">
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="web-search-toggle">
+                    <span id="web-search-label">Web Search</span>
+                </label>
+                <p class="field-hint" id="web-search-hint">Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.</p>
+            </div>
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="calculator-toggle">
+                    <span id="calculator-label">Calculator (LaTeX/Math)</span>
+                </label>
+                <p class="field-hint" id="calculator-hint">Allow AI to use built-in math calculator for precise evaluations and LaTeX formulas.</p>
+            </div>
+        </div>
+
+        <div class="m3-section-title">Stealth</div>
+        <div class="settings-card">
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="silent-mode-toggle">
+                    <span>Silent mode</span>
+                </label>
+            </div>
+            <div class="form-group" id="silent-mode-select-group">
+                <label for="silent-mode-select">Mode:</label>
+                <select id="silent-mode-select">
+                    <option value="indicators">Indicators</option>
+                    <option value="ghost">Page title</option>
+                    <option value="stealth">Stealth</option>
+                    <option value="oneclick">One-click</option>
+                </select>
+                <p class="field-hint">
+                    <strong>Indicators:</strong> Overlay dot next to the correct answer.<br>
+                    <strong>Page title:</strong> Hide window. Answer shown only in browser tab title.<br>
+                    <strong>Stealth:</strong> Completely invisible. Answer auto-copied to clipboard.<br>
+                    <strong>One-click:</strong> Click on a question to instantly select the correct answer.
+                </p>
+            </div>
         </div>
     </div>
 
     <div id="themes-tab" class="tab-content">
-        <div class="form-group theme-engine-group">
-            <label for="theme-engine-select" id="theme-engine-label">Design System / Тема:</label>
-            <select id="theme-engine-select">
-                <option value="material3">Material 3 Expressive (Beer CSS)</option>
-                <option value="legacy">Legacy (Dark Glass)</option>
-            </select>
-            <p class="field-hint" id="theme-engine-hint">Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).</p>
-        </div>
-        <hr class="separator">
-        <div class="form-group">
-            <label id="theme-mode-label">Theme mode:</label>
-            <div class="theme-mode-segmented" id="theme-mode-segmented" role="radiogroup">
-                <button type="button" class="theme-mode-btn" data-mode="dark" role="radio" aria-checked="true">
-                    <span class="theme-mode-icon">dark_mode</span>
-                    <span class="theme-mode-text" id="theme-mode-dark-text">Dark</span>
-                </button>
-                <button type="button" class="theme-mode-btn" data-mode="light" role="radio" aria-checked="false">
-                    <span class="theme-mode-icon">light_mode</span>
-                    <span class="theme-mode-text" id="theme-mode-light-text">Light</span>
-                </button>
+        <div class="m3-section-title">Design System</div>
+        <div class="settings-card">
+            <div class="form-group theme-engine-group">
+                <label for="theme-engine-select" id="theme-engine-label">Engine / Тема:</label>
+                <select id="theme-engine-select">
+                    <option value="material3">Material 3 Expressive (Beer CSS)</option>
+                    <option value="legacy">Legacy (Dark Glass)</option>
+                </select>
+                <p class="field-hint" id="theme-engine-hint">Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).</p>
             </div>
-            <p class="field-hint" id="theme-mode-hint">Switch between dark and light theme.</p>
         </div>
 
-        <hr class="separator">
-        <div class="form-group">
-            <label id="theme-palette-label">Color palette (accent):</label>
-            <div class="theme-palette-swatches" id="theme-palette-swatches"></div>
-            <div id="theme-palette-picker-container" class="theme-palette-picker-container hidden"></div>
-            <p class="field-hint" id="theme-palette-hint">Choose an accent color for the interface.</p>
-        </div>
+        <div class="m3-section-title">Appearance</div>
+        <div class="settings-card">
+            <div class="form-group">
+                <label id="theme-mode-label">Theme mode:</label>
+                <div class="theme-mode-segmented" id="theme-mode-segmented" role="radiogroup">
+                    <button type="button" class="theme-mode-btn" data-mode="dark" role="radio" aria-checked="true">
+                        <span class="theme-mode-icon">dark_mode</span>
+                        <span class="theme-mode-text" id="theme-mode-dark-text">Dark</span>
+                    </button>
+                    <button type="button" class="theme-mode-btn" data-mode="light" role="radio" aria-checked="false">
+                        <span class="theme-mode-icon">light_mode</span>
+                        <span class="theme-mode-text" id="theme-mode-light-text">Light</span>
+                    </button>
+                </div>
+                <p class="field-hint" id="theme-mode-hint">Switch between dark and light theme.</p>
+            </div>
 
-        <hr class="separator">
-        <div class="form-group toggle-group">
-            <label>
-                <input type="checkbox" id="glow-effect-toggle">
-                <span>Glow effect</span>
-            </label>
-            <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
+            <div class="form-group">
+                <label id="theme-palette-label">Color palette (accent):</label>
+                <div class="theme-palette-swatches" id="theme-palette-swatches"></div>
+                <div id="theme-palette-picker-container" class="theme-palette-picker-container hidden"></div>
+                <p class="field-hint" id="theme-palette-hint">Choose an accent color for the interface.</p>
+            </div>
+
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="glow-effect-toggle">
+                    <span>Glow effect</span>
+                </label>
+                <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
+            </div>
         </div>
     </div>
 
