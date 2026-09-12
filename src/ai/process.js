@@ -288,6 +288,17 @@
                     }
                     html += '</div></div>';
                 }
+                if (result.calcCalls && result.calcCalls.length > 0) {
+                    const ccDone = result.calcCalls.filter(c => c.status === 'done').length;
+                    html += '<div class="xd-calc-block">' +
+                        '<div class="xd-calc-header" style="cursor:pointer;">🧮 Calculator <span class="xd-calc-count">(' + ccDone + ')</span> <span class="xd-calc-toggle">▼</span></div>' +
+                        '<div class="xd-calc-content" style="display:none !important;">';
+                    for (const cc of result.calcCalls) {
+                        const resText = cc.result !== undefined ? ' = ' + I.escapeHTML(String(cc.result)) : '';
+                        html += '<div class="xd-calc-entry">✓ <span class="xd-calc-expr">' + I.escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
+                    }
+                    html += '</div></div>';
+                }
                 html += I.renderParsedResponse(parsed);
                 window.xdAnswers.answerContentDiv.innerHTML = html;
 
@@ -298,6 +309,15 @@
                     const content = this.nextElementSibling;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-search-toggle');
+                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
+                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                });
+                const ch = window.xdAnswers.answerContentDiv.querySelector('.xd-calc-header');
+                if (ch) ch.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    if (!content) return;
+                    const toggle = this.querySelector('.xd-calc-toggle');
                     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
                     content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
                     if (toggle) toggle.textContent = isHidden ? '▲' : '▼';

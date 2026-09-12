@@ -17,7 +17,12 @@
 
         // When web search is enabled, append tool usage instructions to system prompt
         if (settings.webSearchEnabled && getActiveSearchProvider(settings)) {
-            systemPrompt += '\n\nУ тебе є доступ до інструмент web_search для пошуку в інтернеті. Використовуй його, коли потрібно знайти актуальну інформацію, факти, дати або деталі, яких може не бути у твоїх навчальних даних. Це особливо корисно для питань про поточні події, історичні дати, наукові факти тощо. Не викликай пошук, якщо впевнений у відповіді.';
+            systemPrompt += '\n\nУ тебе є доступ до інструмента web_search для пошуку в інтернеті. Використовуй його, коли потрібно знайти актуальну інформацію, факти, дати або деталі, яких може не бути у твоїх навчальних даних. Це особливо корисно для питань про поточні події, історичні дати, наукові факти тощо. Не викликай пошук, якщо впевнений у відповіді.';
+        }
+
+        // When calculator is enabled, append tool usage instructions to system prompt
+        if (settings.calculatorEnabled !== false) {
+            systemPrompt += '\n\nУ тебе є доступ до інструмента calculator для точних математичних обчислень та розв\'язання формул/LaTeX виразів. Обов\'язково викликай calculator, коли у завданні є будь-які підрахунки, арифметика, дроби чи формули, щоб гарантувати точність розрахунків.';
         }
 
         let userMsg = '';
@@ -112,9 +117,9 @@
     }
 
     function buildRequestBody(s, systemPrompt, userMsg, images, stream) {
-        const buildWebSearchTool = window.xdAnswers._internal.buildWebSearchTool;
-        // Determine whether to include web_search tool
-        const includeTools = s.webSearchEnabled && s.apiFormat !== 'google'; // Google tools handled separately (non-stream)
+        const I = window.xdAnswers._internal;
+        const availableTools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
+        const includeTools = availableTools.length > 0 && s.apiFormat !== 'google';
 
         if (s.apiFormat === 'openai') {
             const messages = [];
@@ -123,7 +128,7 @@
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
             const body = { model: s.model, messages, max_tokens: 4096, stream: !!stream };
-            if (includeTools) body.tools = buildWebSearchTool('openai');
+            if (includeTools) body.tools = availableTools;
             return body;
         }
 
@@ -132,7 +137,7 @@
             images.forEach(img => userContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img } }));
             const body = { model: s.model, messages: [{ role: 'user', content: userContent }], max_tokens: 4096, stream: !!stream };
             if (systemPrompt) body.system = systemPrompt;
-            if (includeTools) body.tools = buildWebSearchTool('anthropic');
+            if (includeTools) body.tools = availableTools;
             return body;
         }
 
@@ -141,8 +146,7 @@
             images.forEach(img => userParts.push({ inline_data: { mime_type: 'image/jpeg', data: img } }));
             const body = { contents: [{ parts: userParts }] };
             if (systemPrompt) body.systemInstruction = { parts: [{ text: systemPrompt }] };
-            // Google: include tools in non-stream path only (streaming tool calls unreliable)
-            if (s.webSearchEnabled) body.tools = buildWebSearchTool('google');
+            if (availableTools.length > 0) body.tools = availableTools;
             return body;
         }
 

@@ -19,7 +19,7 @@
         const getActiveSearchProvider = I.getActiveSearchProvider;
 
         const active = getActiveProvider(s);
-        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix, webSearchEnabled: s.webSearchEnabled || false };
+        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix, webSearchEnabled: s.webSearchEnabled || false, calculatorEnabled: s.calculatorEnabled !== false };
         const apiFormat = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
         const baseUrl = active.baseUrl || DEFAULT_BASE_URLS[active.type] || DEFAULT_BASE_URLS.openai;
         return {
@@ -28,7 +28,8 @@
             apiKey: active.apiKey,
             model: s.model,
             promptPrefix: s.promptPrefix,
-            webSearchEnabled: (s.webSearchEnabled || false) && !!(getActiveSearchProvider && getActiveSearchProvider(s))
+            webSearchEnabled: (s.webSearchEnabled || false) && !!(getActiveSearchProvider && getActiveSearchProvider(s)),
+            calculatorEnabled: s.calculatorEnabled !== false
         };
     }
 
@@ -48,7 +49,8 @@
             apiKey: provider.apiKey,
             model: run.model || s.model,
             promptPrefix: s.promptPrefix,
-            webSearchEnabled: false
+            webSearchEnabled: false,
+            calculatorEnabled: s.calculatorEnabled !== false
         };
     }
 

@@ -34,12 +34,11 @@
             if (s.apiFormat === 'openai' || s.apiFormat === 'google' || s.apiFormat === 'anthropic') {
                 body.messages = messages;
             }
-            // buildRequestBody may have added tools on its own; strip them so we only add on first loop.
+            // buildRequestBody may have added tools on its own; strip them and re-add within MAX_TOOL_LOOPS limit
             delete body.tools;
-            // Only include tools on the first request; omit on follow-ups after tool calls
-            if (s.webSearchEnabled && toolLoops === 0) {
-                if (s.apiFormat !== 'google') body.tools = buildWebSearchTool(s.apiFormat);
-                else body.tools = buildWebSearchTool('google');
+            if (toolLoops < MAX_TOOL_LOOPS) {
+                const tools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
+                if (tools.length > 0) body.tools = tools;
             }
             window.xdAnswers.lastRequestBody = body;
 
@@ -67,9 +66,16 @@
                     for (const tc of msg.tool_calls) {
                         try {
                             const args = JSON.parse(tc.function.arguments || '{}');
-                            const query = args.query || '';
-                            const numResults = args.num_results || 5;
-                            const resultJson = query ? await executeSearch(query, numResults, args.source || null) : JSON.stringify({ error: 'Empty query' });
+                            const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.function.name);
+                            let resultJson = '';
+                            if (isCalc) {
+                                const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                                resultJson = I.executeCalculator(expr);
+                            } else {
+                                const query = args.query || '';
+                                const numResults = args.num_results || 5;
+                                resultJson = query ? await executeSearch(query, numResults, args.source || null) : JSON.stringify({ error: 'Empty query' });
+                            }
                             messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
                         } catch (err) {
                             messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
@@ -90,10 +96,17 @@
                     for (const block of parsed.content) {
                         if (block.type === 'tool_use') {
                             try {
-                                const query = block.input?.query || '';
-                                const numResults = block.input?.num_results || 5;
-                                const source = block.input?.source || null;
-                                const resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
+                                const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(block.name);
+                                let resultJson = '';
+                                if (isCalc) {
+                                    const expr = block.input?.expression || block.input?.expr || block.input?.formula || block.input?.query || block.input?.input || '';
+                                    resultJson = I.executeCalculator(expr);
+                                } else {
+                                    const query = block.input?.query || '';
+                                    const numResults = block.input?.num_results || 5;
+                                    const source = block.input?.source || null;
+                                    resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
+                                }
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: resultJson });
                             } catch (err) {
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: block.id, content: JSON.stringify({ error: err.message }) });
@@ -123,10 +136,17 @@
                     for (const p of parts) {
                         if (p.functionCall) {
                             try {
-                                const query = p.functionCall.args?.query || '';
-                                const numResults = p.functionCall.args?.num_results || 5;
-                                const source = p.functionCall.args?.source || null;
-                                const resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
+                                const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(p.functionCall.name);
+                                let resultJson = '';
+                                if (isCalc) {
+                                    const expr = p.functionCall.args?.expression || p.functionCall.args?.expr || p.functionCall.args?.formula || p.functionCall.args?.query || p.functionCall.args?.input || '';
+                                    resultJson = I.executeCalculator(expr);
+                                } else {
+                                    const query = p.functionCall.args?.query || '';
+                                    const numResults = p.functionCall.args?.num_results || 5;
+                                    const source = p.functionCall.args?.source || null;
+                                    resultJson = query ? await executeSearch(query, numResults, source) : JSON.stringify({ error: 'Empty query' });
+                                }
                                 functionResponses.push({ functionResponse: { name: p.functionCall.name, response: JSON.parse(resultJson) } });
                             } catch (err) {
                                 functionResponses.push({ functionResponse: { name: p.functionCall.name, response: { error: err.message } } });

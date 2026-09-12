@@ -47,12 +47,47 @@
             let statusCleared = false;
             let toolLoopDepth = 0;
             const MAX_TOOL_LOOPS = 3;
+            let isHandlingToolCalls = false;
 
             // Search indicator state
-            let searchCalls = []; // [{query, status:'searching'|'done', resultCount}]
+            let searchCalls = []; // [{query, status:'searching'|'done', resultCount, round, toolIndex}]
+            // Calculator indicator state
+            let calcCalls = []; // [{expression, status:'calculating'|'done', result, round, toolIndex}]
 
             // Tool call accumulation state (per stream round)
-            let pendingToolCalls = {}; // {index: {id, name, args:''}}
+            let pendingToolCalls = {}; // {index: {index, id, name, args:''}}
+
+            function setToolStreamingIndicator(toolIndex, name, argsStr) {
+                const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(name);
+                let args = {};
+                try { args = JSON.parse(argsStr); } catch {}
+
+                if (isCalc) {
+                    const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                    if (!expr) return;
+                    let entry = calcCalls.find(c => c.round === toolLoopDepth && c.toolIndex === toolIndex);
+                    if (!entry) {
+                        entry = { round: toolLoopDepth, toolIndex, expression: expr, status: 'calculating' };
+                        calcCalls.push(entry);
+                    } else {
+                        entry.expression = expr;
+                        entry.status = 'calculating';
+                    }
+                    updateStreamUI();
+                } else {
+                    const query = args.query || args.q || '';
+                    if (!query) return;
+                    let entry = searchCalls.find(sc => sc.round === toolLoopDepth && sc.toolIndex === toolIndex);
+                    if (!entry) {
+                        entry = { round: toolLoopDepth, toolIndex, query, status: 'searching', resultCount: 0 };
+                        searchCalls.push(entry);
+                    } else {
+                        entry.query = query;
+                        entry.status = 'searching';
+                    }
+                    updateStreamUI();
+                }
+            }
 
             function getElapsed() {
                 const sec = Math.floor((Date.now() - startTime) / 1000);
@@ -137,6 +172,28 @@
                     html += '</div></div>';
                 }
 
+                // Calculator indicator block
+                if (calcCalls.length > 0) {
+                    const doneCount = calcCalls.filter(c => c.status === 'done').length;
+                    const calculatingCount = calcCalls.length - doneCount;
+                    const headerLabel = calculatingCount > 0
+                        ? '🧮 Calculator... <span class="xd-calc-count">(' + calcCalls.length + ')</span>'
+                        : '🧮 Calculator <span class="xd-calc-count">(' + doneCount + ')</span>';
+                    html += '<div class="xd-calc-block">' +
+                        '<div class="xd-calc-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-calc-toggle">▼</span></div>' +
+                        '<div class="xd-calc-content" style="display:none !important;">';
+                    for (let i = 0; i < calcCalls.length; i++) {
+                        const cc = calcCalls[i];
+                        if (cc.status === 'calculating') {
+                            html += '<div class="xd-calc-entry">⏳ <span class="xd-calc-expr">' + escapeHTML(cc.expression || '...') + '</span></div>';
+                        } else {
+                            const resText = cc.result !== undefined ? ' = ' + escapeHTML(String(cc.result)) : '';
+                            html += '<div class="xd-calc-entry">✓ <span class="xd-calc-expr">' + escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
+                        }
+                    }
+                    html += '</div></div>';
+                }
+
                 const parsed = parsePartialLabeled(fullContent) || salvagePartialJSON(fullContent);
 
                 if (parsed && parsed.answer && parsed.answer !== lastHighlightedAnswer) {
@@ -150,6 +207,8 @@
                     html += '<div class="xd-answer xd-answer-partial">' + window.xdAnswers.renderMarkdown(fullContent) + '</div>';
                 } else if (searchCalls.some(sc => sc.status === 'searching')) {
                     html += '<div class="xd-waiting">⏳ Executing web search...</div>';
+                } else if (calcCalls.some(c => c.status === 'calculating')) {
+                    html += '<div class="xd-waiting">⏳ Calculating math expression...</div>';
                 } else {
                     html += '<div class="xd-waiting">⏳ Waiting for answer...</div>';
                 }
@@ -166,18 +225,35 @@
                     content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
                     if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
                 });
+                const ch = contentDiv.querySelector('.xd-calc-header');
+                if (ch) ch.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    if (!content) return;
+                    const toggle = this.querySelector('.xd-calc-toggle');
+                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
+                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                });
             }
 
             // Execute pending tool calls and continue streaming
             async function handleToolCalls() {
+                if (isHandlingToolCalls) return;
+                isHandlingToolCalls = true;
+
                 const toolCalls = Object.values(pendingToolCalls);
-                if (toolCalls.length === 0) { finishStream(); return; }
+                if (toolCalls.length === 0) {
+                    isHandlingToolCalls = false;
+                    finishStream();
+                    return;
+                }
 
                 toolLoopDepth++;
                 console.log('[xdAnswers] Tool call detected (depth=' + toolLoopDepth + '):', toolCalls.map(tc => tc.name + '(' + tc.args.slice(0, 100) + ')').join(', '));
                 if (toolLoopDepth > MAX_TOOL_LOOPS) {
                     console.warn('[xdAnswers] Max tool loop depth reached, stopping');
                     fullContent += '\n\n[Web search limit reached — skipping further searches]';
+                    isHandlingToolCalls = false;
                     finishStream();
                     return;
                 }
@@ -191,11 +267,15 @@
 
                 // Build assistant message with tool_calls (OpenAI format) or content blocks (Anthropic)
                 if (s.apiFormat === 'openai') {
+                    toolCalls.forEach((tc, idx) => {
+                        if (!tc.id) tc.id = 'call_' + Date.now() + '_' + idx;
+                    });
+
                     const assistantMsg = {
                         role: 'assistant',
-                        content: '',
+                        content: fullContent || '',
                         tool_calls: toolCalls.map(tc => ({
-                            id: tc.id || ('call_' + Date.now()),
+                            id: tc.id,
                             type: 'function',
                             function: { name: tc.name, arguments: tc.args }
                         }))
@@ -203,79 +283,191 @@
                     messages.push(assistantMsg);
 
                     // Execute each tool call and add tool results
-                    for (const tc of toolCalls) {
-                        try {
-                            let args = {};
-                            try { args = JSON.parse(tc.args); } catch {}
+                    for (let i = 0; i < toolCalls.length; i++) {
+                        const tc = toolCalls[i];
+                        let args = {};
+                        try { args = JSON.parse(tc.args); } catch {}
+                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name);
+
+                        if (isCalc) {
+                            const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                            let ccEntry = calcCalls.find(c => c.round === (toolLoopDepth - 1) && c.toolIndex === tc.index);
+                            if (!ccEntry && expr) {
+                                ccEntry = calcCalls.find(c => c.expression === expr && c.status === 'calculating');
+                            }
+                            if (!ccEntry) {
+                                ccEntry = { round: toolLoopDepth - 1, toolIndex: tc.index !== undefined ? tc.index : i, expression: expr || 'Math expression', status: 'calculating' };
+                                calcCalls.push(ccEntry);
+                            } else {
+                                ccEntry.status = 'calculating';
+                                if (expr) ccEntry.expression = expr;
+                            }
+                            updateStreamUI();
+
+                            try {
+                                const resultJson = I.executeCalculator(expr);
+                                let resObj = {};
+                                try { resObj = JSON.parse(resultJson); } catch {}
+                                ccEntry.status = 'done';
+                                ccEntry.result = resObj.result !== undefined ? resObj.result : (resObj.error || 'error');
+                                updateStreamUI();
+
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
+                            } catch (err) {
+                                ccEntry.status = 'done';
+                                ccEntry.result = err.message;
+                                updateStreamUI();
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                            }
+                        } else {
                             const query = args.query || args.q || '';
                             const numResults = args.num_results || args.num || 5;
-                            if (!query) throw new Error('Empty query');
 
-                            searchCalls.push({ query, status: 'searching', resultCount: 0 });
+                            let scEntry = searchCalls.find(sc => sc.round === (toolLoopDepth - 1) && sc.toolIndex === tc.index);
+                            if (!scEntry && query) {
+                                scEntry = searchCalls.find(sc => sc.query === query && sc.status === 'searching');
+                            }
+                            if (!scEntry) {
+                                scEntry = { round: toolLoopDepth - 1, toolIndex: tc.index !== undefined ? tc.index : i, query: query || 'Web search', status: 'searching', resultCount: 0 };
+                                searchCalls.push(scEntry);
+                            } else {
+                                scEntry.status = 'searching';
+                                if (query) scEntry.query = query;
+                            }
                             updateStreamUI();
 
-                            const source = args.source || null;
-                            const resultJson = await executeSearch(query, numResults, source);
-                            const resultObj = JSON.parse(resultJson);
-                            const count = resultObj.organic?.length || 0;
-                            searchCalls[searchCalls.length - 1].status = 'done';
-                            searchCalls[searchCalls.length - 1].resultCount = count;
-                            updateStreamUI();
+                            if (!query) {
+                                scEntry.status = 'done';
+                                scEntry.resultCount = 0;
+                                updateStreamUI();
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: 'Empty query' }) });
+                                continue;
+                            }
 
-                            messages.push({ role: 'tool', tool_call_id: assistantMsg.tool_calls.find(t => t.function.name === tc.name)?.id || tc.id, content: resultJson });
-                        } catch (err) {
-                            searchCalls[searchCalls.length - 1].status = 'done';
-                            searchCalls[searchCalls.length - 1].resultCount = 0;
-                            updateStreamUI();
-                            messages.push({ role: 'tool', tool_call_id: assistantMsg.tool_calls.find(t => t.function.name === tc.name)?.id || tc.id, content: JSON.stringify({ error: err.message }) });
+                            try {
+                                const source = args.source || null;
+                                const resultJson = await executeSearch(query, numResults, source);
+                                let count = 0;
+                                try {
+                                    const resultObj = JSON.parse(resultJson);
+                                    count = resultObj.organic?.length || 0;
+                                } catch {}
+                                scEntry.status = 'done';
+                                scEntry.resultCount = count;
+                                updateStreamUI();
+
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
+                            } catch (err) {
+                                scEntry.status = 'done';
+                                scEntry.resultCount = 0;
+                                updateStreamUI();
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                            }
                         }
                     }
                 } else if (s.apiFormat === 'anthropic') {
                     // Build assistant content blocks
                     const assistantBlocks = [];
-                    if (fullThinking) {
-                        // Don't include thinking blocks — they're not part of the API message schema
-                    }
                     if (fullContent) {
                         assistantBlocks.push({ type: 'text', text: fullContent });
                     }
-                    for (const tc of toolCalls) {
-                        assistantBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: {} });
+                    toolCalls.forEach((tc, idx) => {
+                        if (!tc.id) tc.id = 'toolu_' + Date.now() + '_' + idx;
                         try { tc._parsedInput = JSON.parse(tc.args || '{}'); } catch { tc._parsedInput = {}; }
-                        assistantBlocks[assistantBlocks.length - 1].input = tc._parsedInput;
-                    }
+                        assistantBlocks.push({ type: 'tool_use', id: tc.id, name: tc.name, input: tc._parsedInput });
+                    });
                     messages.push({ role: 'assistant', content: assistantBlocks });
 
                     // Execute and add tool_result
                     const toolResultBlocks = [];
-                    for (const tc of toolCalls) {
-                        try {
-                            const args = tc._parsedInput || {};
+                    for (let i = 0; i < toolCalls.length; i++) {
+                        const tc = toolCalls[i];
+                        const args = tc._parsedInput || {};
+                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name);
+
+                        if (isCalc) {
+                            const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                            let ccEntry = calcCalls.find(c => c.round === (toolLoopDepth - 1) && c.toolIndex === tc.index);
+                            if (!ccEntry && expr) {
+                                ccEntry = calcCalls.find(c => c.expression === expr && c.status === 'calculating');
+                            }
+                            if (!ccEntry) {
+                                ccEntry = { round: toolLoopDepth - 1, toolIndex: tc.index !== undefined ? tc.index : i, expression: expr || 'Math expression', status: 'calculating' };
+                                calcCalls.push(ccEntry);
+                            } else {
+                                ccEntry.status = 'calculating';
+                                if (expr) ccEntry.expression = expr;
+                            }
+                            updateStreamUI();
+
+                            try {
+                                const resultJson = I.executeCalculator(expr);
+                                let resObj = {};
+                                try { resObj = JSON.parse(resultJson); } catch {}
+                                ccEntry.status = 'done';
+                                ccEntry.result = resObj.result !== undefined ? resObj.result : (resObj.error || 'error');
+                                updateStreamUI();
+
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
+                            } catch (err) {
+                                ccEntry.status = 'done';
+                                ccEntry.result = err.message;
+                                updateStreamUI();
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                            }
+                        } else {
                             const query = args.query || '';
                             const numResults = args.num_results || 5;
-                            if (!query) throw new Error('Empty query');
 
-                            searchCalls.push({ query, status: 'searching', resultCount: 0 });
+                            let scEntry = searchCalls.find(sc => sc.round === (toolLoopDepth - 1) && sc.toolIndex === tc.index);
+                            if (!scEntry && query) {
+                                scEntry = searchCalls.find(sc => sc.query === query && sc.status === 'searching');
+                            }
+                            if (!scEntry) {
+                                scEntry = { round: toolLoopDepth - 1, toolIndex: tc.index !== undefined ? tc.index : i, query: query || 'Web search', status: 'searching', resultCount: 0 };
+                                searchCalls.push(scEntry);
+                            } else {
+                                scEntry.status = 'searching';
+                                if (query) scEntry.query = query;
+                            }
                             updateStreamUI();
 
-                            const source = args.source || null;
-                            const resultJson = await executeSearch(query, numResults, source);
-                            const resultObj = JSON.parse(resultJson);
-                            const count = resultObj.organic?.length || 0;
-                            searchCalls[searchCalls.length - 1].status = 'done';
-                            searchCalls[searchCalls.length - 1].resultCount = count;
-                            updateStreamUI();
+                            if (!query) {
+                                scEntry.status = 'done';
+                                scEntry.resultCount = 0;
+                                updateStreamUI();
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: 'Empty query' }) });
+                                continue;
+                            }
 
-                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
-                        } catch (err) {
-                            searchCalls[searchCalls.length - 1].status = 'done';
-                            searchCalls[searchCalls.length - 1].resultCount = 0;
-                            updateStreamUI();
-                            toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                            try {
+                                const source = args.source || null;
+                                const resultJson = await executeSearch(query, numResults, source);
+                                let count = 0;
+                                try {
+                                    const resultObj = JSON.parse(resultJson);
+                                    count = resultObj.organic?.length || 0;
+                                } catch {}
+                                scEntry.status = 'done';
+                                scEntry.resultCount = count;
+                                updateStreamUI();
+
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
+                            } catch (err) {
+                                scEntry.status = 'done';
+                                scEntry.resultCount = 0;
+                                updateStreamUI();
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                            }
                         }
                     }
                     messages.push({ role: 'user', content: toolResultBlocks });
                 }
+
+                // Ensure all indicators for this round are finalized
+                searchCalls.forEach(sc => { if (sc.status === 'searching') sc.status = 'done'; });
+                calcCalls.forEach(c => { if (c.status === 'calculating') c.status = 'done'; });
+                updateStreamUI();
 
                 // Reset per-round state for the next stream
                 pendingToolCalls = {};
@@ -283,6 +475,7 @@
                 fullThinking = '';
                 thinkingStarted = false;
                 thinkingDone = false;
+                isHandlingToolCalls = false;
 
                 // Re-stream with updated messages
                 startStreamRound(messages);
@@ -290,7 +483,7 @@
 
             function finishStream() {
                 stopStreamTimer();
-                resolve({ content: fullContent, thinking: fullThinking, searchCalls });
+                resolve({ content: fullContent, thinking: fullThinking, searchCalls, calcCalls });
             }
 
             function startStreamRound(currentMessages) {
@@ -298,11 +491,13 @@
                 const body = Object.assign({}, initialBody);
                 body.messages = currentMessages;
                 // Remove any stale tools from initialBody copy before conditionally adding fresh ones.
-                // Some gateways reject follow-up requests that still include the tools array.
                 delete body.tools;
-                // Only include tools on the first stream round; omit after tool calls to avoid 400 errors on some gateways
-                if (s.webSearchEnabled && s.apiFormat !== 'google' && toolLoopDepth === 0) {
-                    body.tools = buildWebSearchTool(s.apiFormat);
+                // Include tools on stream rounds within MAX_TOOL_LOOPS limit
+                if (toolLoopDepth < MAX_TOOL_LOOPS) {
+                    const tools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
+                    if (tools.length > 0 && s.apiFormat !== 'google') {
+                        body.tools = tools;
+                    }
                 }
                 window.xdAnswers.lastRequestBody = body;
 
@@ -327,42 +522,26 @@
                             // Tool call events
                             if (ev.tool_call_start) {
                                 const tcs = ev.tool_call_start;
-                                pendingToolCalls[tcs.index] = { id: tcs.id, name: tcs.name, args: '' };
+                                pendingToolCalls[tcs.index] = { index: tcs.index, id: tcs.id, name: tcs.name, args: '' };
                             }
                             if (ev.tool_call_delta) {
                                 const tcd = ev.tool_call_delta;
                                 if (!pendingToolCalls[tcd.index]) {
-                                    pendingToolCalls[tcd.index] = { id: tcd.id || '', name: tcd.name || '', args: '' };
+                                    pendingToolCalls[tcd.index] = { index: tcd.index, id: tcd.id || '', name: tcd.name || '', args: '' };
                                 }
                                 if (tcd.id) pendingToolCalls[tcd.index].id = tcd.id;
                                 if (tcd.name) pendingToolCalls[tcd.index].name = tcd.name;
                                 if (tcd.argsDelta) pendingToolCalls[tcd.index].args += tcd.argsDelta;
 
-                                // Show searching indicator as soon as we have a query
-                                try {
-                                    const partial = JSON.parse(pendingToolCalls[tcd.index].args);
-                                    if (partial.query && !searchCalls.some(sc => sc.query === partial.query)) {
-                                        searchCalls.push({ query: partial.query, status: 'searching', resultCount: 0 });
-                                        updateStreamUI();
-                                    }
-                                } catch {} // partial JSON, will update later
+                                setToolStreamingIndicator(tcd.index, pendingToolCalls[tcd.index].name, pendingToolCalls[tcd.index].args);
                             }
                             if (ev.tool_call_args_delta) {
                                 const tcad = ev.tool_call_args_delta;
-                                if (!pendingToolCalls[tcad.index] && tcad.name) {
-                                    pendingToolCalls[tcad.index] = { id: tcad.id || '', name: tcad.name, args: '' };
+                                if (!pendingToolCalls[tcad.index]) {
+                                    pendingToolCalls[tcad.index] = { index: tcad.index, id: tcad.id || '', name: tcad.name || '', args: '' };
                                 }
-                                if (pendingToolCalls[tcad.index]) {
-                                    pendingToolCalls[tcad.index].args += tcad.argsDelta;
-                                    // Try to show searching indicator for partial args
-                                    try {
-                                        const partial = JSON.parse(pendingToolCalls[tcad.index].args);
-                                        if (partial.query && !searchCalls.some(sc => sc.query === partial.query)) {
-                                            searchCalls.push({ query: partial.query, status: 'searching', resultCount: 0 });
-                                            updateStreamUI();
-                                        }
-                                    } catch {}
-                                }
+                                pendingToolCalls[tcad.index].args += tcad.argsDelta;
+                                setToolStreamingIndicator(tcad.index, pendingToolCalls[tcad.index].name, pendingToolCalls[tcad.index].args);
                             }
                             if (ev.tool_call_stop) {
                                 // Tool call finished — execute and continue
@@ -373,13 +552,17 @@
                             if (ev.tool_call_complete) {
                                 const tcc = ev.tool_call_complete;
                                 const idx = Object.keys(pendingToolCalls).length;
-                                pendingToolCalls[idx] = { id: 'google_tc_' + idx, name: tcc.name, args: JSON.stringify(tcc.args || {}) };
+                                pendingToolCalls[idx] = { index: idx, id: 'google_tc_' + idx, name: tcc.name, args: JSON.stringify(tcc.args || {}) };
                             }
                         }
                     },
                     () => {
-                        // Stream done normally (no tool calls)
-                        finishStream();
+                        if (isHandlingToolCalls) return;
+                        if (Object.keys(pendingToolCalls).length > 0) {
+                            handleToolCalls();
+                        } else {
+                            finishStream();
+                        }
                     },
                     (error, details) => {
                         stopStreamTimer();

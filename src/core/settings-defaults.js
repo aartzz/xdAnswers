@@ -65,6 +65,7 @@
         _silentModePreselect: 'indicators',
         hotkey: 'Ctrl+Shift+X',
         webSearchEnabled: true,
+        calculatorEnabled: true,
         defaultPosition: 'bottom-right',
         rememberDragPosition: false,
         savedPosition: null,
