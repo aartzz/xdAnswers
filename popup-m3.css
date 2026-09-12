@@ -279,12 +279,32 @@ body.theme-material3 .aosp-search-clear {
     border-radius: 50% !important;
 }
 
-/* Category cards list (AOSP Style) */
+/* Global hidden utility */
+.hidden {
+    display: none !important;
+}
+
+body.theme-material3 .hidden {
+    display: none !important;
+}
+
+/* Category cards list (AOSP Style - Single Rounded Group) */
 body.theme-material3 .settings-categories-view {
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 0 !important;
     width: 100% !important;
+    background: var(--m3-surface-low) !important;
+    border-radius: var(--m3-r-l) !important;
+    border: none !important;
+    outline: none !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.theme-material3.light .settings-categories-view {
+    background: #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
 }
 
 body.theme-material3 .aosp-category-card {
@@ -292,18 +312,25 @@ body.theme-material3 .aosp-category-card {
     align-items: center !important;
     gap: 16px !important;
     padding: 14px 16px !important;
-    background: var(--m3-surface-low) !important;
-    border-radius: var(--m3-r-l) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
     cursor: pointer !important;
     user-select: none !important;
-    transition: background 0.15s var(--m3-ease), transform 0.1s var(--m3-ease) !important;
+    transition: background 0.15s var(--m3-ease) !important;
     box-sizing: border-box !important;
     width: 100% !important;
+    position: relative !important;
 }
 
-body.theme-material3.light .aosp-category-card {
-    background: #ffffff !important;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+body.theme-material3 .aosp-category-card:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+body.theme-material3.light .aosp-category-card:not(:last-child) {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
 }
 
 body.theme-material3 .aosp-category-card:hover {
@@ -315,7 +342,7 @@ body.theme-material3.light .aosp-category-card:hover {
 }
 
 body.theme-material3 .aosp-category-card:active {
-    transform: scale(0.985) !important;
+    background: var(--m3-surface-high) !important;
 }
 
 body.theme-material3 .aosp-category-icon {
@@ -448,6 +475,7 @@ body.theme-material3 .settings-card {
     box-sizing: border-box !important;
     background: var(--m3-surface-low) !important;
     border: none !important;
+    outline: none !important;
     border-radius: var(--m3-r-l) !important;
     margin-bottom: 14px !important;
     overflow: hidden !important;
@@ -457,6 +485,7 @@ body.theme-material3 .settings-card {
 body.theme-material3.light .settings-card {
     background: #ffffff !important;
     border: none !important;
+    outline: none !important;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
 }
 

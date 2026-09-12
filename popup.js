@@ -1998,10 +1998,18 @@ function initAospSettingsNavigation() {
         const sec = sections[catKey];
         if (!sec || !sec.el) return;
         catView.classList.add('hidden');
+        catView.style.display = 'none';
         subView.classList.remove('hidden');
+        subView.style.display = 'flex';
         subTitle.textContent = t(sec.titleKey);
-        Object.values(sections).forEach(s => { if (s.el) s.el.classList.add('hidden'); });
+        Object.values(sections).forEach(s => {
+            if (s.el) {
+                s.el.classList.add('hidden');
+                s.el.style.display = 'none';
+            }
+        });
         sec.el.classList.remove('hidden');
+        sec.el.style.display = 'flex';
 
         // Scroll tab-content to top
         const tabContent = document.getElementById('features-tab');
@@ -2010,8 +2018,15 @@ function initAospSettingsNavigation() {
 
     function backToCategories() {
         subView.classList.add('hidden');
+        subView.style.display = 'none';
         catView.classList.remove('hidden');
-        Object.values(sections).forEach(s => { if (s.el) s.el.classList.add('hidden'); });
+        catView.style.display = 'flex';
+        Object.values(sections).forEach(s => {
+            if (s.el) {
+                s.el.classList.add('hidden');
+                s.el.style.display = 'none';
+            }
+        });
     }
 
     document.querySelectorAll('.aosp-category-card').forEach(card => {
@@ -2033,27 +2048,38 @@ function initAospSettingsNavigation() {
 
             if (!q) {
                 // If on subview, leave it, else show normal categories
-                document.querySelectorAll('.aosp-category-card').forEach(c => c.classList.remove('hidden'));
-                document.querySelectorAll('.settings-section-panel .form-group').forEach(fg => fg.classList.remove('hidden'));
+                document.querySelectorAll('.aosp-category-card').forEach(c => {
+                    c.classList.remove('hidden');
+                    c.style.display = '';
+                });
+                document.querySelectorAll('.settings-section-panel .form-group').forEach(fg => {
+                    fg.classList.remove('hidden');
+                    fg.style.display = '';
+                });
                 return;
             }
 
             // During search: reveal all panels, highlight matching form-groups
             catView.classList.add('hidden');
+            catView.style.display = 'none';
             subView.classList.remove('hidden');
+            subView.style.display = 'flex';
             subTitle.textContent = t('settingsSearchPlaceholder') || 'Пошук';
             Object.values(sections).forEach(s => {
                 if (!s.el) return;
                 s.el.classList.remove('hidden');
+                s.el.style.display = 'flex';
                 let hasMatch = false;
                 s.el.querySelectorAll('.form-group').forEach(fg => {
                     const terms = (fg.dataset.searchTerms || '').toLowerCase();
                     const text = (fg.textContent || '').toLowerCase();
                     const match = terms.includes(q) || text.includes(q);
                     fg.classList.toggle('hidden', !match);
+                    fg.style.display = match ? '' : 'none';
                     if (match) hasMatch = true;
                 });
                 s.el.classList.toggle('hidden', !hasMatch);
+                s.el.style.display = hasMatch ? 'flex' : 'none';
             });
         });
     }
