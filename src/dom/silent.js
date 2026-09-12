@@ -10,8 +10,12 @@
         if (!c) return;
         const toggle = headerEl.querySelector('.xd-thinking-toggle');
         const isHidden = c.style.display === 'none' || getComputedStyle(c).display === 'none';
-        c.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
+        const newDisplay = isHidden ? 'block' : 'none';
+        c.style.setProperty('display', newDisplay, 'important');
         if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+        if (window.xdAnswers) {
+            window.xdAnswers._thinkingExpanded = isHidden;
+        }
     }
 
     // Mini exit-silent-mode button (barely visible, bottom-right corner)

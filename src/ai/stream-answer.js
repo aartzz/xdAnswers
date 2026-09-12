@@ -225,17 +225,26 @@
                 updateStreamUI();
             }
 
+            let isThinkingExpanded = false;
+            let isSearchExpanded = false;
+            let isCalcExpanded = false;
+
             function ensureThinkingUI() {
                 if (thinkingStarted || !contentDiv) return;
                 clearStatus();
                 thinkingStarted = true;
+                const displayStyle = isThinkingExpanded ? 'block' : 'none';
+                const toggleIcon = isThinkingExpanded ? '▲' : '▼';
                 contentDiv.innerHTML =
                     '<div class="xd-thinking">' +
-                    '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking... <span class="xd-thinking-timer">(0s)</span> <span class="xd-thinking-chars"></span> <span class="xd-thinking-toggle">▼</span></div>' +
-                    '<div class="xd-thinking-content" style="display:none !important;"></div>' +
+                    '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking... <span class="xd-thinking-timer">(0s)</span> <span class="xd-thinking-chars"></span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                    '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;"></div>' +
                     '</div>';
                 const header = contentDiv.querySelector('.xd-thinking-header');
-                header.addEventListener('click', function() { toggleThinkingContent(this); });
+                header.addEventListener('click', function() {
+                    isThinkingExpanded = !isThinkingExpanded;
+                    toggleThinkingContent(this);
+                });
             }
 
             function updateStreamUI() {
@@ -247,9 +256,11 @@
 
                 // Thinking block always first (at the top)
                 if (thinkingStarted) {
+                    const displayStyle = isThinkingExpanded ? 'block' : 'none';
+                    const toggleIcon = isThinkingExpanded ? '▲' : '▼';
                     html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">▼</span></div>' +
-                        '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
+                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                        '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
                 }
 
                 // Search indicator block between thinking and answer
@@ -259,9 +270,11 @@
                     const headerLabel = searchingCount > 0
                         ? '🔍 Web Search... <span class="xd-search-count">(' + searchCalls.length + ')</span>'
                         : '🔍 Web Search <span class="xd-search-count">(' + doneCount + ')</span>';
+                    const sDisplay = isSearchExpanded ? 'block' : 'none';
+                    const sToggle = isSearchExpanded ? '▲' : '▼';
                     html += '<div class="xd-search-block">' +
-                        '<div class="xd-search-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-search-toggle">▼</span></div>' +
-                        '<div class="xd-search-content" style="display:none !important;">';
+                        '<div class="xd-search-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-search-toggle">' + sToggle + '</span></div>' +
+                        '<div class="xd-search-content" style="display:' + sDisplay + ' !important;">';
                     for (let i = 0; i < searchCalls.length; i++) {
                         const sc = searchCalls[i];
                         if (sc.status === 'searching') {
@@ -280,9 +293,11 @@
                     const headerLabel = calculatingCount > 0
                         ? '🧮 Calculator... <span class="xd-calc-count">(' + calcCalls.length + ')</span>'
                         : '🧮 Calculator <span class="xd-calc-count">(' + doneCount + ')</span>';
+                    const cDisplay = isCalcExpanded ? 'block' : 'none';
+                    const cToggle = isCalcExpanded ? '▲' : '▼';
                     html += '<div class="xd-calc-block">' +
-                        '<div class="xd-calc-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-calc-toggle">▼</span></div>' +
-                        '<div class="xd-calc-content" style="display:none !important;">';
+                        '<div class="xd-calc-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-calc-toggle">' + cToggle + '</span></div>' +
+                        '<div class="xd-calc-content" style="display:' + cDisplay + ' !important;">';
                     for (let i = 0; i < calcCalls.length; i++) {
                         const cc = calcCalls[i];
                         if (cc.status === 'calculating') {
@@ -316,24 +331,27 @@
 
                 contentDiv.innerHTML = html;
                 const th = contentDiv.querySelector('.xd-thinking-header');
-                if (th) th.addEventListener('click', function() { toggleThinkingContent(this); });
+                if (th) th.addEventListener('click', function() {
+                    isThinkingExpanded = !isThinkingExpanded;
+                    toggleThinkingContent(this);
+                });
                 const sh = contentDiv.querySelector('.xd-search-header');
                 if (sh) sh.addEventListener('click', function() {
+                    isSearchExpanded = !isSearchExpanded;
                     const content = this.nextElementSibling;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-search-toggle');
-                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
-                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                    content.style.setProperty('display', isSearchExpanded ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isSearchExpanded ? '▲' : '▼';
                 });
                 const ch = contentDiv.querySelector('.xd-calc-header');
                 if (ch) ch.addEventListener('click', function() {
+                    isCalcExpanded = !isCalcExpanded;
                     const content = this.nextElementSibling;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-calc-toggle');
-                    const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
-                    content.style.setProperty('display', isHidden ? 'block' : 'none', 'important');
-                    if (toggle) toggle.textContent = isHidden ? '▲' : '▼';
+                    content.style.setProperty('display', isCalcExpanded ? 'block' : 'none', 'important');
+                    if (toggle) toggle.textContent = isCalcExpanded ? '▲' : '▼';
                 });
             }
 

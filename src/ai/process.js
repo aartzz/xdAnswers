@@ -274,9 +274,12 @@
                 const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
                 if (footerElapsed) footerElapsed.textContent = '⏱ ' + elapsed;
                 if (result.thinking) {
+                    const isExpanded = !!window.xdAnswers._thinkingExpanded;
+                    const displayStyle = isExpanded ? 'block' : 'none';
+                    const toggleIcon = isExpanded ? '▲' : '▼';
                     html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">▼</span></div>' +
-                        '<div class="xd-thinking-content" style="display:none !important;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
+                        '<div class="xd-thinking-header" style="cursor:pointer;">💭 Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + result.thinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
+                        '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;">' + window.xdAnswers.renderMarkdown(result.thinking) + '</div></div>';
                 }
                 if (result.searchCalls && result.searchCalls.length > 0) {
                     const scDone = result.searchCalls.filter(sc => sc.status === 'done').length;
