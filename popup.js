@@ -334,25 +334,37 @@ function processModels(rawModels, format) {
             type: null
         }));
     } else {
-        models = (rawModels.data || []).map(m => ({
-            id: m.id,
-            title: m.title || m.display_name || null,
-            description: m.description || null,
-            ownedBy: m.owned_by || '',
-            root: m.root || m.id,
-            parent: m.parent || null,
-            contextLength: m.context_length || m.context_size || null,
-            maxOutputTokens: m.max_output_tokens || null,
-            capabilities: m.capabilities || null,
-            tags: Array.isArray(m.tags) ? m.tags : [],
-            features: Array.isArray(m.features) ? m.features : [],
-            pricing: (m.input_token_price_per_m !== undefined && m.output_token_price_per_m !== undefined) ? {
-                input: m.input_token_price_per_m / 100,
-                output: m.output_token_price_per_m / 100
-            } : null,
-            status: m.status,
-            type: m.type || m.model_type || null
-        }));
+        const rawList = Array.isArray(rawModels.data) ? rawModels.data : (Array.isArray(rawModels) ? rawModels : []);
+        models = rawList.map(m => {
+            if (typeof m === 'string') {
+                return {
+                    id: m,
+                    title: m,
+                    ownedBy: 'local',
+                    root: m,
+                    type: null
+                };
+            }
+            return {
+                id: m.id || m.name,
+                title: m.title || m.display_name || m.name || null,
+                description: m.description || null,
+                ownedBy: m.owned_by || m.ownedBy || '',
+                root: m.root || m.id || m.name,
+                parent: m.parent || null,
+                contextLength: m.context_length || m.context_size || null,
+                maxOutputTokens: m.max_output_tokens || null,
+                capabilities: m.capabilities || null,
+                tags: Array.isArray(m.tags) ? m.tags : [],
+                features: Array.isArray(m.features) ? m.features : [],
+                pricing: (m.input_token_price_per_m !== undefined && m.output_token_price_per_m !== undefined) ? {
+                    input: m.input_token_price_per_m / 100,
+                    output: m.output_token_price_per_m / 100
+                } : null,
+                status: m.status,
+                type: m.type || m.model_type || null
+            };
+        });
     }
 
     // Filter out non-chat types (embedding, image, audio, rerank, etc.)
@@ -1472,15 +1484,20 @@ async function fetchModelsForProvider(provider) {
     const KNOWN_MODEL_PROVIDERS = new Set([
         'openai', 'anthropic', 'google', 'deepseek', 'groq', 'openrouter',
         'cerebras', 'together', 'fireworks', 'mistral',
-        'opencode-zen', 'opencode-go', 'ollama-cloud'
+        'opencode-zen', 'opencode-go', 'ollama-cloud', 'other'
     ]);
+
+    // Check if host is local or custom
+    const isLocalOrOther = provider.type === 'other' || base.includes('localhost') || base.includes('127.0.0.1') || base.includes('0.0.0.0') || base.includes('::1');
 
     if (format === 'openai') {
         url = `${base}/models`;
-        if (hasRealKey && KNOWN_MODEL_PROVIDERS.has(provider.type)) headers['Authorization'] = `Bearer ${key}`;
+        if (hasRealKey && (KNOWN_MODEL_PROVIDERS.has(provider.type) || isLocalOrOther)) {
+            headers['Authorization'] = `Bearer ${key}`;
+        }
     } else if (format === 'anthropic') {
         url = `${base}/models`;
-        if (hasRealKey && KNOWN_MODEL_PROVIDERS.has(provider.type)) {
+        if (hasRealKey && (KNOWN_MODEL_PROVIDERS.has(provider.type) || isLocalOrOther)) {
             headers['x-api-key'] = key;
             headers['anthropic-version'] = '2023-06-01';
         }
@@ -1491,7 +1508,21 @@ async function fetchModelsForProvider(provider) {
     }
 
     const response = await makeRequest({ url, method: 'GET', headers });
-    const parsed = JSON.parse(response.data);
+    let parsed;
+    try {
+        parsed = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+    } catch (err) {
+        console.error('Failed to parse models response JSON:', err, response.data);
+        return [];
+    }
+
+    // Support responses formatted as raw array [ { id: ... } ] or OpenAI standard { data: [ ... ] } or Ollama { models: [ ... ] }
+    if (Array.isArray(parsed)) {
+        parsed = { data: parsed };
+    } else if (parsed && Array.isArray(parsed.models) && format !== 'google') {
+        parsed = { data: parsed.models };
+    }
+
     let models = processModels(parsed, format);
 
     const isOpenCodeZenWithoutKey = provider.type === 'opencode-zen' && !hasRealKey;
@@ -1524,6 +1555,9 @@ async function fetchModels() {
         allModels = await fetchModelsForProvider(active);
         providerModelsCache[active.id] = allModels;
         renderModelList();
+        if (!allModels || allModels.length === 0) {
+            console.warn('fetchModels: returned 0 models for', active.baseUrl);
+        }
     } catch (e) {
         console.error('Failed to fetch models:', e);
     } finally {
