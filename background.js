@@ -240,7 +240,7 @@ chrome.runtime.onConnect.addListener((port) => {
 
 // Google Forms URL change listener
 chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {
-    if (details.url && details.url.includes('docs.google.com/forms/d/e/')) {
+    if (details.url && details.url.includes('docs.google.com/forms/') && details.url.includes('/d/e/')) {
         chrome.tabs.sendMessage(details.tabId, { type: 'gform_url_changed' }, () => {
             if (chrome.runtime.lastError) {}
         });
