@@ -291,10 +291,24 @@
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
-    //  NAUROK SPECIFIC — Anti-detect logging only
+    //  NAUROK SPECIFIC — Anti-detect logging (plus round-page leave signals)
     // ═══════════════════════════════════════════════════════════════════════════════
     if (isNaurok) {
-        console.log('[xdAnswers Disabler] Anti-detect active for naurok.ua');
+        if ((location.pathname || '').indexOf('/round/') === 0) {
+            // Olympiad round pages: the app threatens to log blur/focus-leave events.
+            // Stop window/document-level listeners for those signals from ever registering.
+            try {
+                var roundAdd = EventTarget.prototype.addEventListener;
+                var roundBlocked = { blur: 1, focus: 1, focusin: 1, focusout: 1, mouseleave: 1, visibilitychange: 1, webkitvisibilitychange: 1 };
+                EventTarget.prototype.addEventListener = function(type, listener, options) {
+                    if (roundBlocked[type] && (this === window || this === document)) { return; }
+                    return roundAdd.call(this, type, listener, options);
+                };
+            } catch (e) { /* ignore */ }
+            console.log('[xdAnswers Disabler] Round anti-detect active for naurok.ua/round/*');
+        } else {
+            console.log('[xdAnswers Disabler] Anti-detect active for naurok.ua');
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════

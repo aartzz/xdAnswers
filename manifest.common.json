@@ -17,6 +17,7 @@
     {
       "resources": [
         "src/core/disabler-page.js",
+        "src/core/naurok-round-page.js",
         "lib/beercss/material-symbols-outlined.woff2"
       ],
       "matches": [
@@ -102,6 +103,41 @@
         "src/ui/styles.js",
         "src/ui/helper.js",
         "providers/naurok.js"
+      ],
+      "run_at": "document_end",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://naurok.ua/round/*",
+        "*://naurok.com.ua/round/*"
+      ],
+      "js": [
+        "version.js",
+        "src/core/constants.js",
+        "src/core/settings-defaults.js",
+        "src/core/state.js",
+        "src/core/version.js",
+        "src/core/settings.js",
+        "src/core/http.js",
+        "src/core/markdown.js",
+        "src/ai/search.js",
+        "src/ai/calculator.js",
+        "src/ai/request.js",
+        "src/ai/stream.js",
+        "src/ai/parse.js",
+        "src/ai/answer.js",
+        "src/ai/stream-answer.js",
+        "src/dom/match.js",
+        "src/dom/select.js",
+        "src/dom/silent.js",
+        "src/dom/oneclick.js",
+        "src/ai/consensus.js",
+        "src/ai/process.js",
+        "src/ui/draggable.js",
+        "src/ui/styles.js",
+        "src/ui/helper.js",
+        "providers/naurok-round.js"
       ],
       "run_at": "document_end",
       "all_frames": true
