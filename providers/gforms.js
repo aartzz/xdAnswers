@@ -15,6 +15,78 @@
             return true; // keep channel open for async responses
         });
 
+        // Google Forms renders grid questions twice: the interactive grid plus a
+        // hidden print copy (inside [aria-hidden="true"]) whose cells are
+        // aria-disabled and dead to clicks. Skip those everywhere.
+        function isHiddenOrDisabled(el) {
+            return !!el.closest('[aria-hidden="true"]') || el.getAttribute('aria-disabled') === 'true';
+        }
+
+        // Grid ("Сітка") questions: rows of examples × columns of answers.
+        // Cells hold no text (only an icon), so build a rows/columns description
+        // for the AI and mark the question as type 'grid'. Returns null for
+        // regular questions.
+        function collectGrid(container) {
+            const gridRows = window.xdAnswers._internal.collectGridRows(
+                Array.from(container.querySelectorAll('[data-field-index]'))
+            );
+            if (gridRows.length < 2) return null;
+
+            const columns = [];
+            for (const row of gridRows) {
+                for (const cell of row.cells) {
+                    if (cell.column && !columns.includes(cell.column)) columns.push(cell.column);
+                }
+            }
+            if (!columns.length) return null;
+
+            const lines = gridRows.map((row, i) => {
+                const label = (row.label || '').replace(/\s+/g, ' ').trim();
+                return `${i + 1}. ${label || 'рядок ' + (i + 1)}`;
+            });
+            const isMulti = gridRows.some(row => row.cells.some(cell => cell.element.getAttribute('role') === 'checkbox'));
+            return {
+                optionsText: 'Рядки (для кожного рядка обери стовпець):\n' + lines.join('\n') +
+                    '\n\nСтовпці (варіанти відповіді):\n' + columns.map(c => c.replace(/\s+/g, ' ').trim()).join(' | '),
+                isMulti: isMulti
+            };
+        }
+
+        function buildQuestionData(container) {
+            const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
+            const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
+            const grid = collectGrid(container);
+            const imgPromises = [];
+            container.querySelectorAll('img').forEach(img => {
+                const src = img.src || img.getAttribute('data-src');
+                if (src && !src.startsWith('data:image/gif')) {
+                    const absoluteSrc = new URL(src, window.location.href).href;
+                    imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
+                }
+            });
+            return Promise.all(imgPromises).then(images => {
+                if (grid) {
+                    return {
+                        text: questionText,
+                        optionsText: grid.optionsText,
+                        base64Images: images.filter(i => i !== null),
+                        questionType: 'grid',
+                        isMulti: grid.isMulti
+                    };
+                }
+                const optionEls = container.querySelectorAll('[data-xd-option="true"]');
+                const options = Array.from(optionEls).map(el => el.innerText.trim()).filter(Boolean);
+                const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
+                return {
+                    text: questionText,
+                    optionsText: options.join('\n') || undefined,
+                    base64Images: images.filter(i => i !== null),
+                    questionType: options.length > 0 ? 'quiz' : 'general',
+                    isMulti: hasCheckboxes
+                };
+            });
+        }
+
         function scanAndInjectButtons() {
             let questionContainers = document.querySelectorAll('.geS5n');
             if (questionContainers.length === 0) {
@@ -27,8 +99,10 @@
                 // Mark option text elements so findOptionElements can find them
                 const optionLabels = container.querySelectorAll('[role="radio"], [role="checkbox"], [role="option"]');
                 optionLabels.forEach(el => {
+                    if (isHiddenOrDisabled(el)) return;
                     // Put data-xd-option on the .snByac span (which has the actual text),
-                    // not the role=radio div (which has empty innerText)
+                    // not the role=radio div (which has empty innerText). Grid cells
+                    // have no .snByac and get the attribute themselves.
                     const textSpan = el.querySelector('.snByac') || el.closest('label')?.querySelector('.snByac');
                     if (textSpan) {
                         textSpan.setAttribute('data-xd-option', 'true');
@@ -40,29 +114,7 @@
                 if (isOneClick) {
                     // One-click mode: click on question triggers AI → auto-select
                     if (container.classList.contains('xd-oneclick-ready')) return;
-                    window.xdAnswers.setupOneClickHandler(container, async () => {
-                        const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
-                        const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
-                        const optionEls = container.querySelectorAll('[data-xd-option="true"]');
-                        const options = Array.from(optionEls).map(el => el.innerText.trim()).filter(Boolean);
-                        const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
-                        const imgPromises = [];
-                        container.querySelectorAll('img').forEach(img => {
-                            const src = img.src || img.getAttribute('data-src');
-                            if (src && !src.startsWith('data:image/gif')) {
-                                const absoluteSrc = new URL(src, window.location.href).href;
-                                imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
-                            }
-                        });
-                        const images = await Promise.all(imgPromises);
-                        return {
-                            text: questionText,
-                            optionsText: options.join('\n') || undefined,
-                            base64Images: images.filter(i => i !== null),
-                            questionType: options.length > 0 ? 'quiz' : 'general',
-                            isMulti: hasCheckboxes
-                        };
-                    });
+                    window.xdAnswers.setupOneClickHandler(container, () => buildQuestionData(container));
                 } else {
                     // Normal mode: add Solve button
                     if (container.querySelector('.xd-solve-btn')) return;
@@ -73,28 +125,8 @@
                     button.onclick = (e) => {
                         e.preventDefault(); e.stopPropagation();
                         window.xdAnswers._answerContainer = container;
-                        const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
-                        const questionText = (titleEl ? titleEl.innerText : container.innerText).trim();
-                        const optionEls = container.querySelectorAll('[data-xd-option="true"]');
-                        const options = Array.from(optionEls).map(el => el.innerText.trim()).filter(Boolean);
-                        const optionsText = options.join('\n');
-                        const hasCheckboxes = container.querySelectorAll('[role="checkbox"]').length > 0;
-                        const imgPromises = [];
-                        container.querySelectorAll('img').forEach(img => {
-                            const src = img.src || img.getAttribute('data-src');
-                            if (src && !src.startsWith('data:image/gif')) {
-                                const absoluteSrc = new URL(src, window.location.href).href;
-                                imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
-                            }
-                        });
-                        Promise.all(imgPromises).then(images => {
-                             window.xdAnswers.processQuestion({
-                                 text: questionText,
-                                 optionsText: optionsText || undefined,
-                                 base64Images: images.filter(i => i !== null),
-                                 questionType: options.length > 0 ? 'quiz' : 'general',
-                                 isMulti: hasCheckboxes
-                             });
+                        buildQuestionData(container).then(data => {
+                            window.xdAnswers.processQuestion(data);
                         });
                     };
                     container.appendChild(button);
