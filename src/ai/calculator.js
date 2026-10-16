@@ -238,6 +238,134 @@
         return true;
     }
 
+    // CSP-safe expression evaluator: new Function() is blocked by CSP in
+    // content scripts (Firefox: "call to Function() blocked by CSP"), so
+    // parse the expression into a tree of closures instead.
+    function tokenizeMath(expr) {
+        const tokens = [];
+        let i = 0;
+        while (i < expr.length) {
+            const ch = expr[i];
+            if (/\s/.test(ch)) { i++; continue; }
+            if (/[0-9.]/.test(ch)) {
+                let j = i;
+                while (j < expr.length && /[0-9.]/.test(expr[j])) j++;
+                // Scientific notation: 1e-3, 2.5E6
+                if (expr[j] === 'e' || expr[j] === 'E') {
+                    let k = j + 1;
+                    if (expr[k] === '+' || expr[k] === '-') k++;
+                    if (/[0-9]/.test(expr[k] || '')) {
+                        while (k < expr.length && /[0-9]/.test(expr[k])) k++;
+                        j = k;
+                    }
+                }
+                const value = Number(expr.slice(i, j));
+                if (!isFinite(value)) throw new Error('Invalid number: ' + expr.slice(i, j));
+                tokens.push({ type: 'num', value });
+                i = j;
+                continue;
+            }
+            if (/[a-zA-Z_$]/.test(ch)) {
+                let j = i;
+                while (j < expr.length && /[a-zA-Z0-9_$]/.test(expr[j])) j++;
+                tokens.push({ type: 'name', value: expr.slice(i, j) });
+                i = j;
+                continue;
+            }
+            if (ch === '*' && expr[i + 1] === '*') { tokens.push({ type: 'op', value: '**' }); i += 2; continue; }
+            if ('+-*/%(),'.includes(ch)) { tokens.push({ type: 'op', value: ch }); i++; continue; }
+            throw new Error('Unexpected character: ' + ch);
+        }
+        return tokens;
+    }
+
+    function compileExpression(expr, variableNames) {
+        const mathVars = new Set(variableNames || []);
+        const tokens = tokenizeMath(expr.replace(/Math\s*\./g, ''));
+        let pos = 0;
+        const peek = () => tokens[pos];
+        const next = () => tokens[pos++];
+        const isOp = (t, v) => !!t && t.type === 'op' && t.value === v;
+
+        function parsePrimary() {
+            const t = next();
+            if (!t) throw new Error('Unexpected end of expression');
+            if (t.type === 'num') { const v = t.value; return () => v; }
+            if (t.type === 'name') {
+                if (isOp(peek(), '(')) {
+                    next();
+                    const args = [];
+                    if (!isOp(peek(), ')')) {
+                        args.push(parseExpression());
+                        while (isOp(peek(), ',')) { next(); args.push(parseExpression()); }
+                    }
+                    if (!isOp(peek(), ')')) throw new Error('Expected ) after arguments of ' + t.value);
+                    next();
+                    const fn = MATH_SCOPE[t.value];
+                    if (typeof fn !== 'function') throw new Error('Unknown function: ' + t.value);
+                    return env => fn(...args.map(a => a(env)));
+                }
+                if (mathVars.has(t.value)) { const name = t.value; return env => env[name]; }
+                if (typeof MATH_SCOPE[t.value] === 'number') { const v = MATH_SCOPE[t.value]; return () => v; }
+                throw new Error('Unknown identifier: ' + t.value);
+            }
+            if (isOp(t, '(')) {
+                const inner = parseExpression();
+                if (!isOp(peek(), ')')) throw new Error('Expected )');
+                next();
+                return inner;
+            }
+            throw new Error('Unexpected token: ' + t.value);
+        }
+
+        function parsePower() {
+            const base = parsePrimary();
+            if (isOp(peek(), '**')) {
+                next();
+                const exp = parseUnary(); // right-associative
+                return env => Math.pow(base(env), exp(env));
+            }
+            return base;
+        }
+
+        function parseUnary() {
+            if (isOp(peek(), '-') || isOp(peek(), '+')) {
+                const sign = next().value;
+                const operand = parseUnary();
+                return sign === '-' ? env => -operand(env) : operand;
+            }
+            return parsePower();
+        }
+
+        function parseMultiplicative() {
+            let left = parseUnary();
+            while (isOp(peek(), '*') || isOp(peek(), '/') || isOp(peek(), '%')) {
+                const op = next().value;
+                const l = left;
+                const r = parseUnary();
+                if (op === '*') left = env => l(env) * r(env);
+                else if (op === '/') left = env => l(env) / r(env);
+                else left = env => l(env) % r(env);
+            }
+            return left;
+        }
+
+        function parseExpression() {
+            let left = parseMultiplicative();
+            while (isOp(peek(), '+') || isOp(peek(), '-')) {
+                const op = next().value;
+                const l = left;
+                const r = parseMultiplicative();
+                left = op === '+' ? env => l(env) + r(env) : env => l(env) - r(env);
+            }
+            return left;
+        }
+
+        const root = parseExpression();
+        if (pos < tokens.length) throw new Error('Unexpected token: ' + tokens[pos].value);
+        return root;
+    }
+
     function evaluateMath(rawExpression) {
         if (!rawExpression || typeof rawExpression !== 'string') {
             return { success: false, error: 'Empty expression' };
@@ -259,10 +387,8 @@
                     if (isSafeExpression(lhs, [varName]) && isSafeExpression(rhs, [varName])) {
                         try {
                             const diffStr = '(' + lhs + ') - (' + rhs + ')';
-                            const fnArgs = Object.keys(MATH_SCOPE);
-                            const fnVals = Object.values(MATH_SCOPE);
-                            const fn = new Function(...fnArgs, varName, 'return (' + diffStr + ');');
-                            const evalAt = (val) => fn(...fnVals, val);
+                            const fn = compileExpression(diffStr, [varName]);
+                            const evalAt = (val) => fn({ [varName]: val });
 
                             // Test for quadratic: f(x) = A*x^2 + B*x + C
                             const c = evalAt(0);
@@ -330,10 +456,8 @@
         }
 
         try {
-            const fnArgs = Object.keys(MATH_SCOPE);
-            const fnVals = Object.values(MATH_SCOPE);
-            const fn = new Function(...fnArgs, 'return (' + converted + ');');
-            const res = fn(...fnVals);
+            const fn = compileExpression(converted, []);
+            const res = fn({});
 
             if (typeof res !== 'number' || isNaN(res)) {
                 return { success: false, error: 'Expression evaluated to NaN or non-number', converted };
