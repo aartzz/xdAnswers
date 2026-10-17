@@ -1,10 +1,10 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    const TRANSLATIONS = {
+    const TRANSLATIONS: Record<string, Record<string, string>> = {
         uk: {
             tabAI: 'ШІ',
             tabProviders: 'Провайдери',

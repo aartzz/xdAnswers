@@ -3,10 +3,10 @@
 // Extracted from legacy utils.js (lines 2154-2454).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.createUI = function() {
+    window.xdAnswers.createUI = function(): void {
         if (window.xdAnswers.helperContainer) return;
 
         const container = document.createElement('div');
@@ -33,8 +33,8 @@
             '</div>';
 
         window.xdAnswers.helperContainer = container;
-        window.xdAnswers.answerContentDiv = container.querySelector('#ollama-answer-content');
-        window.xdAnswers.dragHeader = container.querySelector('#ollama-helper-drag-header');
+        window.xdAnswers.answerContentDiv = container.querySelector<HTMLElement>('#ollama-answer-content');
+        window.xdAnswers.dragHeader = container.querySelector<HTMLElement>('#ollama-helper-drag-header');
         // Set display:flex inline (removed from CSS to allow silent mode display:none to work)
         container.style.setProperty('display', 'flex', 'important');
 
@@ -48,14 +48,14 @@
         if (versionEl) versionEl.textContent = window.xdAnswers._internal.getVersionString();
     };
 
-    window.xdAnswers.attachHelperEventListeners = function() {
+    window.xdAnswers.attachHelperEventListeners = function(): void {
         const I = window.xdAnswers._internal;
         const container = window.xdAnswers.helperContainer;
         if (!container) return;
-        const silentModeBtn = container.querySelector('#silent-mode-btn');
-        const silentModeSelect = container.querySelector('#silent-mode-inline-select');
-        const copyBtn = container.querySelector('#copy-answer-btn');
-        const refreshBtn = container.querySelector('#refresh-answer-btn');
+        const silentModeBtn = container.querySelector('#silent-mode-btn') as HTMLButtonElement;
+        const silentModeSelect = container.querySelector('#silent-mode-inline-select') as HTMLSelectElement;
+        const copyBtn = container.querySelector('#copy-answer-btn') as HTMLButtonElement;
+        const refreshBtn = container.querySelector('#refresh-answer-btn') as HTMLButtonElement;
         if (!refreshBtn) return;
 
         // Initialize silent mode button state
@@ -68,10 +68,10 @@
         } else {
             silentModeBtn.classList.remove('active');
         }
-        const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
+        const modeLabels: Record<string, string> = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
         silentModeBtn.title = 'Silent mode: ' + (modeLabels[currentSilentMode] || 'Off');
 
-        window.xdAnswers.Draggable.init(container, window.xdAnswers.dragHeader, () => {
+        window.xdAnswers.Draggable.init(container, window.xdAnswers.dragHeader!, () => {
             window.xdAnswers.isManuallyPositioned = true;
         });
 
@@ -102,7 +102,7 @@
                 // Hide helper
                 container.style.setProperty('display', 'none', 'important');
                 // Remove existing highlights (switching to silent mode indicators/title/clipboard instead)
-                document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                document.querySelectorAll<HTMLElement>('.xd-highlight-correct').forEach(el => {
                     el.classList.remove('xd-highlight-correct');
                     el.style.removeProperty('outline');
                     el.style.removeProperty('background-color');
@@ -127,7 +127,7 @@
                 silentModeBtn.classList.add('active');
                 container.style.setProperty('display', 'none', 'important');
                 // Remove existing highlights
-                document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                document.querySelectorAll<HTMLElement>('.xd-highlight-correct').forEach(el => {
                     el.classList.remove('xd-highlight-correct');
                     el.style.removeProperty('outline');
                     el.style.removeProperty('background-color');
@@ -181,13 +181,13 @@
         };
     };
 
-    window.xdAnswers.attachAndPositionHelper = function(targetContainerOverride) {
+    window.xdAnswers.attachAndPositionHelper = function(targetContainerOverride?: HTMLElement): void {
         const I = window.xdAnswers._internal;
         if (window.xdAnswers.isExtensionModifyingDOM) return;
         window.xdAnswers.isExtensionModifyingDOM = true;
 
         window.xdAnswers.createUI();
-        const container = window.xdAnswers.helperContainer;
+        const container = window.xdAnswers.helperContainer!;
 
         if (window.xdAnswers.settings.silentMode && window.xdAnswers.settings.silentMode !== '') {
             container.style.setProperty('display', 'none', 'important');
@@ -197,7 +197,7 @@
         }
         container.style.setProperty('display', 'flex', 'important');
 
-        let targetParent = targetContainerOverride || document.body;
+        let targetParent: HTMLElement = targetContainerOverride || document.body;
 
         if (!targetContainerOverride && location.hostname.includes('vseosvita.ua') &&
             (location.pathname.includes('/test/go-olp') || location.pathname.startsWith('/test/start/'))) {
@@ -207,7 +207,7 @@
         // When an element is in fullscreen mode, append helper to it
         // so it renders on top of the fullscreen layer instead of behind it
         if (!targetContainerOverride && document.fullscreenElement) {
-            targetParent = document.fullscreenElement;
+            targetParent = document.fullscreenElement as HTMLElement;
         }
 
         if (!container.parentNode || container.parentNode !== targetParent) {
@@ -223,7 +223,7 @@
             if (isMax) {
                 Object.assign(container.style, { top: I.maximizedHelperState.top, left: I.maximizedHelperState.left, bottom: 'auto', right: 'auto', transform: '' });
             } else {
-                const s = window.xdAnswers.settings || {};
+                const s = window.xdAnswers.settings || ({} as XdSettings);
                 // Prefer saved drag coords only when user enabled remember-drag
                 if (s.rememberDragPosition && s.savedPosition && typeof s.savedPosition.top === 'string' && typeof s.savedPosition.left === 'string') {
                     Object.assign(container.style, { top: s.savedPosition.top, left: s.savedPosition.left, bottom: 'auto', right: 'auto', transform: '' });
@@ -275,9 +275,9 @@
                     if (miniBtn) miniBtn.remove();
                 }
                 // Sync inline silent mode controls
-                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn');
-                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select');
-                const modeLabels = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
+                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn') as HTMLButtonElement | null;
+                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select') as HTMLSelectElement | null;
+                const modeLabels: Record<string, string> = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
                 if (silentModeBtn) {
                     silentModeBtn.title = 'Silent mode: ' + (modeLabels[silentMode] || 'Off');
                     if (silentMode !== '') {
@@ -304,7 +304,7 @@
                         I.highlightCorrectAnswer(parsed.answer);
                     } else {
                         // In silent mode: remove old highlights, apply silent mode visuals
-                        document.querySelectorAll('.xd-highlight-correct').forEach(el => {
+                        document.querySelectorAll<HTMLElement>('.xd-highlight-correct').forEach(el => {
                             el.classList.remove('xd-highlight-correct');
                             el.style.removeProperty('outline');
                             el.style.removeProperty('background-color');

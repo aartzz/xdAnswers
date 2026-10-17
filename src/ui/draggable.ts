@@ -2,22 +2,26 @@
 // Draggable helper window module. Extracted from legacy utils.js (lines 1979-2054).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
+
+    interface DraggableInstance { destroy: () => void; }
+    interface DragCoords { x: number; y: number; }
 
     window.xdAnswers.Draggable = (function() {
-        let instance;
-        function createDraggable(container, handle, onDragStartCallback) {
+        let instance: DraggableInstance | null;
+        function createDraggable(container: HTMLElement, handle: HTMLElement, onDragStartCallback?: () => void): DraggableInstance {
             let isDragging = false;
-            let startX, startY, initialTop, initialLeft;
+            let startX = 0, startY = 0, initialTop = 0, initialLeft = 0;
 
-            const getCoords = (e) => {
-                if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                return { x: e.clientX, y: e.clientY };
+            const getCoords = (e: MouseEvent | TouchEvent): DragCoords => {
+                if ('touches' in e && e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
             };
 
-            const onDragStart = (e) => {
-                if (e.target.tagName === 'BUTTON' || (e.target.parentElement && e.target.parentElement.tagName === 'BUTTON')) return;
+            const onDragStart = (e: MouseEvent | TouchEvent) => {
+                const target = e.target as Element | null;
+                if (target && (target.tagName === 'BUTTON' || (target.parentElement && target.parentElement.tagName === 'BUTTON'))) return;
                 if (e.type === 'touchstart') e.preventDefault();
                 isDragging = true;
                 if (onDragStartCallback) onDragStartCallback();
@@ -35,7 +39,7 @@
                 document.addEventListener('touchend', onDragEnd, { once: true });
             };
 
-            const onDragMove = (e) => {
+            const onDragMove = (e: MouseEvent | TouchEvent) => {
                 if (!isDragging) return;
                 e.preventDefault();
                 const coords = getCoords(e);
@@ -63,7 +67,7 @@
                 } catch (e) {}
             };
 
-            const destroy = () => {
+            const destroy = (): void => {
                 handle.removeEventListener('mousedown', onDragStart);
                 handle.removeEventListener('touchstart', onDragStart);
                 document.removeEventListener('mousemove', onDragMove);
@@ -77,8 +81,8 @@
             return { destroy };
         }
         return {
-            init: function(c, h, cb) { if (instance) instance.destroy(); instance = createDraggable(c, h, cb); },
-            destroy: function() { if (instance) { instance.destroy(); instance = null; } }
+            init: function(c: HTMLElement, h: HTMLElement, cb?: () => void): void { if (instance) instance.destroy(); instance = createDraggable(c, h, cb); },
+            destroy: function(): void { if (instance) { instance.destroy(); instance = null; } }
         };
     })();
 })();

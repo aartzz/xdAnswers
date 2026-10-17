@@ -178,7 +178,7 @@ async function main() {
         'version.js',
         'src/core/constants.ts',
         'src/core/settings-defaults.ts',
-        'src/ui/i18n.js',
+        'src/ui/i18n.ts',
         'popup.js'
     ]);
 

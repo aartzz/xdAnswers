@@ -89,7 +89,7 @@ interface XdSettings {
     themeEngine: string;
     defaultPosition: string;
     rememberDragPosition: boolean;
-    savedPosition: { top: number; left: number } | null;
+    savedPosition: { top: string; left: string } | null;
     disablerEnabled: boolean;
     customization: XdCustomization;
     consensus: XdConsensusSettings;

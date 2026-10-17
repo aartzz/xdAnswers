@@ -2,10 +2,10 @@
 // Helper window CSS styles. Extracted from legacy utils.js (lines 2058-2152).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.updateHelperBaseStyles = function() {
+    window.xdAnswers.updateHelperBaseStyles = function(): void {
         const I = window.xdAnswers._internal;
         const custom = window.xdAnswers.settings.customization;
         const isMax = window.xdAnswers.isHelperWindowMaximized;
