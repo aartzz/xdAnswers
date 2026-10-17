@@ -2,9 +2,9 @@
 // Naurok provider entry: discovers the test topic via the sessions API and
 // feeds question data (text/options/images) into the AI pipeline, either
 // automatically or through the one-click handler. DOM extraction lives in
-// ./dom.ts, page-world interception in ./disabler.ts.
+// ./dom.ts; page-world session sniffing lives in ./disabler.ts and posts
+// payloads through a window.postMessage bridge.
 import type { NaurokDomApi } from './dom';
-import type { NaurokDisablerApi } from './disabler';
 
 (function () {
     'use strict';
@@ -16,17 +16,20 @@ import type { NaurokDisablerApi } from './disabler';
     const modules = I.providerModules || (I.providerModules = {});
     const naurokModules = modules.naurok || (modules.naurok = {});
     const dom = naurokModules.dom as NaurokDomApi;
-    const disabler = naurokModules.disabler as NaurokDisablerApi;
 
     // naurok exposes the test metadata at GET /api2/test/sessions/{numeric_id}.
-    // Topic/session come either from intercepted page traffic (disabler.ts) or
-    // from a direct API call once the numeric session ID is parsed from ng-init.
+    // Topic/session come either from intercepted page traffic (see ./disabler.ts,
+    // which posts payloads from the page world) or from a direct API call once
+    // the numeric session ID is parsed from ng-init.
     let _naurokTopic: string | null = null;
     let _naurokSessionId: number | null = null;
 
-    if (disabler && typeof disabler.install === 'function') {
-        disabler.install(function (payload) { extractTopicFromSessionPayload(payload); });
-    }
+    window.addEventListener('message', function (event) {
+        if (event.source !== window) return;
+        const data = event.data as { source?: string; provider?: string; type?: string; payload?: unknown } | null;
+        if (!data || data.source !== 'xd-disabler' || data.provider !== 'naurok' || data.type !== 'session-payload') return;
+        extractTopicFromSessionPayload(data.payload);
+    });
 
     function extractTopicFromSessionPayload(payload: unknown): void {
         try {

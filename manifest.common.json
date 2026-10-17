@@ -16,7 +16,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/core/disabler-page.ts",
+        "src/core/disabler.ts",
         "src/core/naurok-round-page.ts",
         "lib/beercss/material-symbols-outlined.woff2"
       ],
@@ -66,7 +66,7 @@
         "*://*.testportal.net/*",
         "*://*.szkolawchmurze.org/*"
       ],
-      "js": ["src/core/disabler.ts"],
+      "js": ["src/core/disabler-inject.ts"],
       "run_at": "document_start",
       "all_frames": true
     },
@@ -103,7 +103,6 @@
         "src/ui/styles.ts",
         "src/ui/helper.ts",
         "src/providers/naurok/dom.ts",
-        "src/providers/naurok/disabler.ts",
         "src/providers/naurok/main.ts"
       ],
       "run_at": "document_end",

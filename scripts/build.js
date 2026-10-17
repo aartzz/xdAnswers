@@ -11,7 +11,10 @@
 //        - shared core prefix            -> dist/core.js
 //        - per-provider remainder        -> dist/<provider>.js
 //        - single-file blocks (disabler) -> dist/<file>.js
-//   3. bundles background.js, popup.js and the web-accessible page scripts
+//   3. bundles background.js, popup.js and the web-accessible page scripts.
+//      The page disabler (dist/disabler.js) is composed from src/core/disabler.ts
+//      plus every src/providers/**/disabler.ts so provider-specific page-world
+//      patches ship inside the single injected script.
 //   4. copies static assets (images, lib, popup html/css) into dist
 //   5. writes dist/manifest.json with browser-specific keys
 //
@@ -116,6 +119,25 @@ function blockBundleName(remainder) {
     return scriptName(remainder[remainder.length - 1]);
 }
 
+// Provider page-world disabler modules: every src/providers/<...>/disabler.ts.
+// They are bundled together with src/core/disabler.ts into dist/disabler.js
+// (injected by src/core/disabler-inject.ts) and gate themselves on hostname.
+function providerPageDisablers() {
+    const base = path.join(ROOT, 'src', 'providers');
+    const found = [];
+    const walk = (rel) => {
+        const abs = path.join(base, rel);
+        for (const entry of fs.readdirSync(abs).sort()) {
+            const childRel = rel ? rel + '/' + entry : entry;
+            const childAbs = path.join(base, childRel);
+            if (fs.statSync(childAbs).isDirectory()) walk(childRel);
+            else if (entry === 'disabler.ts') found.push('src/providers/' + childRel);
+        }
+    };
+    walk('');
+    return found;
+}
+
 // popup.html keeps only the bundled popup.js; the four setup scripts move into the bundle.
 function transformPopupHtml(html) {
     const movedScripts = [
@@ -197,12 +219,18 @@ async function main() {
         'popup.ts'
     ]);
 
+    const pageDisablerFiles = providerPageDisablers();
     const webAccessibleResources = [];
     for (const entry of commonManifest.web_accessible_resources) {
         const resources = [];
         for (const resource of entry.resources) {
             if (!/\.(js|ts)$/.test(resource)) {
                 resources.push(resource);
+                continue;
+            }
+            if (resource === 'src/core/disabler.ts') {
+                await bundle('disabler.js', [resource, ...pageDisablerFiles]);
+                resources.push('disabler.js');
                 continue;
             }
             const name = scriptName(resource);

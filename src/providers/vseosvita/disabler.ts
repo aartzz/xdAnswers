@@ -1,27 +1,23 @@
 // src/providers/vseosvita/disabler.ts
-// vseosvita ships the test title and description inside JSON responses of its own
-// POST endpoints (/ext/test-designer/testing-pupil/active-screen-data and
-// /start-execution). This module patches window.fetch and XMLHttpRequest at load
-// time to sniff those payloads and publishes the parsed values on
-// window.xdAnswers._internal.providerModules.vseosvita.disabler for main.ts.
-
-export interface VseosvitaDisablerApi {
-    getTopic(): string | null;
-    getDescription(): string | null;
-}
-
+// Page-world patches for vseosvita. This file is bundled into the injected
+// page disabler (see scripts/build.js) and gated on location.hostname.
+//
+// Two concerns live here:
+//   1. vseosvita ships the test title and description inside JSON responses of
+//      its own POST endpoints (/ext/test-designer/testing-pupil/active-screen-data
+//      and /start-execution). window.fetch and XMLHttpRequest are patched to
+//      sniff those payloads and forward the parsed values to the content script
+//      through a postMessage bridge (source: 'xd-disabler', provider: 'vseosvita').
+//   2. vseosvita uses Vue with fullscreen computed properties; those instances
+//      are patched here (plus a small layout fix for the fixed header).
 (function () {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
-    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
+    if (location.hostname.indexOf('vseosvita.ua') === -1) return;
 
-    const I = window.xdAnswers._internal;
-    I.providerModules = I.providerModules || {};
-    const ns = (I.providerModules.vseosvita = I.providerModules.vseosvita || {});
-
-    let _vseosvitaTopic: string | null = null;       // string | null
-    let _vseosvitaDescription: string | null = null; // string | null (HTML stripped)
+    // ── Topic sniffing ────────────────────────────────────────────────
+    let _vseosvitaTopic: string | null = null;
+    let _vseosvitaDescription: string | null = null;
 
     function stripHtml(html: unknown): string {
         try {
@@ -30,6 +26,19 @@ export interface VseosvitaDisablerApi {
             tmp.innerHTML = html;
             return (tmp.textContent || (tmp as HTMLElement).innerText || '').replace(/\s+/g, ' ').trim();
         } catch (e) { return ''; }
+    }
+
+    function postTopic(): void {
+        if (!_vseosvitaTopic && !_vseosvitaDescription) return;
+        try {
+            window.postMessage({
+                source: 'xd-disabler',
+                provider: 'vseosvita',
+                type: 'topic',
+                topic: _vseosvitaTopic,
+                description: _vseosvitaDescription
+            }, '*');
+        } catch (e) { /* ignore */ }
     }
 
     function extractTopicFromVseosvitaPayload(payload: unknown): void {
@@ -49,6 +58,7 @@ export interface VseosvitaDisablerApi {
                     console.log('[xdAnswers/vseosvita] Description:', plain.slice(0, 80) + (plain.length > 80 ? '...' : ''));
                 }
             }
+            postTopic();
         } catch (e) { console.warn('[xdAnswers/vseosvita] extractTopicFromVseosvitaPayload error:', e); }
     }
 
@@ -103,8 +113,67 @@ export interface VseosvitaDisablerApi {
         }
     } catch (e) { /* XHR patch failed */ }
 
-    ns.disabler = {
-        getTopic: () => _vseosvitaTopic,
-        getDescription: () => _vseosvitaDescription
-    } as VseosvitaDisablerApi;
+    // ── Vue instance patches (vseosvita uses Vue with fullscreen computed properties) ──
+    function patchVueInstance(): void {
+        const vueEls = document.querySelectorAll('*');
+        for (const el of vueEls) {
+            const vm = (el as any).__vue__;
+            if (vm) {
+                if (typeof vm.is_full_screen_required !== 'undefined') {
+                    vm.is_full_screen_required = false;
+                }
+                if (typeof vm.is_full_screen_mode !== 'undefined') {
+                    vm.is_full_screen_mode = true;
+                }
+                if (typeof vm.is_full_screen_listeners !== 'undefined') {
+                    vm.is_full_screen_listeners = true;
+                }
+                if (typeof vm.is_full_screen_show_exit_dlg !== 'undefined') {
+                    vm.is_full_screen_show_exit_dlg = false;
+                }
+                if (typeof vm.isFullscreenRequired !== 'undefined') {
+                    vm.isFullscreenRequired = false;
+                }
+                try {
+                    if (vm.$options && vm.$options.computed && vm.$options.computed.isFullscreenSupported) {
+                        vm.$options.computed.isFullscreenSupported = function() { return false; };
+                    }
+                    if (vm._computedWatchers && vm._computedWatchers.isFullscreenSupported) {
+                        vm._computedWatchers.isFullscreenSupported.value = false;
+                        vm._computedWatchers.isFullscreenSupported.dirty = false;
+                    }
+                } catch (e) { /* ignore */ }
+            }
+        }
+    }
+
+    patchVueInstance();
+    setTimeout(patchVueInstance, 500);
+    setTimeout(patchVueInstance, 1500);
+    setTimeout(patchVueInstance, 3000);
+
+    const hammerInterval = setInterval(function() {
+        if (!location.hostname.includes('vseosvita.ua')) {
+            clearInterval(hammerInterval);
+            return;
+        }
+        patchVueInstance();
+    }, 100);
+
+    // Add top padding to the test container so the fixed header doesn't cover timer/questions
+    function addTopPadding(): void {
+        const style = document.createElement('style');
+        style.textContent = `
+            .v-test-go { padding-top: 60px !important; }
+            .v-test-go-bg { margin-top: 10px !important; }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addTopPadding);
+    } else {
+        addTopPadding();
+    }
+
+    console.log('[xdAnswers Disabler] Fullscreen + Vue patches neutralized on vseosvita.ua (page world)');
 })();

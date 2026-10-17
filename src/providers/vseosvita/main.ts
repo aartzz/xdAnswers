@@ -1,11 +1,11 @@
 // src/providers/vseosvita/main.ts
 // vseosvita provider entry (vseosvita.ua test pages): detects the current question,
 // wires the one-click handler or auto-processes it through the AI pipeline.
-// Extraction lives in ./dom.ts, answer application in ./apply.ts and the topic
-// sniffing fetch/XHR patches in ./disabler.ts.
+// Extraction lives in ./dom.ts, answer application in ./apply.ts; the topic
+// sniffing fetch/XHR patches live in ./disabler.ts (page world) and post the
+// sniffed topic/description through a window.postMessage bridge.
 import type { VseosvitaDomApi } from './dom';
 import type { VseosvitaApplyApi } from './apply';
-import type { VseosvitaDisablerApi } from './disabler';
 
 (function () {
     'use strict';
@@ -18,7 +18,18 @@ import type { VseosvitaDisablerApi } from './disabler';
     const vseosvitaModules = modules.vseosvita || (modules.vseosvita = {});
     const dom = vseosvitaModules.dom as VseosvitaDomApi;
     const applyApi = vseosvitaModules.apply as VseosvitaApplyApi;
-    const disabler = vseosvitaModules.disabler as VseosvitaDisablerApi;
+
+    // Sniffed test topic/description arrive from the page-world disabler.
+    let _vseosvitaTopic: string | null = null;
+    let _vseosvitaDescription: string | null = null;
+
+    window.addEventListener('message', function (event) {
+        if (event.source !== window) return;
+        const data = event.data as { source?: string; provider?: string; type?: string; topic?: string | null; description?: string | null } | null;
+        if (!data || data.source !== 'xd-disabler' || data.provider !== 'vseosvita' || data.type !== 'topic') return;
+        if (typeof data.topic === 'string' && data.topic.trim()) _vseosvitaTopic = data.topic.trim();
+        if (typeof data.description === 'string' && data.description.trim()) _vseosvitaDescription = data.description.trim();
+    });
 
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
@@ -92,8 +103,8 @@ import type { VseosvitaDisablerApi } from './disabler';
                             questionType: savedQuestionType,
                             isMultiQuiz: savedIsMultiQuiz,
                             isMulti: savedIsMulti,
-                            topic: disabler.getTopic() || undefined,
-                            topicDescription: disabler.getDescription() || undefined
+                            topic: _vseosvitaTopic || undefined,
+                            topicDescription: _vseosvitaDescription || undefined
                         };
                     });
                 }
@@ -116,8 +127,8 @@ import type { VseosvitaDisablerApi } from './disabler';
                         questionType: questionData.questionType,
                         isMultiQuiz: questionData.isMultiQuiz,
                         isMulti: questionData.isMulti,
-                        topic: disabler.getTopic() || undefined,
-                        topicDescription: disabler.getDescription() || undefined
+                        topic: _vseosvitaTopic || undefined,
+                        topicDescription: _vseosvitaDescription || undefined
                     });
                     window.xdAnswers.attachAndPositionHelper();
                 });

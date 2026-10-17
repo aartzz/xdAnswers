@@ -1,38 +1,30 @@
 // src/providers/naurok/disabler.ts
-// Page-world interception for the Naurok provider: patches window.fetch and
-// XMLHttpRequest to capture /api2/test/sessions/ payloads (test topic and
-// session id). Payloads are queued until main.ts installs its consumer.
-// Publishes its API on window.xdAnswers._internal.providerModules.naurok.disabler.
-
-export interface NaurokDisablerApi {
-    install(onSessionPayload: (json: unknown) => void): void;
-}
-
+// Page-world interception for the Naurok provider. This file is bundled into
+// the injected page disabler (see scripts/build.js) and gated on
+// location.hostname, so it only patches Naurok pages. It wraps window.fetch
+// and XMLHttpRequest to capture /api2/test/sessions/ payloads (test topic and
+// session id) and forwards them to the content script through a postMessage
+// bridge (source: 'xd-disabler', provider: 'naurok').
 (function () {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
-    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
+    if (location.hostname.indexOf('naurok') === -1) return;
 
-    const I = window.xdAnswers._internal;
-    I.providerModules = I.providerModules || {};
-    const ns = (I.providerModules.naurok = I.providerModules.naurok || {});
-
-    const pendingPayloads: unknown[] = [];
-    let sink: ((json: unknown) => void) | null = null;
-
-    function deliverSessionPayload(json: unknown): void {
-        if (sink) {
-            try { sink(json); } catch (e) { /* consumer error */ }
-        } else {
-            pendingPayloads.push(json);
-        }
+    function postSessionPayload(json: unknown): void {
+        try {
+            window.postMessage({
+                source: 'xd-disabler',
+                provider: 'naurok',
+                type: 'session-payload',
+                payload: json
+            }, '*');
+        } catch (e) { /* payload not structured-cloneable */ }
     }
 
     // ── Intercept window.fetch ────────────────────────────────────────
     try {
-        const origFetch = window.fetch;
         const w = window as any;
+        const origFetch = window.fetch;
         if (origFetch && !w.__xdAnswersNaurokFetchHooked) {
             w.__xdAnswersNaurokFetchHooked = true;
             w.fetch = function (this: any, input: any, init?: any) {
@@ -40,10 +32,10 @@ export interface NaurokDisablerApi {
                 const promise = origFetch.apply(this, arguments as any);
                 if (url && /\/api2\/test\/sessions\//.test(url)) {
                     console.log('[xdAnswers/naurok] Fetch intercepted:', url);
-                    promise.then(resp => {
+                    promise.then((resp: Response) => {
                         try {
                             resp.clone().json().then(json => {
-                                deliverSessionPayload(json);
+                                postSessionPayload(json);
                             }).catch(() => {});
                         } catch (e) { /* clone failed */ }
                     }).catch(() => {});
@@ -56,10 +48,11 @@ export interface NaurokDisablerApi {
     // ── Intercept XMLHttpRequest (AngularJS $http uses XHR, not fetch) ──
     try {
         const proto = XMLHttpRequest.prototype as any;
+        const w = window as any;
         const origOpen = proto.open;
         const origSend = proto.send;
-        if (!(window as any).__xdAnswersNaurokXHRHooked) {
-            (window as any).__xdAnswersNaurokXHRHooked = true;
+        if (!w.__xdAnswersNaurokXHRHooked) {
+            w.__xdAnswersNaurokXHRHooked = true;
             proto.open = function (this: any, method: string, url: string) {
                 this.__xdUrl = url;
                 return origOpen.apply(this, arguments as any);
@@ -70,7 +63,7 @@ export interface NaurokDisablerApi {
                     this.addEventListener('load', function (this: any) {
                         try {
                             const json = JSON.parse(this.responseText);
-                            deliverSessionPayload(json);
+                            postSessionPayload(json);
                         } catch (e) { /* not json */ }
                     });
                 }
@@ -78,14 +71,4 @@ export interface NaurokDisablerApi {
             };
         }
     } catch (e) { /* XHR patch failed */ }
-
-    function install(onSessionPayload: (json: unknown) => void): void {
-        sink = onSessionPayload;
-        while (pendingPayloads.length > 0) {
-            const payload = pendingPayloads.shift();
-            try { onSessionPayload(payload); } catch (e) { /* consumer error */ }
-        }
-    }
-
-    ns.disabler = { install };
 })();
