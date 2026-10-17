@@ -158,6 +158,18 @@ interface XdPositionPreset {
     translate?: 'x' | 'y' | 'xy';
 }
 
+interface XdMathEvalResult {
+    success: boolean;
+    error?: string;
+    expression?: string;
+    converted?: string;
+    result?: string | number;
+    formatted?: string;
+    equation?: boolean;
+    variable?: string;
+    solutions?: number[];
+}
+
 interface XdAnswersInternal {
     // Constants and defaults
     DEFAULT_SETTINGS: XdSettings;
@@ -190,7 +202,7 @@ interface XdAnswersInternal {
     executeSearch(query: string, count?: number, preferredSource?: string): Promise<string>;
 
     // Calculator
-    evaluateMath(rawExpression: string): Record<string, unknown>;
+    evaluateMath(rawExpression: string): XdMathEvalResult;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
     buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[];

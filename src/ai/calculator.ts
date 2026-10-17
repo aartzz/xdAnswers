@@ -1,10 +1,10 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    const MATH_SCOPE = {
+    const MATH_SCOPE: Record<string, unknown> = {
         Math: Math,
         PI: Math.PI,
         E: Math.E,
@@ -18,8 +18,8 @@
         sinh: Math.sinh,
         cosh: Math.cosh,
         tanh: Math.tanh,
-        cot: function(x) { return 1 / Math.tan(x); },
-        ctg: function(x) { return 1 / Math.tan(x); },
+        cot: function(x: number) { return 1 / Math.tan(x); },
+        ctg: function(x: number) { return 1 / Math.tan(x); },
         tg: Math.tan,
         sqrt: Math.sqrt,
         cbrt: Math.cbrt,
@@ -36,7 +36,7 @@
         round: Math.round,
         floor: Math.floor,
         ceil: Math.ceil,
-        factorial: function(n) {
+        factorial: function(n: number) {
             n = Math.round(Number(n));
             if (n < 0 || !isFinite(n)) return NaN;
             if (n === 0 || n === 1) return 1;
@@ -45,7 +45,7 @@
             for (let i = 2; i <= n; i++) r *= i;
             return r;
         },
-        comb: function(n, k) {
+        comb: function(n: number, k: number) {
             n = Math.round(Number(n));
             k = Math.round(Number(k));
             if (k < 0 || k > n) return 0;
@@ -55,7 +55,7 @@
             for (let i = 0; i < k; i++) c = (c * (n - i)) / (i + 1);
             return Math.round(c);
         },
-        perm: function(n, k) {
+        perm: function(n: number, k: number) {
             n = Math.round(Number(n));
             k = Math.round(Number(k));
             if (k < 0 || k > n) return 0;
@@ -63,19 +63,19 @@
             for (let i = 0; i < k; i++) p *= (n - i);
             return p;
         },
-        gcd: function(a, b) {
+        gcd: function(a: number, b: number) {
             a = Math.abs(Math.round(a));
             b = Math.abs(Math.round(b));
             while (b) { const t = b; b = a % b; a = t; }
             return a;
         },
-        lcm: function(a, b) {
+        lcm: function(a: number, b: number) {
             if (!a || !b) return 0;
-            return Math.abs(Math.round(a * b)) / MATH_SCOPE.gcd(a, b);
+            return Math.abs(Math.round(a * b)) / (MATH_SCOPE.gcd as (a: number, b: number) => number)(a, b);
         }
     };
 
-    function parseGroup(str, start, openChar, closeChar) {
+    function parseGroup(str: string, start: number, openChar: string, closeChar: string): { content: string; endIndex: number } | null {
         if (str[start] !== openChar) return null;
         let depth = 0;
         for (let i = start; i < str.length; i++) {
@@ -88,13 +88,13 @@
         return null;
     }
 
-    function latexToMath(latex) {
+    function latexToMath(latex: string): string {
         if (!latex || typeof latex !== 'string') return '';
         let s = latex.trim();
         s = s.replace(/^\$+|\$+$/g, '').trim();
 
         // Balanced braces replacement for \frac and \dfrac
-        function replaceFracs(str) {
+        function replaceFracs(str: string): string {
             let regex = /\\d?frac\s*\{/g;
             let match;
             while ((match = regex.exec(str)) !== null) {
@@ -115,7 +115,7 @@
         s = replaceFracs(s);
 
         // \binom{n}{k}
-        function replaceBinoms(str) {
+        function replaceBinoms(str: string): string {
             let regex = /\\binom\s*\{/g;
             let match;
             while ((match = regex.exec(str)) !== null) {
@@ -145,7 +145,7 @@
 
         // \sqrt{x} with balanced braces
         let sqrtRegex = /\\sqrt\s*\{/g;
-        let sMatch;
+        let sMatch: RegExpExecArray | null;
         while ((sMatch = sqrtRegex.exec(s)) !== null) {
             const open = s.indexOf('{', sMatch.index);
             const grp = parseGroup(s, open, '{', '}');
@@ -228,7 +228,7 @@
         'factorial', 'comb', 'perm', 'gcd', 'lcm'
     ]);
 
-    function isSafeExpression(expr, allowedVars) {
+    function isSafeExpression(expr: string, allowedVars?: string[]): boolean {
         if (/["'`\\;{}[\]]/.test(expr)) return false;
         const vars = new Set(allowedVars || []);
         const words = expr.match(/[a-zA-Z_$][a-zA-Z0-9_$]*/g) || [];
@@ -238,11 +238,18 @@
         return true;
     }
 
+    type MathFn = (env: Record<string, number>) => number;
+
+    interface MathToken {
+        type: 'num' | 'name' | 'op';
+        value: number | string;
+    }
+
     // CSP-safe expression evaluator: new Function() is blocked by CSP in
     // content scripts (Firefox: "call to Function() blocked by CSP"), so
     // parse the expression into a tree of closures instead.
-    function tokenizeMath(expr) {
-        const tokens = [];
+    function tokenizeMath(expr: string): MathToken[] {
+        const tokens: MathToken[] = [];
         let i = 0;
         while (i < expr.length) {
             const ch = expr[i];
@@ -279,35 +286,38 @@
         return tokens;
     }
 
-    function compileExpression(expr, variableNames) {
+    function compileExpression(expr: string, variableNames?: string[]): MathFn {
         const mathVars = new Set(variableNames || []);
         const tokens = tokenizeMath(expr.replace(/Math\s*\./g, ''));
         let pos = 0;
-        const peek = () => tokens[pos];
-        const next = () => tokens[pos++];
-        const isOp = (t, v) => !!t && t.type === 'op' && t.value === v;
+        const peek = (): MathToken | undefined => tokens[pos];
+        const next = (): MathToken | undefined => tokens[pos++];
+        const isOp = (t: MathToken | undefined, v: string): boolean => !!t && t.type === 'op' && t.value === v;
 
-        function parsePrimary() {
+        function parsePrimary(): MathFn {
             const t = next();
             if (!t) throw new Error('Unexpected end of expression');
-            if (t.type === 'num') { const v = t.value; return () => v; }
+            if (t.type === 'num') { const v = t.value as number; return () => v; }
             if (t.type === 'name') {
+                const name = t.value as string;
                 if (isOp(peek(), '(')) {
                     next();
-                    const args = [];
+                    const args: MathFn[] = [];
                     if (!isOp(peek(), ')')) {
                         args.push(parseExpression());
                         while (isOp(peek(), ',')) { next(); args.push(parseExpression()); }
                     }
-                    if (!isOp(peek(), ')')) throw new Error('Expected ) after arguments of ' + t.value);
+                    if (!isOp(peek(), ')')) throw new Error('Expected ) after arguments of ' + name);
                     next();
-                    const fn = MATH_SCOPE[t.value];
-                    if (typeof fn !== 'function') throw new Error('Unknown function: ' + t.value);
-                    return env => fn(...args.map(a => a(env)));
+                    const fn = MATH_SCOPE[name];
+                    if (typeof fn !== 'function') throw new Error('Unknown function: ' + name);
+                    const callable = fn as (...fnArgs: number[]) => number;
+                    return env => callable(...args.map(a => a(env)));
                 }
-                if (mathVars.has(t.value)) { const name = t.value; return env => env[name]; }
-                if (typeof MATH_SCOPE[t.value] === 'number') { const v = MATH_SCOPE[t.value]; return () => v; }
-                throw new Error('Unknown identifier: ' + t.value);
+                if (mathVars.has(name)) { return env => env[name]; }
+                const constant = MATH_SCOPE[name];
+                if (typeof constant === 'number') { return () => constant; }
+                throw new Error('Unknown identifier: ' + name);
             }
             if (isOp(t, '(')) {
                 const inner = parseExpression();
@@ -318,7 +328,7 @@
             throw new Error('Unexpected token: ' + t.value);
         }
 
-        function parsePower() {
+        function parsePower(): MathFn {
             const base = parsePrimary();
             if (isOp(peek(), '**')) {
                 next();
@@ -328,19 +338,19 @@
             return base;
         }
 
-        function parseUnary() {
+        function parseUnary(): MathFn {
             if (isOp(peek(), '-') || isOp(peek(), '+')) {
-                const sign = next().value;
+                const sign = next()!.value;
                 const operand = parseUnary();
                 return sign === '-' ? env => -operand(env) : operand;
             }
             return parsePower();
         }
 
-        function parseMultiplicative() {
+        function parseMultiplicative(): MathFn {
             let left = parseUnary();
             while (isOp(peek(), '*') || isOp(peek(), '/') || isOp(peek(), '%')) {
-                const op = next().value;
+                const op = next()!.value;
                 const l = left;
                 const r = parseUnary();
                 if (op === '*') left = env => l(env) * r(env);
@@ -350,10 +360,10 @@
             return left;
         }
 
-        function parseExpression() {
+        function parseExpression(): MathFn {
             let left = parseMultiplicative();
             while (isOp(peek(), '+') || isOp(peek(), '-')) {
-                const op = next().value;
+                const op = next()!.value;
                 const l = left;
                 const r = parseMultiplicative();
                 left = op === '+' ? env => l(env) + r(env) : env => l(env) - r(env);
@@ -366,7 +376,7 @@
         return root;
     }
 
-    function evaluateMath(rawExpression) {
+    function evaluateMath(rawExpression: string): XdMathEvalResult {
         if (!rawExpression || typeof rawExpression !== 'string') {
             return { success: false, error: 'Empty expression' };
         }
@@ -388,7 +398,7 @@
                         try {
                             const diffStr = '(' + lhs + ') - (' + rhs + ')';
                             const fn = compileExpression(diffStr, [varName]);
-                            const evalAt = (val) => fn({ [varName]: val });
+                            const evalAt = (val: number) => fn({ [varName]: val });
 
                             // Test for quadratic: f(x) = A*x^2 + B*x + C
                             const c = evalAt(0);
@@ -474,11 +484,11 @@
                 formatted: String(cleanRes)
             };
         } catch (err) {
-            return { success: false, error: err.message, converted };
+            return { success: false, error: err instanceof Error ? err.message : String(err), converted };
         }
     }
 
-    function buildCalculatorTool(apiFormat) {
+    function buildCalculatorTool(apiFormat: string): unknown[] {
         const desc = 'Calculate and evaluate mathematical expressions, arithmetic, algebraic formulas, or LaTeX math (e.g. fractions \\frac{a}{b}, square roots \\sqrt{x}, exponents 2^8, percentages, trigonometry, equations 2x + 5 = 15). Use this tool whenever the question involves calculations to guarantee 100% precision.';
         const params = {
             type: 'object',
@@ -504,21 +514,21 @@
         return [];
     }
 
-    function executeCalculator(rawExpression) {
+    function executeCalculator(rawExpression: string): string {
         const res = evaluateMath(rawExpression);
         return JSON.stringify(res);
     }
 
-    function isCalculatorToolName(name) {
+    function isCalculatorToolName(name: string): boolean {
         if (!name) return false;
         const n = String(name).toLowerCase();
         return n === 'calculator' || n === 'calculate' || n === 'math_eval' || n === 'latex_calculator' || n === 'latex_eval';
     }
 
-    function buildTools(s, apiFormat) {
-        const tools = [];
+    function buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[] {
+        const tools: unknown[] = [];
         const I = window.xdAnswers._internal;
-        const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s));
+        const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s as unknown as XdSettings));
         const calculator = s.calculatorEnabled !== false;
 
         if (apiFormat === 'openai') {
@@ -532,13 +542,13 @@
             return tools;
         }
         if (apiFormat === 'google') {
-            const decls = [];
+            const decls: unknown[] = [];
             if (webSearch && I.buildWebSearchTool) {
-                const ws = I.buildWebSearchTool('google');
+                const ws = I.buildWebSearchTool('google') as Array<{ function_declarations?: unknown[] }>;
                 if (ws[0]?.function_declarations) decls.push(...ws[0].function_declarations);
             }
             if (calculator) {
-                const calc = buildCalculatorTool('google');
+                const calc = buildCalculatorTool('google') as Array<{ function_declarations?: unknown[] }>;
                 if (calc[0]?.function_declarations) decls.push(...calc[0].function_declarations);
             }
             return decls.length > 0 ? [{ function_declarations: decls }] : [];
