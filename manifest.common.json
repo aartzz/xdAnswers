@@ -211,7 +211,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/gforms.js"
+        "src/providers/gforms/dom.ts",
+        "src/providers/gforms/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
@@ -315,7 +316,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/kahoot.js"
+        "src/providers/kahoot/dom.ts",
+        "src/providers/kahoot/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
@@ -417,7 +419,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/lcloud.js"
+        "src/providers/lcloud/dom.ts",
+        "src/providers/lcloud/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true

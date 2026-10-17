@@ -28,6 +28,17 @@ interface XdConsensusRun {
     [key: string]: unknown;
 }
 
+interface XdGridCellInfo {
+    element: Element;
+    column: string;
+}
+
+interface XdGridRowInfo {
+    index: number;
+    label: string;
+    cells: XdGridCellInfo[];
+}
+
 interface XdConsensusSettings {
     enabled: boolean;
     runs: XdConsensusRun[];
@@ -293,7 +304,7 @@ interface XdAnswersInternal {
     isGridCell(el: Element): boolean;
     gridRowLabel(el: Element): string;
     gridCellColumnText(el: Element): string;
-    collectGridRows(elements: Element[]): unknown[];
+    collectGridRows(elements: Element[]): XdGridRowInfo[];
     matchGridAnswer(answerText: string, optionElements: Element[]): Element[];
 
     // Silent mode / selection / one-click

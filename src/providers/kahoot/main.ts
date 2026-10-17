@@ -1,7 +1,13 @@
+// src/providers/kahoot/main.ts
+// Kahoot provider entry: polling, character-by-character numeric/text input, one-click mode.
+import type { KahootDomApi, KahootQuestionState } from './dom';
+
 (function() {
     'use strict';
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
     let lastQuestionText = '';
-    let kahootContainer = null;  // scoped container for current question
+    let kahootContainer: HTMLElement | null = null;  // scoped container for current question
 
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
@@ -12,73 +18,49 @@
     }, 50);
 
     function initKahoot() {
+        const domApi = window.xdAnswers._internal.providerModules?.kahoot?.dom as KahootDomApi;
+        if (!domApi) {
+            console.warn('[xdAnswers] kahoot: dom module missing');
+            return;
+        }
+
         window.xdAnswers.onRefresh = () => { lastQuestionText = ''; checkQuestion(); };
 
         // Poll for question changes — Kahoot is highly dynamic
         setInterval(checkQuestion, 800);
 
-        function findInputElement() {
-            // Kahoot uses data-functional-selector for answer inputs
-            // Numeric input has type="number" or type="text" inside the answer area
-            var sel = document.querySelector('[data-functional-selector*="answer"] input[type="number"]')
-                   || document.querySelector('[data-functional-selector*="answer"] input[type="text"]')
-                   || document.querySelector('[data-functional-selector*="answer"] input')
-                   || document.querySelector('input[type="number"]')
-                   || document.querySelector('input[data-functional-selector*="answer"]');
-            return sel;
+        function buildQuestionData(state: KahootQuestionState, images: string[]): XdQuestionData {
+            return {
+                text: state.text,
+                optionsText: state.options.length > 0 ? state.options.join('\n') : undefined,
+                base64Images: images,
+                questionType: state.questionType
+            };
         }
 
         function checkQuestion() {
             if (window.xdAnswers.isProcessingAI) return;
 
-            // Find question text — InRoute uses .n-kahoot-p
-            const questionEl = document.querySelector('.n-kahoot-p');
-            if (!questionEl) return;
-
-            const questionText = questionEl.innerText.trim();
-            if (!questionText || questionText === lastQuestionText) return;
-            lastQuestionText = questionText;
-
-            // Find option buttons — Kahoot uses data-functional-selector for answers
-            let optionEls = document.querySelectorAll('[data-functional-selector^="answer-"], [data-functional-selector*="answer"]');
-            if (optionEls.length === 0) {
-                optionEls = document.querySelectorAll('.choices__choice, [class*="choice"], button[role="radio"]');
-            }
-
-            const options = Array.from(optionEls).map(function(el) {
-                return el.innerText.trim();
-            }).filter(Boolean);
-
-            // Check for images in the question
-            const imgPromises = [];
-            const questionContainer = questionEl.closest('[data-testid="question-screen"], [class*="question"], div');
-            if (questionContainer) {
-                questionContainer.querySelectorAll('img').forEach(function(img) {
-                    imgPromises.push(window.xdAnswers.imageToBase64(img.src));
-                });
-            }
+            const state = domApi.readQuestion();
+            if (!state || state.text === lastQuestionText) return;
+            lastQuestionText = state.text;
 
             // Store container for answer-time use
-            kahootContainer = questionContainer || questionEl.parentElement;
+            kahootContainer = state.container;
 
-            Promise.all(imgPromises).then(function(images) {
-                var questionData = {
-                    text: questionText,
-                    options: options.length > 0 ? options : undefined,
-                    base64Images: images.filter(function(img) { return img !== null; }),
-                    questionType: options.length > 0 ? 'choice' : 'text'
-                };
+            domApi.loadImages(state.imageUrls).then(function(images) {
+                const questionData = buildQuestionData(state, images);
 
                 // ── Custom auto-answer: character-by-character input for numeric/text answers ──
                 // Kahoot tracks KEYDOWN/KEYUP timing. Direct value assignment is detectable.
                 // InRoute uses 15ms/char + 400ms dot animation buffer.
-                var inputEl = findInputElement();
+                const inputEl = domApi.findInputElement();
 
                 if (inputEl) {
                     // Numeric/text answer question — install character-by-character applier
                     window.xdAnswers._answerContainer = kahootContainer;
                     window.xdAnswers._customAutoAnswer = function(answerText) {
-                        var input = findInputElement();
+                        const input = domApi.findInputElement();
                         if (!input) {
                             // Fallback to default auto-select if input vanished
                             window.xdAnswers._internal.autoSelectAnswer(answerText, true);
@@ -86,18 +68,18 @@
                         }
 
                         // Use native value setter to set initial empty state
-                        var proto = window.HTMLInputElement.prototype;
-                        var nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+                        const proto = window.HTMLInputElement.prototype;
+                        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
                         if (nativeSetter) nativeSetter.call(input, '');
                         else input.value = '';
                         input.dispatchEvent(new Event('input', { bubbles: true }));
 
                         // Type character by character at 15ms intervals (matching InRoute)
-                        var cleanAnswer = answerText.replace(/[^0-9a-zA-Z\s.,\-]/g, '').trim();
-                        var chars = cleanAnswer.split('');
-                        var idx = 0;
+                        const cleanAnswer = answerText.replace(/[^0-9a-zA-Z\s.,\-]/g, '').trim();
+                        const chars = cleanAnswer.split('');
+                        let idx = 0;
 
-                        var typeInterval = setInterval(function() {
+                        const typeInterval = setInterval(function() {
                             if (idx >= chars.length) {
                                 clearInterval(typeInterval);
 
@@ -114,7 +96,7 @@
                                 return;
                             }
 
-                            var current = chars.slice(0, idx + 1).join('');
+                            const current = chars.slice(0, idx + 1).join('');
                             if (nativeSetter) nativeSetter.call(input, current);
                             else input.value = current;
 
@@ -135,12 +117,12 @@
                     };
                 } else {
                     // MCQ question — clear any previous custom applier
-                    delete window.xdAnswers._customAutoAnswer;
+                    window.xdAnswers._customAutoAnswer = null;
                 }
 
-                var isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
+                const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
                 if (isOneClick) {
-                    var container = questionEl.closest('[data-testid="question-screen"]') || questionEl.parentElement;
+                    const container = state.container;
                     if (container && !container.classList.contains('xd-oneclick-ready')) {
                         window.xdAnswers.clearOneClickHandlers();
                         window.xdAnswers.setupOneClickHandler(container, async function() { return questionData; });
