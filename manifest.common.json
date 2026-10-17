@@ -451,7 +451,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/quizlet.js"
+        "src/providers/quizlet/dom.ts",
+        "src/providers/quizlet/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
@@ -486,7 +487,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/testportal.js"
+        "src/providers/testportal/dom.ts",
+        "src/providers/testportal/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
@@ -520,7 +522,8 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/szkolawchmurze.js"
+        "src/providers/szkolawchmurze/dom.ts",
+        "src/providers/szkolawchmurze/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true

@@ -116,6 +116,7 @@ interface XdQuestionData {
     topic?: string;
     topicDescription?: string;
     questionType?: string;
+    isMultiple?: boolean;
     batchQuestions?: unknown;
     customPromptPrefix?: string;
     [key: string]: unknown;
