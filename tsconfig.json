@@ -14,6 +14,6 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/**/*", "providers/**/*", "types/**/*.d.ts"],
+  "include": ["src/**/*", "providers/**/*", "types/**/*.d.ts", "background.ts", "popup.ts"],
   "exclude": ["node_modules", "build", "dist", "lib"]
 }

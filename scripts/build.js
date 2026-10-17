@@ -173,13 +173,13 @@ async function main() {
     }
 
     // Extension-level scripts and web-accessible page scripts.
-    await bundle('background.js', ['background.js']);
+    await bundle('background.js', ['background.ts']);
     await bundle('popup.js', [
         'version.js',
         'src/core/constants.ts',
         'src/core/settings-defaults.ts',
         'src/ui/i18n.ts',
-        'popup.js'
+        'popup.ts'
     ]);
 
     const webAccessibleResources = [];

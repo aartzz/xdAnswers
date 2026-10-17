@@ -6,21 +6,21 @@ const MODELS_DEV_API = 'https://models.dev/api.json';
 const MODELS_CACHE_KEY = 'xdAnswers_modelsDev';
 const MODELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
 
-async function syncModelsDev() {
+async function syncModelsDev(): Promise<void> {
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort('Timeout'), 30000);
         const response = await fetch(MODELS_DEV_API, { signal: controller.signal });
         clearTimeout(timeoutId);
         if (!response.ok) return;
-        const data = await response.json();
+        const data: any = await response.json();
 
         // Extract slim model index: { modelKey: { name, family, attachment, reasoning, cost, limit, modalities, provider } }
         // modelKey = "providerId/modelId" for cross-provider lookup
-        const index = {};
-        for (const [provId, prov] of Object.entries(data)) {
+        const index: Record<string, any> = {};
+        for (const [provId, prov] of Object.entries(data) as Array<[string, any]>) {
             if (!prov.models) continue;
-            for (const [modelId, m] of Object.entries(prov.models)) {
+            for (const [modelId, m] of Object.entries(prov.models) as Array<[string, any]>) {
                 // Skip non-chat models
                 const outMods = m.modalities?.output || [];
                 if (outMods.includes('image') || outMods.includes('audio') || outMods.includes('video')) continue;
@@ -49,7 +49,7 @@ async function syncModelsDev() {
         });
         console.log('xdAnswers: models.dev synced, ' + Object.keys(index).length + ' entries');
     } catch (e) {
-        console.warn('xdAnswers: models.dev sync failed:', e.message);
+        console.warn('xdAnswers: models.dev sync failed:', (e as Error).message);
     }
 }
 
@@ -73,7 +73,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return;
             }
             try {
-                const index = JSON.parse(data[MODELS_CACHE_KEY]);
+                const index = JSON.parse(data[MODELS_CACHE_KEY] as string);
                 const modelId = request.modelId;
                 const info = index[modelId] || index['openai/' + modelId] || null;
                 sendResponse({ found: !!info, info });
@@ -91,7 +91,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     if (request.type === 'fetch') {
         try {
-            const { url, method, headers, data, responseType, timeout } = request.payload;
+            const { url, method, headers, data, responseType, timeout } = request.payload as any;
 
             // Firefox MV3: XMLHttpRequest bypasses CORS where fetch() is blocked in service workers.
             // Chrome: XMLHttpRequest is not available in service workers; fall through to fetch.
@@ -99,7 +99,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open(method || 'GET', url, true);
                 if (headers) {
-                    for (const [k, v] of Object.entries(headers)) {
+                    for (const [k, v] of Object.entries(headers) as Array<[string, string]>) {
                         xhr.setRequestHeader(k, v);
                     }
                 }
@@ -139,7 +139,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const timeoutId = setTimeout(() => controller.abort('Timeout'), timeout || 60000);
 
             fetch(url, { method, headers, body: data, signal: controller.signal })
-                .then(response => {
+                .then((response): Promise<string | Blob> => {
                     clearTimeout(timeoutId);
                     if (!response.ok) {
                         return response.text().then(text => {
@@ -149,7 +149,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     if (responseType === 'blob') return response.blob();
                     return response.text();
                 })
-                .then(responseData => {
+                .then((responseData: string | Blob) => {
                     if (responseData instanceof Blob) {
                         const reader = new FileReader();
                         let sent = false;
@@ -182,7 +182,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                 });
         } catch (error) {
-            try { sendResponse({ success: false, error: 'Invalid request', details: error.message }); } catch (e) {}
+            try { sendResponse({ success: false, error: 'Invalid request', details: (error as Error).message }); } catch (e) {}
         }
         return true;
     }
@@ -193,21 +193,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== 'xdAnswers-stream') return;
 
-    let controller = null;
+    let controller: AbortController | null = null;
 
     port.onDisconnect.addListener(() => {
         if (controller) controller.abort();
     });
 
-    port.onMessage.addListener(async (msg) => {
+    port.onMessage.addListener(async (msg: any) => {
         if (msg.type !== 'fetch_stream') return;
         const { url, method, headers, data } = msg.payload;
 
-        controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort('Timeout'), 120000);
+        const ctrl = new AbortController();
+        controller = ctrl;
+        const timeoutId = setTimeout(() => ctrl.abort('Timeout'), 120000);
 
         try {
-            const response = await fetch(url, { method, headers, body: data, signal: controller.signal });
+            const response = await fetch(url, { method, headers, body: data, signal: ctrl.signal });
             clearTimeout(timeoutId);
 
             if (!response.ok) {
@@ -216,7 +217,7 @@ chrome.runtime.onConnect.addListener((port) => {
                 return;
             }
 
-            const reader = response.body.getReader();
+            const reader = response.body!.getReader();
             const decoder = new TextDecoder();
 
             while (true) {
@@ -232,7 +233,7 @@ chrome.runtime.onConnect.addListener((port) => {
         } catch (error) {
             clearTimeout(timeoutId);
             try {
-                port.postMessage({ type: 'error', error: error.name === 'AbortError' ? 'Timeout' : error.message });
+                port.postMessage({ type: 'error', error: (error as Error).name === 'AbortError' ? 'Timeout' : (error as Error).message });
             } catch (e) {}
         }
     });

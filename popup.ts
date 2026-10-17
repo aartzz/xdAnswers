@@ -1,3 +1,7 @@
+// @ts-nocheck — popup UI script. It drives Beer CSS components and a large
+// amount of dynamically generated DOM; typing it would require annotating
+// nearly every line. The file is intentionally left unchecked during the
+// TypeScript migration and is bundled verbatim by esbuild.
 const PREDEFINED_THEMES = {
     'Dark': { borderColor: '#cccccc', contentColor: '#1c1c1c', headerColor: '#333333', textColor: '#e0e0e0' },
     'AMOLED': { borderColor: '#ffffff', contentColor: '#000000', headerColor: '#111111', textColor: '#ffffff' },
