@@ -303,6 +303,13 @@ interface XdAnswersInternal {
     formatDateForMSForms(text: string): string;
     autoSelectAnswer(answerText: string, force?: boolean): void;
     clearOneClickHandlers(): void;
+
+    /**
+     * Per-provider helper namespace filled by split provider modules
+     * (e.g. src/providers/naurok/dom.ts publishes providerModules.naurok.dom
+     * before main.ts consumes it inside the same content-script bundle).
+     */
+    providerModules?: Record<string, Record<string, any>>;
 }
 
 interface XdAnswers {
@@ -343,7 +350,7 @@ interface XdAnswers {
     };
 
     clearOneClickHandlers(): void;
-    setupOneClickHandler(container: HTMLElement, getQuestionDataFn: () => XdQuestionData | Promise<XdQuestionData>, setCursor?: boolean): void;
+    setupOneClickHandler(container: HTMLElement, getQuestionDataFn: () => XdQuestionData | null | Promise<XdQuestionData | null>, setCursor?: boolean): void;
     triggerHotkey(): Promise<void>;
 
     makeRequest(options: XdMakeRequestOptions): Promise<XdTransportResult>;

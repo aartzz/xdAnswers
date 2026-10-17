@@ -101,6 +101,16 @@ function scriptName(file) {
     return path.basename(file).replace(/\.(js|ts)$/, '') + '.js';
 }
 
+// Provider directories bundle to a single file named after the directory
+// (src/providers/naurok/{dom,disabler,main}.ts -> naurok.js).
+function blockBundleName(remainder) {
+    const match = /^src\/providers\/([^/]+)\//.exec(remainder[0]);
+    if (match && remainder.every(file => file.startsWith('src/providers/' + match[1] + '/'))) {
+        return match[1] + '.js';
+    }
+    return scriptName(remainder[remainder.length - 1]);
+}
+
 // popup.html keeps only the bundled popup.js; the four setup scripts move into the bundle.
 function transformPopupHtml(html) {
     const movedScripts = [
@@ -159,7 +169,7 @@ async function main() {
         if (!remainder.length) {
             throw new Error('manifest.common.json: block has no provider script: ' + block.matches.join(', '));
         }
-        const name = scriptName(remainder[remainder.length - 1]);
+        const name = blockBundleName(remainder);
         const existing = bundledProviders.get(name);
         if (existing && existing.join(',') !== remainder.join(',')) {
             throw new Error(`Duplicate bundle name "${name}" for: ${remainder.join(', ')}`);

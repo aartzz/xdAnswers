@@ -102,7 +102,9 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/naurok.js"
+        "src/providers/naurok/dom.ts",
+        "src/providers/naurok/disabler.ts",
+        "src/providers/naurok/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
