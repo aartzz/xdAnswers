@@ -250,7 +250,10 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/justclass.js"
+        "src/providers/justclass/dom.ts",
+        "src/providers/justclass/api.ts",
+        "src/providers/justclass/ui.ts",
+        "src/providers/justclass/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true

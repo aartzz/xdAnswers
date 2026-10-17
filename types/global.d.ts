@@ -148,7 +148,7 @@ interface XdParsedResponse {
     extractedBy?: string;
     /** Marks a parsed response produced by the JustClass provider. */
     _justclass?: boolean;
-    _justclassShort?: string[];
+    _justclassShort?: string;
 }
 
 /** Event emitted by `_internal.parseSSEChunks` for one API stream chunk. */
