@@ -1,12 +1,14 @@
+// src/ai/consensus.ts
+// Consensus aggregation across multiple model runs.
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
     const I = window.xdAnswers._internal;
 
-    function normalizeAnswer(answer) {
+    function normalizeAnswer(answer: string | null | undefined): string {
         return String(answer || '')
             .trim()
             .toLowerCase()
@@ -19,11 +21,11 @@
             .replace(/[\s"'`\)\]\}.,!?;:…]+$/g, '');
     }
 
-    function computeConsensus(runResults) {
+    function computeConsensus(runResults: XdConsensusRunResult[]): XdConsensusResult {
         const fulfilled = runResults.filter(r => r.status === 'fulfilled');
-        const normalizedCounts = new Map();
+        const normalizedCounts = new Map<string, { count: number; answer: string | null | undefined }>();
         const parsedResults = runResults.map(r => {
-            const parsedAnswer = r.status === 'fulfilled' ? I.parseAIResponse(r.value).answer : null;
+            const parsedAnswer = r.status === 'fulfilled' ? I.parseAIResponse(r.value || '').answer : null;
             const normalized = parsedAnswer ? normalizeAnswer(parsedAnswer) : '';
             if (r.status === 'fulfilled') {
                 const entry = normalizedCounts.get(normalized) || { count: 0, answer: parsedAnswer };
@@ -49,7 +51,7 @@
         for (const [answer, entry] of normalizedCounts.entries()) {
             if (entry.count > majorityCount) {
                 majorityNormalized = answer;
-                majorityAnswer = entry.answer;
+                majorityAnswer = entry.answer || '';
                 majorityCount = entry.count;
             }
         }
@@ -70,7 +72,7 @@
         };
     }
 
-    function getMainModelRun(settings) {
+    function getMainModelRun(settings: XdSettings): XdConsensusRun {
         return {
             id: '__main__',
             providerId: settings.activeProviderId || '',
@@ -80,7 +82,7 @@
         };
     }
 
-    async function runConsensus(questionData) {
+    async function runConsensus(questionData: XdQuestionData): Promise<XdConsensusResult | null> {
         const settings = window.xdAnswers.settings;
         const consensus = settings && settings.consensus;
         const extraRuns = consensus && consensus.runs;
@@ -90,16 +92,16 @@
         }
 
         // Always include main model as first run, then extra runs
-        const allRuns = [getMainModelRun(settings), ...extraRuns];
+        const allRuns: XdConsensusRun[] = [getMainModelRun(settings), ...extraRuns];
 
         const settled = await Promise.allSettled(allRuns.map(async run => {
             const effectiveSettingsOverride = I.getEffectiveSettingsForRun(settings, run);
-            const showAnswerOnlyOverride = run.showAnswerOnly;
+            const showAnswerOnlyOverride = !!run.showAnswerOnly;
             const value = await window.xdAnswers.getAnswer(questionData, effectiveSettingsOverride, showAnswerOnlyOverride);
             return { run, value };
         }));
 
-        const runResults = settled.map((entry, index) => {
+        const runResults: XdConsensusRunResult[] = settled.map((entry, index) => {
             const run = allRuns[index];
             if (entry.status === 'fulfilled') {
                 return { status: 'fulfilled', value: entry.value.value, run };

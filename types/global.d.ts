@@ -122,11 +122,21 @@ interface XdSseEvent {
     tool_call_complete?: { name?: string; args?: unknown };
 }
 
+interface XdConsensusRunResult {
+    run: XdConsensusRun;
+    status: 'fulfilled' | 'rejected';
+    value?: string;
+    reason?: unknown;
+    parsedAnswer?: string | null;
+    isMajority?: boolean;
+    _normalizedAnswer?: string;
+}
+
 interface XdConsensusResult {
     state: 'unanimous' | 'majority' | 'no-consensus';
-    majorityAnswer: string;
+    majorityAnswer: string | null;
     agreement: number;
-    runResults: unknown[];
+    runResults: XdConsensusRunResult[];
 }
 
 interface XdMakeRequestOptions {
