@@ -193,7 +193,7 @@ interface XdAnswersInternal {
     evaluateMath(rawExpression: string): Record<string, unknown>;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
-    buildTools(s: XdSettings, apiFormat: string): unknown[];
+    buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[];
     executeCalculator(rawExpression: string): string;
     isCalculatorToolName(name: string): boolean;
 
@@ -202,7 +202,7 @@ interface XdAnswersInternal {
     buildStreamUrl(s: XdEffectiveSettings): string;
     buildNonStreamUrl(s: XdEffectiveSettings): string;
     buildHeaders(s: XdEffectiveSettings): Record<string, string>;
-    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: string[] | null, stream: boolean): unknown;
+    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown;
 
     // Streaming and parsing
     parseSSEChunks(rawText: string, apiFormat: string): unknown[];

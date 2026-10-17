@@ -1,22 +1,41 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function getEligibleProviders(s) {
+    interface SearchResultItem {
+        title: string;
+        url: string;
+        snippet: string;
+        date: string | null;
+    }
+
+    interface SearchKnowledge {
+        title: string;
+        description: string;
+    }
+
+    interface NormalizedSearchResults {
+        organic: SearchResultItem[];
+        knowledge?: SearchKnowledge;
+        peopleAlsoAsk?: Array<{ title: string; snippet: string }>;
+        answerBox?: string;
+    }
+
+    function getEligibleProviders(s: XdSettings): XdProviderConfig[] {
         if (!s.providers) return [];
         return s.providers.filter(function(p) {
             return p.kind === 'search' && (p.apiKey || p.type === 'searxng' || p.type === 'exa');
         });
     }
 
-    function getActiveSearchProvider(s) {
+    function getActiveSearchProvider(s: XdSettings): XdProviderConfig | null {
         var all = getEligibleProviders(s);
         return all.length > 0 ? all[0] : null;
     }
 
-    function findProviderBySource(s, source) {
+    function findProviderBySource(s: XdSettings, source?: string | null): XdProviderConfig | null {
         var all = getEligibleProviders(s);
         if (!source) return all.length > 0 ? all[0] : null;
         var src = source.toLowerCase().trim();
@@ -28,7 +47,7 @@
         return match || (all.length > 0 ? all[0] : null);
     }
 
-    function buildWebSearchTool(apiFormat) {
+    function buildWebSearchTool(apiFormat: string): unknown[] {
         var desc = 'Search the web for current information. Use this when you need up-to-date facts, references, or details that may not be in your training data. Call this before answering if you are unsure about something.';
         var params = {
             type: 'object',
@@ -52,9 +71,9 @@
         return [];
     }
 
-    async function executeSearch(query, count, preferredSource) {
+    async function executeSearch(query: string, count?: number, preferredSource?: string | null): Promise<string> {
         var DEFAULT_BASE_URLS = window.xdAnswers._internal.DEFAULT_BASE_URLS;
-        var s = window.xdAnswers.settings || {};
+        var s: XdSettings = window.xdAnswers.settings || ({} as XdSettings);
         var sp = preferredSource
             ? findProviderBySource(s, preferredSource)
             : getActiveSearchProvider(s);
@@ -62,7 +81,7 @@
         if (!sp) throw new Error('No search provider configured');
 
         var num = Math.min(Math.max(count || 5, 1), 10);
-        var lastError = null;
+        var lastError: unknown = null;
 
         // Try the requested provider first; on failure, fall through to others
         var providers = getEligibleProviders(s);
@@ -81,7 +100,7 @@
                 var result = await searchWithProvider(p, query, num, DEFAULT_BASE_URLS);
                 return result;
             } catch (e) {
-                var errMsg = e && e.message ? e.message : String(e);
+                var errMsg = e instanceof Error ? e.message : String(e);
                 console.warn('[xdAnswers] Search provider ' + p.name + ' (' + p.type + ') failed:', errMsg);
                 lastError = e;
                 // Continue to next provider
@@ -91,7 +110,7 @@
         throw lastError || new Error('All search providers failed');
     }
 
-    async function searchWithProvider(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchWithProvider(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         switch (sp.type) {
             case 'langsearch': return searchLangSearch(sp, query, num, DEFAULT_BASE_URLS);
             case 'serper': return searchSerper(sp, query, num, DEFAULT_BASE_URLS);
@@ -105,7 +124,7 @@
         }
     }
 
-    async function searchLangSearch(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchLangSearch(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.langsearch) + '/web-search';
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
@@ -113,10 +132,10 @@
             data: JSON.stringify({ query: query, count: num, summary: true }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.data && parsed.data.webPages ? (parsed.data.webPages.value || []) : [];
-        var normalized = {
-            organic: items.map(function(v) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(v: any) {
                 return { title: v.name || '', url: v.url || '', snippet: v.snippet || v.summary || '', date: v.datePublished || null };
             })
         };
@@ -124,7 +143,7 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchSerper(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchSerper(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.serper) + '/search';
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
@@ -132,16 +151,16 @@
             data: JSON.stringify({ q: query, num: num }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
-        var normalized = {
-            organic: (parsed.organic || []).map(function(r) {
+        var parsed: any = JSON.parse(resp.data);
+        var normalized: NormalizedSearchResults = {
+            organic: (parsed.organic || []).map(function(r: any) {
                 return { title: r.title || '', url: r.link || '', snippet: r.snippet || '', date: r.date || null };
             }),
             knowledge: parsed.knowledgeGraph ? {
                 title: parsed.knowledgeGraph.title || '',
                 description: parsed.knowledgeGraph.description || ''
             } : undefined,
-            peopleAlsoAsk: (parsed.peopleAlsoAsk || []).map(function(a) {
+            peopleAlsoAsk: (parsed.peopleAlsoAsk || []).map(function(a: any) {
                 return { title: a.title || '', snippet: a.snippet || '' };
             })
         };
@@ -149,7 +168,7 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchPerplexity(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchPerplexity(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.perplexity) + '/search';
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
@@ -157,10 +176,10 @@
             data: JSON.stringify({ query: query, max_results: num }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.title || '', url: r.url || '', snippet: r.snippet || '', date: r.date || r.last_updated || null };
             })
         };
@@ -168,9 +187,9 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchExa(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchExa(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.exa) + '/search';
-        var headers = { 'Content-Type': 'application/json' };
+        var headers: Record<string, string> = { 'Content-Type': 'application/json' };
         if (sp.apiKey) {
             headers['x-api-key'] = sp.apiKey;
         }
@@ -181,10 +200,10 @@
                 contents: { text: { maxCharacters: 500 }, highlights: true } }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.title || '', url: r.url || '', snippet: r.text || (r.highlights || []).join(' … ') || '', date: r.publishedDate || null };
             })
         };
@@ -192,7 +211,7 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchTavily(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchTavily(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.tavily) + '/search';
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
@@ -200,10 +219,10 @@
             data: JSON.stringify({ query: query, search_depth: 'basic', max_results: num, include_answer: false }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.title || '', url: r.url || '', snippet: r.content || '', date: null };
             })
         };
@@ -211,7 +230,7 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchLinkup(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchLinkup(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var url = (sp.baseUrl || DEFAULT_BASE_URLS.linkup) + '/search';
         var resp = await window.xdAnswers.makeRequest({
             url: url, method: 'POST',
@@ -219,10 +238,10 @@
             data: JSON.stringify({ q: query, depth: 'standard', outputType: 'searchResults', maxResults: num }),
             responseType: 'text', timeout: 15000
         });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.name || '', url: r.url || '', snippet: r.content || r.snippet || '', date: null };
             })
         };
@@ -230,7 +249,7 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchSearchApi(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchSearchApi(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var baseUrl = sp.baseUrl || DEFAULT_BASE_URLS.searchapi;
         var engine = (sp.name && /bing/i.test(sp.name)) ? 'bing'
             : (sp.name && /yahoo/i.test(sp.name)) ? 'yahoo'
@@ -238,17 +257,17 @@
             : 'google';
         var url = baseUrl + '/search?engine=' + engine + '&q=' + encodeURIComponent(query) + '&num=' + num + '&api_key=' + encodeURIComponent(sp.apiKey);
         var resp = await window.xdAnswers.makeRequest({ url: url, method: 'GET', responseType: 'text', timeout: 15000 });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.organic_results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.title || '', url: r.link || '', snippet: r.snippet || '', date: r.date || null };
             }),
             knowledge: parsed.knowledge_graph ? {
                 title: parsed.knowledge_graph.title || '',
                 description: parsed.knowledge_graph.description || ''
             } : undefined,
-            peopleAlsoAsk: (parsed.related_searches || []).map(function(s) {
+            peopleAlsoAsk: (parsed.related_searches || []).map(function(s: any) {
                 return { title: s.query || s.title || '', snippet: '' };
             })
         };
@@ -256,14 +275,14 @@
         return JSON.stringify(normalized);
     }
 
-    async function searchSearxng(sp, query, num, DEFAULT_BASE_URLS) {
+    async function searchSearxng(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
         var baseUrl = sp.baseUrl || DEFAULT_BASE_URLS.searxng;
         var url = baseUrl.replace(/\/+$/, '') + '/search?q=' + encodeURIComponent(query) + '&format=json&pageno=1';
         var resp = await window.xdAnswers.makeRequest({ url: url, method: 'GET', responseType: 'text', timeout: 15000 });
-        var parsed = JSON.parse(resp.data);
+        var parsed: any = JSON.parse(resp.data);
         var items = parsed.results || [];
-        var normalized = {
-            organic: items.map(function(r) {
+        var normalized: NormalizedSearchResults = {
+            organic: items.map(function(r: any) {
                 return { title: r.title || '', url: r.url || '', snippet: r.content || r.snippet || '', date: r.publishedDate || null };
             })
         };
@@ -272,7 +291,7 @@
             normalized.knowledge = { title: ib.title || ib.infobox || '', description: ib.content || '' };
         }
         if (parsed.answers && parsed.answers.length > 0) {
-            normalized.answerBox = parsed.answers.map(function(a) { return a.answer || ''; }).join('; ');
+            normalized.answerBox = parsed.answers.map(function(a: any) { return a.answer || ''; }).join('; ');
         }
         console.log('[xdAnswers] SearXNG results:', normalized.organic.length, 'items');
         return JSON.stringify(normalized);
