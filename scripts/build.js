@@ -102,11 +102,16 @@ function scriptName(file) {
 }
 
 // Provider directories bundle to a single file named after the directory
-// (src/providers/naurok/{dom,disabler,main}.ts -> naurok.js).
+// (src/providers/naurok/{dom,disabler,main}.ts -> naurok.js). Nested module
+// directories join their segments with '-' so a provider can host several
+// routes side by side (src/providers/naurok/round/* -> naurok-round.js).
 function blockBundleName(remainder) {
-    const match = /^src\/providers\/([^/]+)\//.exec(remainder[0]);
-    if (match && remainder.every(file => file.startsWith('src/providers/' + match[1] + '/'))) {
-        return match[1] + '.js';
+    const dirs = remainder.map(file => {
+        const match = /^src\/providers\/(.+)\/[^/]+$/.exec(file);
+        return match ? match[1] : null;
+    });
+    if (dirs[0] && dirs.every(dir => dir === dirs[0])) {
+        return dirs[0].replace(/\//g, '-') + '.js';
     }
     return scriptName(remainder[remainder.length - 1]);
 }

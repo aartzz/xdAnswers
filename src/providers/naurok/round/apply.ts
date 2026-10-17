@@ -1,4 +1,4 @@
-// src/providers/naurok-round/apply.ts
+// src/providers/naurok/round/apply.ts
 // Answer application for the НаУрок олімпіади / конкурси provider: resolves the
 // AI answer against the extracted question meta and clicks, types or drags it
 // into the page. Publishes its API on

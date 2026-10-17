@@ -1,4 +1,4 @@
-// src/providers/naurok-round/main.ts
+// src/providers/naurok/round/main.ts
 // НаУрок олімпіади / конкурси provider entry (naurok.ua/round/*): extracts each
 // question, wires the ✨ Solve button (or the one-click handler) and forwards
 // answers through the AI pipeline. Extraction lives in ./dom.ts, answer

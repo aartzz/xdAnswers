@@ -1,4 +1,4 @@
-// src/providers/naurok-round/dom.ts
+// src/providers/naurok/round/dom.ts
 // DOM extraction for the НаУрок олімпіади / конкурси provider (naurok.ua/round/*):
 // question text, answer options/rows/inputs and images. Publishes its API on
 // window.xdAnswers._internal.providerModules['naurok-round'].dom for apply.ts and main.ts.
