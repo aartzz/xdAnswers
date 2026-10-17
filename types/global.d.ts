@@ -33,6 +33,35 @@ interface XdConsensusSettings {
     runs: XdConsensusRun[];
 }
 
+interface XdSearchCallInfo {
+    query: string;
+    status: 'searching' | 'done';
+    resultCount: number;
+    round: number;
+    toolIndex: number;
+}
+
+interface XdCalcCallInfo {
+    expression: string;
+    status: 'calculating' | 'done';
+    result?: unknown;
+    round: number;
+    toolIndex: number;
+}
+
+interface XdStreamAnswerOverrides {
+    contentDiv?: HTMLElement | null;
+    effectiveSettings?: XdEffectiveSettings;
+    showAnswerOnly?: boolean;
+}
+
+interface XdStreamAnswerResult {
+    content: string;
+    thinking: string;
+    searchCalls?: XdSearchCallInfo[];
+    calcCalls?: XdCalcCallInfo[];
+}
+
 interface XdCustomization {
     glowEffect: boolean;
     borderColor: string;
@@ -117,7 +146,7 @@ interface XdSseEvent {
     thinking?: string;
     tool_call_start?: { index: number; id?: string; name?: string };
     tool_call_delta?: { index: number; id?: string; name?: string; argsDelta: string };
-    tool_call_args_delta?: { index: number; argsDelta: string };
+    tool_call_args_delta?: { index: number; id?: string; name?: string; argsDelta: string };
     tool_call_stop?: boolean;
     tool_call_complete?: { name?: string; args?: unknown };
 }
@@ -332,7 +361,7 @@ interface XdAnswers {
     resolvePositionPreset(preset: string): XdPositionPreset;
 
     getAnswer(questionData: XdQuestionData, effectiveSettingsOverride?: XdEffectiveSettings, showAnswerOnlyOverride?: boolean): Promise<string>;
-    streamAnswer(questionData: XdQuestionData, outerStartTime?: number, overrides?: unknown): Promise<unknown>;
+    streamAnswer(questionData: XdQuestionData, outerStartTime?: number, overrides?: XdStreamAnswerOverrides): Promise<XdStreamAnswerResult>;
     processQuestion(questionData: XdQuestionData): Promise<void>;
 
     createUI(): void;

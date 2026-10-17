@@ -1,11 +1,11 @@
-// src/ai/process.js
+// src/ai/process.ts
 // Main question processing pipeline. Extracted from legacy utils.js (lines 1842-1975).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.processQuestion = async function(questionData) {
+    window.xdAnswers.processQuestion = async function(questionData: XdQuestionData): Promise<void> {
         if (window.xdAnswers.isProcessingAI) {
             window.xdAnswers._oneClickUserTriggered = false;
             return;
@@ -56,7 +56,7 @@
         }
 
         try {
-            let result;
+            let result: XdStreamAnswerResult;
             const _cs = window.xdAnswers.settings.consensus;
             console.log('[xdAnswers] consensus check:', JSON.stringify(_cs));
             const consensusEnabled = _cs && _cs.enabled && _cs.runs && _cs.runs.length >= 1;
@@ -64,8 +64,8 @@
                 const I = window.xdAnswers._internal;
                 const consensusSettings = window.xdAnswers.settings.consensus;
                 // Main model always first, then extra runs
-                const mainRun = { id: '__main__', providerId: window.xdAnswers.settings.activeProviderId || '', model: window.xdAnswers.settings.model || '', showAnswerOnly: window.xdAnswers.settings.showAnswerOnly || false, isMainModel: true };
-                const runs = [mainRun, ...consensusSettings.runs];
+                const mainRun: XdConsensusRun = { id: '__main__', providerId: window.xdAnswers.settings.activeProviderId || '', model: window.xdAnswers.settings.model || '', showAnswerOnly: window.xdAnswers.settings.showAnswerOnly || false, isMainModel: true };
+                const runs: XdConsensusRun[] = [mainRun, ...consensusSettings.runs];
                 const answerContentDiv = window.xdAnswers.answerContentDiv;
                 let consensusFinalized = false;
 
@@ -76,12 +76,12 @@
                     if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + getElapsed();
                 };
 
-                const updateFooterModel = (label) => {
+                const updateFooterModel = (label: string) => {
                     const footerModel = window.xdAnswers.helperContainer?.querySelector('.xd-footer-model');
                     if (footerModel) footerModel.textContent = label;
                 };
 
-                const setActiveTab = (tabIndex, shouldUpdateFooter) => {
+                const setActiveTab = (tabIndex: number, shouldUpdateFooter: boolean) => {
                     if (!answerContentDiv) return;
                     const tabButtons = Array.from(answerContentDiv.querySelectorAll('.xd-consensus-tab'));
                     const tabContents = Array.from(answerContentDiv.querySelectorAll('.xd-tab-content'));
@@ -92,7 +92,7 @@
                         tabContents[i].classList.toggle('active-tab', i === tabIndex);
                     }
                     if (shouldUpdateFooter && !consensusFinalized) {
-                        const modelName = tabButtons[tabIndex]?.dataset.modelName || 'consensus';
+                        const modelName = (tabButtons[tabIndex] as HTMLElement | undefined)?.dataset.modelName || 'consensus';
                         updateFooterModel(modelName);
                     }
                 };
@@ -121,10 +121,10 @@
                     });
 
                     // Horizontal scroll: mouse wheel + drag-to-scroll
-                    const tabsContainer = answerContentDiv.querySelector('.xd-consensus-tabs');
+                    const tabsContainer = answerContentDiv.querySelector<HTMLElement>('.xd-consensus-tabs');
                     if (tabsContainer) {
                         // Wheel → horizontal scroll
-                        tabsContainer.addEventListener('wheel', function(e) {
+                        tabsContainer.addEventListener('wheel', function(this: HTMLElement, e: WheelEvent) {
                             if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // already horizontal
                             const hasScroll = this.scrollWidth > this.clientWidth;
                             if (!hasScroll) return;
@@ -133,12 +133,12 @@
                         }, { passive: false });
 
                         // Drag-to-scroll (works on tabs too — distinguishes drag vs click by distance)
-                        let dragState = null;
-                        tabsContainer.addEventListener('mousedown', function(e) {
+                        let dragState: { startX: number; scrollLeft: number; moved: boolean } | null = null;
+                        tabsContainer.addEventListener('mousedown', function(this: HTMLElement, e: MouseEvent) {
                             dragState = { startX: e.pageX, scrollLeft: this.scrollLeft, moved: false };
                             this.style.cursor = 'grabbing';
                         });
-                        document.addEventListener('mousemove', function(e) {
+                        document.addEventListener('mousemove', function(e: MouseEvent) {
                             if (!dragState) return;
                             const dx = e.pageX - dragState.startX;
                             if (Math.abs(dx) > 5) dragState.moved = true;
@@ -160,11 +160,11 @@
                 }
 
                 // Stream each model into its own tab
-                const runPromises = runs.map((run, index) => {
+                const runPromises = runs.map((run, index): Promise<XdConsensusRunResult> => {
                     const modelName = run.model || window.xdAnswers.settings.model || 'model';
                     const effectiveSettingsOverride = I.getEffectiveSettingsForRun(window.xdAnswers.settings, run);
-                    const showAnswerOnlyOverride = run.showAnswerOnly;
-                    const tabContentDiv = !isSilent && answerContentDiv ? answerContentDiv.querySelector('.xd-tab-content[data-tab="' + index + '"]') : null;
+                    const showAnswerOnlyOverride = run.showAnswerOnly === undefined ? undefined : !!run.showAnswerOnly;
+                    const tabContentDiv = !isSilent && answerContentDiv ? answerContentDiv.querySelector<HTMLElement>('.xd-tab-content[data-tab="' + index + '"]') : null;
 
                     return window.xdAnswers.streamAnswer(questionData, startTime, {
                         contentDiv: tabContentDiv,
@@ -181,9 +181,9 @@
                                 tabButton.innerHTML = answerLabel + I.escapeHTML(modelName);
                             }
                         }
-                        return { status: 'fulfilled', value: streamResult.content, run: run };
+                        return { status: 'fulfilled' as const, value: streamResult.content, run: run };
                     }).catch(error => {
-                        const reason = error instanceof Error ? error : new Error(String(error && error.message ? error.message : error || 'Unknown'));
+                        const reason = error instanceof Error ? error : new Error(String((error as any) && (error as any).message ? (error as any).message : error || 'Unknown'));
                         if (!isSilent && answerContentDiv) {
                             const tabContent = answerContentDiv.querySelector('.xd-tab-content[data-tab="' + index + '"]');
                             const tabButton = answerContentDiv.querySelector('.xd-consensus-tab[data-tab="' + index + '"]');
@@ -255,7 +255,7 @@
             try {
                 result = await window.xdAnswers.streamAnswer(questionData, startTime);
             } catch (streamErr) {
-                console.warn('xdAnswers: Streaming failed, falling back:', streamErr.message);
+                console.warn('xdAnswers: Streaming failed, falling back:', (streamErr as Error).message);
                 const answer = await window.xdAnswers.getAnswer(questionData);
                 result = { content: answer, thinking: '' };
             }
@@ -308,10 +308,10 @@
                 window.xdAnswers.answerContentDiv.innerHTML = html;
 
                 const th = window.xdAnswers.answerContentDiv.querySelector('.xd-thinking-header');
-                if (th) th.addEventListener('click', function() { I.toggleThinkingContent(this); });
+                if (th) th.addEventListener('click', function(this: HTMLElement) { I.toggleThinkingContent(this); });
                 const sh = window.xdAnswers.answerContentDiv.querySelector('.xd-search-header');
-                if (sh) sh.addEventListener('click', function() {
-                    const content = this.nextElementSibling;
+                if (sh) sh.addEventListener('click', function(this: HTMLElement) {
+                    const content = this.nextElementSibling as HTMLElement | null;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-search-toggle');
                     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
@@ -321,8 +321,8 @@
                         : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
                 const ch = window.xdAnswers.answerContentDiv.querySelector('.xd-calc-header');
-                if (ch) ch.addEventListener('click', function() {
-                    const content = this.nextElementSibling;
+                if (ch) ch.addEventListener('click', function(this: HTMLElement) {
+                    const content = this.nextElementSibling as HTMLElement | null;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-calc-toggle');
                     const isHidden = content.style.display === 'none' || getComputedStyle(content).display === 'none';
@@ -343,7 +343,7 @@
                     window.xdAnswers._customAutoAnswer = null;
                     setTimeout(() => {
                         window.xdAnswers._autoSelecting = true;
-                        try { customFn(parsed.answer, parsed); } catch (e) { console.error('xdAnswers customAutoAnswer:', e); }
+                        try { customFn(parsed.answer as string, parsed); } catch (e) { console.error('xdAnswers customAutoAnswer:', e); }
                         window.xdAnswers._oneClickContainer = null;
                         window.xdAnswers._answerContainer = null;
                         window.xdAnswers._autoSelecting = false;
@@ -356,7 +356,7 @@
         } catch (error) {
             if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
             if (!isSilent && window.xdAnswers.answerContentDiv) {
-                const errHtml = I.formatError(error.message);
+                const errHtml = I.formatError((error as Error).message);
                 window.xdAnswers.answerContentDiv.innerHTML = errHtml;
             }
         } finally {

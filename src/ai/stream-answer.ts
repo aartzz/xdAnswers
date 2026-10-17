@@ -1,11 +1,19 @@
-// src/ai/stream-answer.js
+// src/ai/stream-answer.ts
 // Streaming answer pipeline. Extracted from legacy utils.js (lines 759-1107).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.streamAnswer = function(questionData, outerStartTime, overrides) {
+    interface PendingToolCall {
+        index: number;
+        id?: string;
+        name?: string;
+        args: string;
+        _parsedInput?: any;
+    }
+
+    window.xdAnswers.streamAnswer = function(questionData: XdQuestionData, outerStartTime?: number, overrides?: XdStreamAnswerOverrides): Promise<XdStreamAnswerResult> {
         return new Promise((resolve, reject) => {
             const I = window.xdAnswers._internal;
             const getEffectiveSettings = I.getEffectiveSettings;
@@ -27,9 +35,9 @@
             const images = questionData.base64Images || [];
 
             // Build initial messages array for multi-turn tool-call support
-            const messages = [];
+            const messages: Array<Record<string, unknown>> = [];
             if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
-            const userContent = [{ type: 'text', text: userMsg }];
+            const userContent: Array<Record<string, unknown>> = [{ type: 'text', text: userMsg }];
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
 
@@ -43,23 +51,23 @@
             const contentDiv = (overrides && overrides.contentDiv) || window.xdAnswers.answerContentDiv;
             let thinkingStarted = false;
             let thinkingDone = false;
-            let streamTimerInterval = null;
+            let streamTimerInterval: number | null = null;
             let statusCleared = false;
             let toolLoopDepth = 0;
             const MAX_TOOL_LOOPS = 3;
             let isHandlingToolCalls = false;
 
             // Search indicator state
-            let searchCalls = []; // [{query, status:'searching'|'done', resultCount, round, toolIndex}]
+            let searchCalls: XdSearchCallInfo[] = []; // [{query, status:'searching'|'done', resultCount, round, toolIndex}]
             // Calculator indicator state
-            let calcCalls = []; // [{expression, status:'calculating'|'done', result, round, toolIndex}]
+            let calcCalls: XdCalcCallInfo[] = []; // [{expression, status:'calculating'|'done', result, round, toolIndex}]
 
             // Tool call accumulation state (per stream round)
-            let pendingToolCalls = {}; // {index: {index, id, name, args:''}}
+            let pendingToolCalls: Record<number, PendingToolCall> = {}; // {index: {index, id, name, args:''}}
 
-            function setToolStreamingIndicator(toolIndex, name, argsStr) {
+            function setToolStreamingIndicator(toolIndex: number, name: string, argsStr: string) {
                 const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(name);
-                let args = {};
+                let args: any = {};
                 try { args = JSON.parse(argsStr); } catch {}
 
                 if (isCalc) {
@@ -131,7 +139,7 @@
             const PROSE_THINKING_ANYWHERE_REGEX = /(?:^|\n)\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze|We need to (?:answer|find|determine|identify|select|choose))/i;
             const PROSE_TRANSITION_REGEX = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+(?:is|=)\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
 
-            function checkAndExtractInlineThinking(newText) {
+            function checkAndExtractInlineThinking(newText: string) {
                 rawContentBuffer += newText;
 
                 // 1. Tag based: <think>...</think>
@@ -162,7 +170,7 @@
 
                     const anywhereMatch = rawContentBuffer.match(PROSE_THINKING_ANYWHERE_REGEX);
                     if (anywhereMatch) {
-                        const matchIndex = anywhereMatch.index;
+                        const matchIndex = anywhereMatch.index ?? 0;
                         const before = rawContentBuffer.slice(0, matchIndex);
                         rawContentBuffer = rawContentBuffer.slice(matchIndex).replace(/^\n\s*/, '');
                         inInlineThinking = true;
@@ -243,7 +251,7 @@
                     '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;"></div>' +
                     '</div>';
                 const header = contentDiv.querySelector('.xd-thinking-header');
-                header.addEventListener('click', function() {
+                header!.addEventListener('click', function(this: HTMLElement) {
                     isThinkingExpanded = !isThinkingExpanded;
                     toggleThinkingContent(this);
                 });
@@ -339,14 +347,14 @@
 
                 contentDiv.innerHTML = html;
                 const th = contentDiv.querySelector('.xd-thinking-header');
-                if (th) th.addEventListener('click', function() {
+                if (th) th.addEventListener('click', function(this: HTMLElement) {
                     isThinkingExpanded = !isThinkingExpanded;
                     toggleThinkingContent(this);
                 });
                 const sh = contentDiv.querySelector('.xd-search-header');
-                if (sh) sh.addEventListener('click', function() {
+                if (sh) sh.addEventListener('click', function(this: HTMLElement) {
                     isSearchExpanded = !isSearchExpanded;
-                    const content = this.nextElementSibling;
+                    const content = this.nextElementSibling as HTMLElement | null;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-search-toggle');
                     content.style.setProperty('display', isSearchExpanded ? 'block' : 'none', 'important');
@@ -355,9 +363,9 @@
                         : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
                 });
                 const ch = contentDiv.querySelector('.xd-calc-header');
-                if (ch) ch.addEventListener('click', function() {
+                if (ch) ch.addEventListener('click', function(this: HTMLElement) {
                     isCalcExpanded = !isCalcExpanded;
-                    const content = this.nextElementSibling;
+                    const content = this.nextElementSibling as HTMLElement | null;
                     if (!content) return;
                     const toggle = this.querySelector('.xd-calc-toggle');
                     content.style.setProperty('display', isCalcExpanded ? 'block' : 'none', 'important');
@@ -380,7 +388,7 @@
                 }
 
                 toolLoopDepth++;
-                console.log('[xdAnswers] Tool call detected (depth=' + toolLoopDepth + '):', toolCalls.map(tc => tc.name + '(' + tc.args.slice(0, 100) + ')').join(', '));
+                console.log('[xdAnswers] Tool call detected (depth=' + toolLoopDepth + '):', toolCalls.map(tc => (tc.name || '') + '(' + tc.args.slice(0, 100) + ')').join(', '));
                 if (toolLoopDepth > MAX_TOOL_LOOPS) {
                     console.warn('[xdAnswers] Max tool loop depth reached, stopping');
                     fullContent += '\n\n[Web search limit reached — skipping further searches]';
@@ -416,9 +424,9 @@
                     // Execute each tool call and add tool results
                     for (let i = 0; i < toolCalls.length; i++) {
                         const tc = toolCalls[i];
-                        let args = {};
+                        let args: any = {};
                         try { args = JSON.parse(tc.args); } catch {}
-                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name);
+                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name || '');
 
                         if (isCalc) {
                             const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
@@ -437,7 +445,7 @@
 
                             try {
                                 const resultJson = I.executeCalculator(expr);
-                                let resObj = {};
+                                let resObj: any = {};
                                 try { resObj = JSON.parse(resultJson); } catch {}
                                 ccEntry.status = 'done';
                                 ccEntry.result = resObj.result !== undefined ? resObj.result : (resObj.error || 'error');
@@ -446,9 +454,9 @@
                                 messages.push({ role: 'tool', tool_call_id: tc.id, content: resultJson });
                             } catch (err) {
                                 ccEntry.status = 'done';
-                                ccEntry.result = err.message;
+                                ccEntry.result = (err as Error).message;
                                 updateStreamUI();
-                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
                         } else {
                             const query = args.query || args.q || '';
@@ -492,13 +500,13 @@
                                 scEntry.status = 'done';
                                 scEntry.resultCount = 0;
                                 updateStreamUI();
-                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                                messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
                         }
                     }
                 } else if (s.apiFormat === 'anthropic') {
                     // Build assistant content blocks
-                    const assistantBlocks = [];
+                    const assistantBlocks: Array<Record<string, unknown>> = [];
                     if (fullContent) {
                         assistantBlocks.push({ type: 'text', text: fullContent });
                     }
@@ -510,11 +518,11 @@
                     messages.push({ role: 'assistant', content: assistantBlocks });
 
                     // Execute and add tool_result
-                    const toolResultBlocks = [];
+                    const toolResultBlocks: Array<Record<string, unknown>> = [];
                     for (let i = 0; i < toolCalls.length; i++) {
                         const tc = toolCalls[i];
                         const args = tc._parsedInput || {};
-                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name);
+                        const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name || '');
 
                         if (isCalc) {
                             const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
@@ -533,7 +541,7 @@
 
                             try {
                                 const resultJson = I.executeCalculator(expr);
-                                let resObj = {};
+                                let resObj: any = {};
                                 try { resObj = JSON.parse(resultJson); } catch {}
                                 ccEntry.status = 'done';
                                 ccEntry.result = resObj.result !== undefined ? resObj.result : (resObj.error || 'error');
@@ -542,9 +550,9 @@
                                 toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: resultJson });
                             } catch (err) {
                                 ccEntry.status = 'done';
-                                ccEntry.result = err.message;
+                                ccEntry.result = (err as Error).message;
                                 updateStreamUI();
-                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
                         } else {
                             const query = args.query || '';
@@ -588,7 +596,7 @@
                                 scEntry.status = 'done';
                                 scEntry.resultCount = 0;
                                 updateStreamUI();
-                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: err.message }) });
+                                toolResultBlocks.push({ type: 'tool_result', tool_use_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
                         }
                     }
@@ -639,9 +647,9 @@
                 resolve({ content: fullContent, thinking: fullThinking, searchCalls, calcCalls });
             }
 
-            function startStreamRound(currentMessages) {
+            function startStreamRound(currentMessages: Array<Record<string, unknown>>) {
                 // Build the request body from the current message history
-                const body = Object.assign({}, initialBody);
+                const body = Object.assign({}, initialBody) as Record<string, unknown>;
                 body.messages = currentMessages;
                 // Remove any stale tools from initialBody copy before conditionally adding fresh ones.
                 delete body.tools;
@@ -657,7 +665,7 @@
                 const cancel = window.xdAnswers.streamRequest(
                     { url: buildStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body) },
                     (chunk) => {
-                        const events = parseSSEChunks(chunk, s.apiFormat);
+                        const events = parseSSEChunks(chunk as string, s.apiFormat);
                         for (const ev of events) {
                             if (ev.thinking) {
                                 ensureThinkingUI();
@@ -684,7 +692,7 @@
                                 if (tcd.name) pendingToolCalls[tcd.index].name = tcd.name;
                                 if (tcd.argsDelta) pendingToolCalls[tcd.index].args += tcd.argsDelta;
 
-                                setToolStreamingIndicator(tcd.index, pendingToolCalls[tcd.index].name, pendingToolCalls[tcd.index].args);
+                                setToolStreamingIndicator(tcd.index, pendingToolCalls[tcd.index].name || '', pendingToolCalls[tcd.index].args);
                             }
                             if (ev.tool_call_args_delta) {
                                 const tcad = ev.tool_call_args_delta;
@@ -692,7 +700,7 @@
                                     pendingToolCalls[tcad.index] = { index: tcad.index, id: tcad.id || '', name: tcad.name || '', args: '' };
                                 }
                                 pendingToolCalls[tcad.index].args += tcad.argsDelta;
-                                setToolStreamingIndicator(tcad.index, pendingToolCalls[tcad.index].name, pendingToolCalls[tcad.index].args);
+                                setToolStreamingIndicator(tcad.index, pendingToolCalls[tcad.index].name || '', pendingToolCalls[tcad.index].args);
                             }
                             if (ev.tool_call_stop) {
                                 // Tool call finished — execute and continue
