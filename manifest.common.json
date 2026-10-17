@@ -16,8 +16,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/core/disabler-page.js",
-        "src/core/naurok-round-page.js",
+        "src/core/disabler-page.ts",
+        "src/core/naurok-round-page.ts",
         "lib/beercss/material-symbols-outlined.woff2"
       ],
       "matches": [
@@ -66,7 +66,7 @@
         "*://*.testportal.net/*",
         "*://*.szkolawchmurze.org/*"
       ],
-      "js": ["src/core/disabler.js"],
+      "js": ["src/core/disabler.ts"],
       "run_at": "document_start",
       "all_frames": true
     },

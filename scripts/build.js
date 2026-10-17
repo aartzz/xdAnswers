@@ -186,7 +186,7 @@ async function main() {
     for (const entry of commonManifest.web_accessible_resources) {
         const resources = [];
         for (const resource of entry.resources) {
-            if (!resource.endsWith('.js')) {
+            if (!/\.(js|ts)$/.test(resource)) {
                 resources.push(resource);
                 continue;
             }

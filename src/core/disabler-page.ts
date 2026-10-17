@@ -1,3 +1,7 @@
+// @ts-nocheck — page-world script that monkey-patches non-standard browser APIs
+// (webkit/moz/ms fullscreen members, prototype overrides). Typing these overrides
+// would require `any` casts on nearly every line, so the file is intentionally
+// left unchecked; it is bundled verbatim by esbuild.
 (function() {
     'use strict';
 
