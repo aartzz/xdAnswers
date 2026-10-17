@@ -1,16 +1,24 @@
-// src/ai/parse.js
+// src/ai/parse.ts
 // Response parsing utilities. Extracted from legacy utils.js (lines 1111-1339).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function parsePartialLabeled(text) {
+    type FieldName = 'answer' | 'explanation' | 'solution' | 'confidence';
+    interface LabeledFields {
+        answer: string;
+        explanation: string;
+        solution: string;
+        confidence: string;
+    }
+
+    function parsePartialLabeled(text: string): XdParsedResponse | null {
         if (!text || !text.includes(':')) return null;
 
-        const result = { answer: '', explanation: '', solution: '', confidence: '', isPartial: true };
+        const result: XdParsedResponse & LabeledFields = { answer: '', explanation: '', solution: '', confidence: '', isPartial: true };
         const lines = text.split('\n');
-        let currentField = null;
+        let currentField: FieldName | null = null;
 
         for (const line of lines) {
             const match = line.match(/^\s*([A-Za-zА-Яа-яІіЇїЄє'`]+)\s*:\s*(.*)$/);
@@ -27,7 +35,7 @@
             }
         }
 
-        for (const f of ['answer', 'explanation', 'solution', 'confidence']) {
+        for (const f of ['answer', 'explanation', 'solution', 'confidence'] as FieldName[]) {
             result[f] = cleanFieldContent(f, result[f]);
         }
 
@@ -35,7 +43,7 @@
         return hasAny ? result : null;
     }
 
-    function renderPartial(parsed) {
+    function renderPartial(parsed: XdParsedResponse): string {
         let html = '';
         if (parsed.answer) html += '<div class="xd-answer xd-answer-partial">' + window.xdAnswers.renderMarkdown(parsed.answer) + '</div>';
         if (parsed.explanation) html += '<div class="xd-explanation">' + window.xdAnswers.renderMarkdown(parsed.explanation) + '</div>';
@@ -44,7 +52,7 @@
         return html;
     }
 
-    function formatError(msg) {
+    function formatError(msg: string | undefined): string {
         if (!msg) return '<div class="xd-error">Unknown error</div>';
 
         const imageErrorMatch = msg.match(/Cannot read ["']([^"']+)["'].*does not support image input/i);
@@ -53,9 +61,9 @@
         }
 
         let code = 'Error';
-        let detail = msg;
+        let detail: any = msg;
         try {
-            const parsed = JSON.parse(msg);
+            const parsed: any = JSON.parse(msg);
             code = 'API ' + (parsed.status || parsed.code || parsed.error?.code || 'Error');
             detail = parsed.statusText || parsed.message || parsed.error?.message || parsed.responseText || msg;
             if (detail.length > 200) detail = detail.substring(0, 200) + '...';
@@ -69,7 +77,7 @@
         return '<div class="xd-error"><strong>' + code + ':</strong> ' + detail + '</div>';
     }
 
-    function normalizeFieldName(name) {
+    function normalizeFieldName(name: string): FieldName | null {
         const normalized = (name || '').trim().toLowerCase();
         if (['answer', 'відповідь'].includes(normalized)) return 'answer';
         if (['explanation', 'пояснення'].includes(normalized)) return 'explanation';
@@ -78,7 +86,7 @@
         return null;
     }
 
-    function cleanFieldContent(field, val) {
+    function cleanFieldContent(field: string, val: string): string {
         if (!val) return '';
         let s = val.trim();
         if (field === 'solution') {
@@ -97,7 +105,7 @@
         return s;
     }
 
-    function parseLabeledResponse(text) {
+    function parseLabeledResponse(text: string): XdParsedResponse | null {
         if (!text) return null;
 
         const cleaned = text
@@ -106,8 +114,8 @@
             .trim();
 
         const lines = cleaned.split('\n');
-        const result = { answer: '', explanation: '', solution: '', confidence: '', raw: text, isStructured: false };
-        let currentField = null;
+        const result: XdParsedResponse & LabeledFields = { answer: '', explanation: '', solution: '', confidence: '', raw: text, isStructured: false };
+        let currentField: FieldName | null = null;
 
         for (const line of lines) {
             const match = line.match(/^\s*([A-Za-zА-Яа-яІіЇїЄє'`]+)\s*:\s*(.*)$/);
@@ -127,7 +135,7 @@
         }
 
         if (result.isStructured) {
-            for (const f of ['answer', 'explanation', 'solution', 'confidence']) {
+            for (const f of ['answer', 'explanation', 'solution', 'confidence'] as FieldName[]) {
                 result[f] = cleanFieldContent(f, result[f]);
             }
         }
@@ -135,7 +143,7 @@
         return result.isStructured ? result : null;
     }
 
-    function extractJSONString(text) {
+    function extractJSONString(text: string): string {
         if (!text) return '';
         const start = text.indexOf('{');
         if (start === -1) return '';
@@ -174,7 +182,7 @@
         return text.slice(start);
     }
 
-    function extractFieldValue(text, fieldName) {
+    function extractFieldValue(text: string, fieldName: string): string {
         const escapedField = fieldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const patterns = [
             new RegExp('"' + escapedField + '"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"', 'i'),
@@ -198,7 +206,7 @@
         return '';
     }
 
-    function salvagePartialJSON(text) {
+    function salvagePartialJSON(text: string): XdParsedResponse | null {
         const candidate = extractJSONString(text) || text;
         const answer = extractFieldValue(candidate, 'answer');
         const explanation = extractFieldValue(candidate, 'explanation');
@@ -220,9 +228,9 @@
         return null;
     }
 
-    function extractFinalAnswerRegex(text) {
+    function extractFinalAnswerRegex(text: string): XdParsedResponse | null {
         if (!text) return null;
-        var m = text.match(/FINAL_ANSWER:\s*(.+?)(?:\n|$)/i);
+        let m = text.match(/FINAL_ANSWER:\s*(.+?)(?:\n|$)/i);
         if (!m) m = text.match(/Відповідь:\s*(.+?)(?:\n|$)/i);
         if (!m) m = text.match(/Ответ:\s*(.+?)(?:\n|$)/i);
         if (!m) m = text.match(/ANSWER:\s*(.+?)(?:\n|$)/i);
@@ -230,8 +238,8 @@
         if (!m) m = text.match(/(?:Option|Варіант)\s+([A-DА-Яа-яІіЇїЄє0-9])\s*(?:is\s+correct|є\s+правильн)/i);
         if (!m) return null;
 
-        var answer = m[1].trim();
-        var explanation = text.substring(0, m.index).trim().replace(/\n{3,}/g, '\n\n');
+        const answer = m[1].trim();
+        const explanation = text.substring(0, m.index).trim().replace(/\n{3,}/g, '\n\n');
 
         return {
             answer: answer,
@@ -244,7 +252,7 @@
         };
     }
 
-    function stripInlineThinking(text) {
+    function stripInlineThinking(text: string): string {
         if (!text) return '';
         // Strip <think>...</think>
         let cleaned = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
@@ -256,7 +264,7 @@
         if (proseHeaderRegex.test(cleaned)) {
             const transition = cleaned.match(proseTransitionRegex);
             if (transition) {
-                cleaned = cleaned.substring(transition.index + 1).trim();
+                cleaned = cleaned.substring((transition.index ?? 0) + 1).trim();
             } else {
                 // Look for trailing option conclusion or answer in prose
                 const trailingAnswer = cleaned.match(/(?:(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ)\*{0,2}\s*:\s*)|(?:(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+is\s*:?\s*)|(?:The\s+correct\s+option\s+is\s*:?\s*))([A-DА-Яа-яІіЇїЄє0-9][^\n\.]*)/i);
@@ -272,33 +280,33 @@
         return cleaned || text;
     }
 
-    function parseAIResponse(text) {
+    function parseAIResponse(text: string): XdParsedResponse {
         if (!text) return { answer: '', explanation: '', solution: '', confidence: '', raw: text, parseFailed: true };
 
         text = stripInlineThinking(text);
 
-        var labeled = parseLabeledResponse(text);
+        const labeled = parseLabeledResponse(text);
         if (labeled) return labeled;
 
-        var finalAnswerExtracted = extractFinalAnswerRegex(text);
+        const finalAnswerExtracted = extractFinalAnswerRegex(text);
         if (finalAnswerExtracted && finalAnswerExtracted.answer) return finalAnswerExtracted;
 
-        var jsonStr = text.trim();
-        var jsonMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        let jsonStr = text.trim();
+        const jsonMatch = jsonStr.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
         if (jsonMatch) jsonStr = jsonMatch[1].trim();
 
         try {
-            var p = JSON.parse(jsonStr);
+            const p: any = JSON.parse(jsonStr);
             return { answer: p.answer || '', explanation: p.explanation || '', solution: p.solution || '', confidence: p.confidence, raw: text, isJSON: true };
         } catch (e) {
-            var salvaged = salvagePartialJSON(jsonStr);
+            const salvaged = salvagePartialJSON(jsonStr);
             if (salvaged) return salvaged;
 
             return { answer: '', explanation: '', solution: '', confidence: '', raw: text, isJSON: false, parseFailed: true };
         }
     }
 
-    function renderParsedResponse(parsed) {
+    function renderParsedResponse(parsed: XdParsedResponse): string {
         if ((parsed.isJSON || parsed.isStructured) && parsed.answer) {
             let html = '<div class="xd-answer">' + window.xdAnswers.renderMarkdown(parsed.answer) + '</div>';
             if (parsed.explanation) html += '<div class="xd-explanation">' + window.xdAnswers.renderMarkdown(parsed.explanation) + '</div>';

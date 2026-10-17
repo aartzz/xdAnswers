@@ -102,9 +102,24 @@ interface XdParsedResponse {
     isJSON?: boolean;
     isStructured?: boolean;
     parseFailed?: boolean;
+    isPartial?: boolean;
+    isPartialJSON?: boolean;
+    extractedBy?: string;
     /** Marks a parsed response produced by the JustClass provider. */
     _justclass?: boolean;
     _justclassShort?: string[];
+}
+
+/** Event emitted by `_internal.parseSSEChunks` for one API stream chunk. */
+interface XdSseEvent {
+    done?: boolean;
+    content?: string;
+    thinking?: string;
+    tool_call_start?: { index: number; id?: string; name?: string };
+    tool_call_delta?: { index: number; id?: string; name?: string; argsDelta: string };
+    tool_call_args_delta?: { index: number; argsDelta: string };
+    tool_call_stop?: boolean;
+    tool_call_complete?: { name?: string; args?: unknown };
 }
 
 interface XdConsensusResult {
@@ -217,7 +232,7 @@ interface XdAnswersInternal {
     buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown;
 
     // Streaming and parsing
-    parseSSEChunks(rawText: string, apiFormat: string): unknown[];
+    parseSSEChunks(rawText: string, apiFormat: string): XdSseEvent[];
     parsePartialLabeled(text: string): XdParsedResponse | null;
     renderPartial(parsed: XdParsedResponse): string;
     formatError(msg: string): string;

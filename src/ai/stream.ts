@@ -1,11 +1,13 @@
+// src/ai/stream.ts
+// Server-sent-events chunk parsing for the supported API formats.
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function parseSSEChunks(rawText, apiFormat) {
-        const results = [];
+    function parseSSEChunks(rawText: string, apiFormat: string): XdSseEvent[] {
+        const results: XdSseEvent[] = [];
         const lines = rawText.split('\n');
 
         for (const line of lines) {
@@ -14,7 +16,7 @@
             if (data === '[DONE]') { results.push({ done: true }); continue; }
 
             try {
-                const json = JSON.parse(data);
+                const json: any = JSON.parse(data);
 
                 if (apiFormat === 'openai') {
                     const choice = json.choices?.[0];
