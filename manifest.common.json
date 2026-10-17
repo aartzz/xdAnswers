@@ -284,7 +284,9 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/msforms.js"
+        "src/providers/msforms/dom.ts",
+        "src/providers/msforms/apply.ts",
+        "src/providers/msforms/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
