@@ -28,7 +28,7 @@
 
     function injectDisablerIntoPage() {
         const script = document.createElement('script');
-        script.src = chrome.runtime.getURL('src/core/disabler-page.js');
+        script.src = chrome.runtime.getURL('disabler-page.js');
         script.onload = function() {
             if (script.parentNode) {
                 script.parentNode.removeChild(script);

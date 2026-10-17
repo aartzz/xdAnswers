@@ -29,5 +29,6 @@ Desktop.ini
 *.swp
 manifest.json
 version.js
+/dist
 /dist_chrome
 .web-extension-id

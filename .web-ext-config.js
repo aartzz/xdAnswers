@@ -63,7 +63,7 @@ const byTarget = {
 };
 
 module.exports = {
-  sourceDir: './',
+  sourceDir: './dist',
   artifactsDir: './build',
   build: {
     overwriteDest: true,

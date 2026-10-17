@@ -5,7 +5,8 @@
     window.xdAnswers._internal = window.xdAnswers._internal || {};
 
     // Version string for UI display
-    // _buildVersion is injected by build-manifest.js (release) or inject-version.js (debug)
+    // _buildVersion is written by scripts/inject-version.js during the build
+    // (bundled into dist/core.js by scripts/build.js)
     // Release: "v5.0.3", Debug: "6774ea7", Fallback: reads manifest version
     function getVersionString() {
         if (window.xdAnswers._buildVersion) return window.xdAnswers._buildVersion;

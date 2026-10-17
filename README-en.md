@@ -121,8 +121,8 @@ Built artifacts land in `./build`. Install them the same way you would install a
 For iterative development, use `web-ext run` — it launches a temporary browser profile with the extension already loaded and auto-reloads it whenever files change:
 
 ```bash
-# First, generate manifest.json for the target browser
-node scripts/build-manifest.js firefox    # or chrome
+# First, build the extension into ./dist
+npm run dev                               # or: node scripts/build.js firefox
 
 # Firefox — opens a temporary Firefox with the extension loaded
 npx web-ext run
@@ -131,7 +131,7 @@ npx web-ext run
 npx web-ext run -t chromium
 ```
 
-When you're done, remove the generated `manifest.json` with `npm run clean`.
+When you're done, you can delete the generated `./dist` directory — every build recreates it.
 
 ## Usage
 
