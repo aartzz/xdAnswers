@@ -1,20 +1,31 @@
-// src/dom/match.js
+// src/dom/match.ts
 // Option matching utilities. Extracted from legacy utils.js (lines 1343-1477).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
+
+    interface GridCellRef {
+        element: Element;
+        column: string;
+    }
+
+    interface GridRow {
+        index: number;
+        label: string;
+        cells: GridCellRef[];
+    }
 
     // Google Forms (and similar) render a hidden, aria-hidden print copy of grid
     // questions whose cells are aria-disabled. Those are dead to clicks, so they
     // must never be matched, highlighted or auto-selected.
-    function isHiddenOrDisabled(el) {
-        if (!el || !el.closest) return false;
+    function isHiddenOrDisabled(el: Element | null): boolean {
+        if (!el) return false;
         if (el.getAttribute && el.getAttribute('aria-disabled') === 'true') return true;
         return !!el.closest('[aria-hidden="true"]');
     }
 
-    function findOptionElements() {
+    function findOptionElements(): Element[] {
         const selectors = [
             '[data-xd-option="true"]',
             '.question-option-inner-content',
@@ -44,15 +55,15 @@
         const inputs = document.querySelectorAll('input[type="radio"], input[type="checkbox"]');
         if (inputs.length > 1) {
             const labels = Array.from(inputs).map(inp => {
-                const label = inp.closest('label') || inp.parentElement;
-                return label || null;
-            }).filter(label => label && !isHiddenOrDisabled(label));
+                const label: Element | null = inp.closest('label') || inp.parentElement;
+                return label;
+            }).filter((label): label is Element => !!label && !isHiddenOrDisabled(label));
             if (labels.length > 1) return labels;
         }
         return [];
     }
 
-    function normalizeText(t) {
+    function normalizeText(t: string | null | undefined): string {
         return (t || '').replace(/\s+/g, ' ').trim().toLowerCase()
             .replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, '')  // zero-width / nbsp
             .replace(/(\d),(\d)/g, '$1.$2')                    // decimal comma → dot (1,5 → 1.5)
@@ -62,10 +73,10 @@
             .trim();
     }
 
-    function levenshtein(a, b) {
+    function levenshtein(a: string, b: string): number {
         if (a.length === 0) return b.length;
         if (b.length === 0) return a.length;
-        const matrix = [];
+        const matrix: number[][] = [];
         for (let i = 0; i <= b.length; i++) matrix[i] = [i];
         for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
         for (let i = 1; i <= b.length; i++) {
@@ -81,7 +92,7 @@
         return matrix[b.length][a.length];
     }
 
-    function textSimilarity(a, b) {
+    function textSimilarity(a: string, b: string): number {
         if (!a || !b) return 0;
         if (a === b) return 1;
         const maxLen = Math.max(a.length, b.length);
@@ -101,17 +112,17 @@
     // (data-answer-value / data-value / aria-label), and cells share a
     // data-field-index that identifies their row.
 
-    function isGridCell(el) {
+    function isGridCell(el: Element | null): boolean {
         return !!(el && typeof el.matches === 'function' &&
             el.hasAttribute('data-field-index') &&
             el.matches('[role="radio"], [role="checkbox"], [role="option"]'));
     }
 
-    function gridRowLabel(el) {
-        const group = el.closest ? el.closest('[role="group"], [role="radiogroup"]') : null;
+    function gridRowLabel(el: Element): string {
+        const group = el.closest('[role="group"], [role="radiogroup"]');
         if (group) {
             const labelEl = group.querySelector('.V4d7Ke.wzWPxe');
-            const labelText = labelEl ? (labelEl.innerText || labelEl.textContent || '').trim() : '';
+            const labelText = labelEl ? ((labelEl as HTMLElement).innerText || labelEl.textContent || '').trim() : '';
             if (labelText) return labelText;
             const groupAria = (group.getAttribute('aria-label') || '').trim();
             if (groupAria) return groupAria;
@@ -123,7 +134,7 @@
         return aria.slice(comma + 1).trim().replace(/^(?:відповідь\s+для|answer\s+for)\s*:?\s*/i, '');
     }
 
-    function gridCellColumnText(el) {
+    function gridCellColumnText(el: Element): string {
         const direct = (el.getAttribute('data-answer-value') || el.getAttribute('data-value') || '').trim();
         if (direct) return direct;
         const aria = (el.getAttribute('aria-label') || '').trim();
@@ -133,13 +144,13 @@
 
     // Groups grid cells into rows: [{ index, label, cells: [{ element, column }] }]
     // Returns [] when the elements are not grid cells.
-    function collectGridRows(elements) {
+    function collectGridRows(elements: Element[] | null | undefined): GridRow[] {
         const cells = (elements || []).filter(el => isGridCell(el) && !isHiddenOrDisabled(el));
         if (cells.length < 2) return [];
         // Group by the row container first: separate grids on the page reuse the
         // same data-field-index values, so index alone would merge their rows.
-        const rows = [];
-        const byGroup = new Map();
+        const rows: GridRow[] = [];
+        const byGroup = new Map<Element, GridRow>();
         for (const el of cells) {
             const group = el.closest('[role="group"], [role="radiogroup"]') || el.parentElement || el;
             let row = byGroup.get(group);
@@ -156,7 +167,7 @@
         return rows;
     }
 
-    function gridCleanRef(text) {
+    function gridCleanRef(text: string | null | undefined): string {
         return (text || '')
             .replace(/[*`_]/g, '')
             .replace(/^[\s"'«»„“”]+|[\s"'«»„“”]+$/g, '')
@@ -166,14 +177,14 @@
             .trim();
     }
 
-    function findGridRow(ref, rows) {
+    function findGridRow(ref: string, rows: GridRow[]): { row: GridRow; score: number } | null {
         const norm = normalizeText(gridCleanRef(ref));
         if (!norm) return null;
         if (/^\d+$/.test(norm)) {
             const i = parseInt(norm, 10) - 1;
             return (i >= 0 && i < rows.length) ? { row: rows[i], score: 1 } : null;
         }
-        let best = null, bestScore = 0;
+        let best: GridRow | null = null, bestScore = 0;
         for (const row of rows) {
             if (!row.label) continue;
             const rowNorm = normalizeText(row.label);
@@ -183,10 +194,10 @@
             if (Math.min(rowNorm.length, norm.length) >= 3 && (rowNorm.includes(norm) || norm.includes(rowNorm))) score = Math.max(score, 0.6);
             if (score > bestScore) { bestScore = score; best = row; }
         }
-        return bestScore >= 0.45 ? { row: best, score: bestScore } : null;
+        return bestScore >= 0.45 && best ? { row: best, score: bestScore } : null;
     }
 
-    function findGridColumn(row, ref) {
+    function findGridColumn(row: GridRow, ref: string): { cell: GridCellRef; score: number } | null {
         const norm = normalizeText(gridCleanRef(ref));
         if (!norm) return null;
         const letter = norm.match(/^(?:варіант|вариант|option|variant)?\s*([a-zа-яіїєґ])$/);
@@ -203,7 +214,7 @@
             const i = parseInt(numeric[1], 10) - 1;
             if (i >= 0 && i < row.cells.length) return { cell: row.cells[i], score: 1 };
         }
-        let best = null, bestScore = 0;
+        let best: GridCellRef | null = null, bestScore = 0;
         for (const c of row.cells) {
             if (!c.column) continue;
             const colNorm = normalizeText(c.column);
@@ -213,22 +224,22 @@
             if (Math.min(colNorm.length, norm.length) >= 3 && (colNorm.includes(norm) || norm.includes(colNorm))) score = Math.max(score, 0.6);
             if (score > bestScore) { bestScore = score; best = c; }
         }
-        return bestScore >= 0.45 ? { cell: best, score: bestScore } : null;
+        return bestScore >= 0.45 && best ? { cell: best, score: bestScore } : null;
     }
 
     // Parses answers like "row = column; row = column" (also "1-A", "рядок 1: ...",
     // "column = row" reversed) and returns the matched grid cells.
-    function matchGridAnswer(answerText, optionElements) {
+    function matchGridAnswer(answerText: string, optionElements: Element[]): Element[] {
         const rows = collectGridRows(optionElements);
         if (rows.length < 2) return [];
 
         const items = answerText.split(/;|\n+/).map(s => s.trim()).filter(Boolean);
         const pairSeparator = /(?:=>|->|=|→|—|–|\s-\s|-|:|\)\s*)/;
-        const matched = [];
-        const usedCells = new Set();
-        const usedRows = new Set();
+        const matched: Element[] = [];
+        const usedCells = new Set<Element>();
+        const usedRows = new Set<GridRow>();
 
-        const pushCell = (cell, row) => {
+        const pushCell = (cell: GridCellRef | null, row: GridRow | null): void => {
             if (!cell || usedCells.has(cell.element)) return;
             usedCells.add(cell.element);
             if (row) usedRows.add(row);
@@ -236,7 +247,7 @@
         };
 
         for (const item of items) {
-            let bestCell = null, bestRow = null, bestScore = 0;
+            let bestCell: GridCellRef | null = null, bestRow: GridRow | null = null, bestScore = 0;
             let cursor = 0;
             // Try every separator position; keep the split that scores best.
             while (cursor < item.length) {
@@ -285,7 +296,7 @@
         return matched;
     }
 
-    function matchAnswerToOptions(answerText, optionElements) {
+    function matchAnswerToOptions(answerText: string, optionElements: Element[]): Element[] {
         if (!answerText || !optionElements.length) return [];
         // Grid path only when the candidate set is pure grid cells, so a mixed
         // unscoped page (regular questions + grids) can't hijack matching.
@@ -295,8 +306,8 @@
             if (gridMatched.length) return gridMatched;
         }
         const answers = answerText.split(';').map(a => a.trim()).filter(Boolean);
-        const matched = [];
-        const usedElements = new Set();
+        const matched: Element[] = [];
+        const usedElements = new Set<Element>();
         const optionLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
         for (const ans of answers) {
@@ -326,11 +337,11 @@
                 }
             }
 
-            let best = null, bestScore = 0;
+            let best: Element | null = null, bestScore = 0;
 
             for (const el of optionElements) {
                 if (usedElements.has(el)) continue;
-                const normEl = normalizeText(el.innerText || el.textContent);
+                const normEl = normalizeText((el as HTMLElement).innerText || el.textContent);
                 if (!normEl) continue;
 
                 // Exact match

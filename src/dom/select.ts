@@ -1,11 +1,11 @@
-// src/dom/select.js
+// src/dom/select.ts
 // Answer highlighting and auto-selection. Extracted from legacy utils.js (lines 1479-1639).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function highlightCorrectAnswer(answerText) {
+    function highlightCorrectAnswer(answerText: string): void {
         const I = window.xdAnswers._internal;
         // Only highlight when setting is enabled and not in any silent mode
         if (!window.xdAnswers.settings.highlightCorrect) return;
@@ -14,9 +14,9 @@
         // Clear previous highlights first
         document.querySelectorAll('.xd-highlight-correct').forEach(el => {
             el.classList.remove('xd-highlight-correct');
-            el.style.removeProperty('outline');
-            el.style.removeProperty('background-color');
-            el.style.removeProperty('border-radius');
+            (el as HTMLElement).style.removeProperty('outline');
+            (el as HTMLElement).style.removeProperty('background-color');
+            (el as HTMLElement).style.removeProperty('border-radius');
         });
         const allOptionElements = I.findOptionElements();
         const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
@@ -25,7 +25,7 @@
             : allOptionElements;
         const elements = I.matchAnswerToOptions(answerText, optionElements);
         for (const el of elements) {
-            const target = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
+            const target = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
             target.classList.add('xd-highlight-correct');
             target.style.setProperty('outline', '3px solid #22c55e', 'important');
             target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');
@@ -33,7 +33,7 @@
         }
     }
 
-    function formatDateForMSForms(text) {
+    function formatDateForMSForms(text: string): string {
         if (!text) return text;
         text = text.trim();
         // Already in dd.MM.yyyy format
@@ -67,7 +67,7 @@
         return text;
     }
 
-    function autoSelectAnswer(answerText, force) {
+    function autoSelectAnswer(answerText: string, force?: boolean): void {
         const I = window.xdAnswers._internal;
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
         const allOptionElements = I.findOptionElements();
@@ -85,14 +85,14 @@
             if (elements.length > 0) {
                 for (const el of elements) {
                     // Try multiple click target strategies
-                    const clickTarget = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
+                    const clickTarget = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
 
                     // Strategy 1: Direct click
                     clickTarget.click();
 
                     // Strategy 2: If there's a radio/checkbox input inside, click it too
-                    const input = clickTarget.querySelector('input[type="radio"], input[type="checkbox"]')
-                        || clickTarget.closest('label')?.querySelector('input[type="radio"], input[type="checkbox"]');
+                    const input = clickTarget.querySelector<HTMLInputElement>('input[type="radio"], input[type="checkbox"]')
+                        || clickTarget.closest('label')?.querySelector<HTMLInputElement>('input[type="radio"], input[type="checkbox"]');
                     if (input && !input.checked) {
                         input.click();
                     }
@@ -105,9 +105,9 @@
                 // No option elements matched — try text/paragraph inputs
                 // GForms: input.whsOnd (short text), textarea.KHxj8b (paragraph)
                 // Vseosvita: .a-test-lab-inp input[type="text"] (open answer)
-                const textInput = scopedContainer.querySelector('input.whsOnd, .a-test-lab-inp input[type="text"], input[data-automation-id="textInput"], input[role="combobox"], input[type="text"]');
-                const textArea = scopedContainer.querySelector('textarea.KHxj8b, textarea');
-                const target = textArea || textInput;
+                const textInput = scopedContainer.querySelector<HTMLInputElement>('input.whsOnd, .a-test-lab-inp input[type="text"], input[data-automation-id="textInput"], input[role="combobox"], input[type="text"]');
+                const textArea = scopedContainer.querySelector<HTMLTextAreaElement>('textarea.KHxj8b, textarea');
+                const target: HTMLInputElement | HTMLTextAreaElement | null = textArea || textInput;
                 if (target) {
                     // For MS Forms date combobox, parse and format as dd.MM.yyyy
                     let fillText = answerText;
@@ -133,7 +133,7 @@
             const hasCheckboxes = !!document.querySelector('input[type="checkbox"]:not(.ng-hide)') ||
                 !!document.querySelector('[ng-click*="multiquiz"], .question-option-inner-multiple, .fa-check-square-o');
             if (elements.length > 1 && hasCheckboxes) {
-                let saveBtn = document.querySelector(
+                let saveBtn = document.querySelector<HTMLElement>(
                     '.test-multiquiz-save-button:not(.ng-hide), ' +
                     'a[ng-click*="save"]:not(.ng-hide), ' +
                     '[ng-click*="saveAnswer"], ' +
@@ -144,10 +144,10 @@
                 if (!saveBtn) {
                     const allBtns = document.querySelectorAll('button, a[ng-click], [role="button"], .btn, .test-action-button, .test-multiquiz-save-button');
                     for (const btn of allBtns) {
-                        const t = (btn.innerText || '').trim().toLowerCase();
+                        const t = ((btn as HTMLElement).innerText || '').trim().toLowerCase();
                         if (t.includes('зберегти') || t.includes('save') || t.includes('confirm') || t.includes('підтвердити')) {
-                            if (!btn.classList.contains('ng-hide') && !btn.disabled && btn.offsetParent !== null) {
-                                saveBtn = btn;
+                            if (!btn.classList.contains('ng-hide') && !(btn as HTMLButtonElement).disabled && (btn as HTMLElement).offsetParent !== null) {
+                                saveBtn = btn as HTMLElement;
                                 break;
                             }
                         }
@@ -155,9 +155,9 @@
                 }
                 if (saveBtn) {
                     setTimeout(() => {
-                        saveBtn.click();
-                        saveBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-                        saveBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+                        saveBtn!.click();
+                        saveBtn!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+                        saveBtn!.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
                     }, 200);
                 }
             }

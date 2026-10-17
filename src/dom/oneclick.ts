@@ -1,15 +1,29 @@
-// src/dom/oneclick.js
+// src/dom/oneclick.ts
 // One-click silent mode handlers. Extracted from legacy utils.js (lines 1737-1838).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    const _oneClickHandlers = [];
+    interface OneClickEntry {
+        container: HTMLElement;
+        handler: (e: MouseEvent) => void;
+        getQuestionDataFn?: (() => Promise<XdQuestionData | null> | XdQuestionData | null) | null;
+    }
+
+    interface ParsedHotkey {
+        ctrlKey: boolean;
+        altKey: boolean;
+        shiftKey: boolean;
+        metaKey: boolean;
+        key: string;
+    }
+
+    const _oneClickHandlers: OneClickEntry[] = [];
     window.xdAnswers._oneClickUserTriggered = false;
     window.xdAnswers._oneClickContainer = null;
 
-    function clearOneClickHandlers() {
+    function clearOneClickHandlers(): void {
         for (const { container, handler } of _oneClickHandlers) {
             container.removeEventListener('click', handler, true);
             container.classList.remove('xd-oneclick-ready');
@@ -23,7 +37,11 @@
 
     // Register a question container for one-click mode.
     // getQuestionDataFn: async () => questionData (called on click)
-    window.xdAnswers.setupOneClickHandler = function(container, getQuestionDataFn, setCursor = true) {
+    window.xdAnswers.setupOneClickHandler = function(
+        container: HTMLElement,
+        getQuestionDataFn: () => Promise<XdQuestionData | null> | XdQuestionData | null,
+        setCursor = true
+    ): void {
         if (!container) return;
         // Don't re-register the same container
         if (_oneClickHandlers.some(h => h.container === container)) return;
@@ -31,11 +49,11 @@
         container.classList.add('xd-oneclick-ready');
         if (setCursor) container.style.cursor = 'pointer';
 
-        const handler = async (e) => {
+        const handler = async (e: MouseEvent): Promise<void> => {
             // Don't re-trigger when autoSelectAnswer clicks an option inside this container
             if (window.xdAnswers._autoSelecting) return;
             // Don't trigger when user clicks an answer option — let the site handle it
-            if (e.target.closest('.question-option-inner, .test-option, .question-option-inner-content')) return;
+            if ((e.target as Element).closest('.question-option-inner, .test-option, .question-option-inner-content')) return;
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
             // Scope autoSelectAnswer to this container only
@@ -64,7 +82,7 @@
     //   oneclick container, call its getQuestionDataFn, and run processQuestion directly.
     // - In every other mode: fall back to the provider-supplied onRefresh hook
     //   (same code path as the helper's refresh button).
-    window.xdAnswers.triggerHotkey = async function() {
+    window.xdAnswers.triggerHotkey = async function(): Promise<void> {
         try {
             const silentMode = (window.xdAnswers.settings && window.xdAnswers.settings.silentMode) || '';
 
@@ -117,10 +135,10 @@
     }
 
     // Parse a hotkey string like "Ctrl+Shift+X" into { ctrlKey, altKey, shiftKey, metaKey, key }
-    function parseHotkey(hotkey) {
+    function parseHotkey(hotkey: string): ParsedHotkey | null {
         if (!hotkey) return null;
         const parts = hotkey.split('+').map(p => p.trim());
-        const result = { ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, key: '' };
+        const result: ParsedHotkey = { ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, key: '' };
         for (const part of parts) {
             const lower = part.toLowerCase();
             if (lower === 'ctrl' || lower === 'control') result.ctrlKey = true;
@@ -134,7 +152,7 @@
     }
 
     // Check if a KeyboardEvent matches the stored hotkey
-    function eventMatchesHotkey(e) {
+    function eventMatchesHotkey(e: KeyboardEvent): boolean {
         const settings = window.xdAnswers.settings;
         const hotkey = settings && settings.hotkey;
         if (!hotkey) return false;
@@ -157,10 +175,11 @@
 
     // Listen for custom hotkey on the page
     document.addEventListener('keydown', (e) => {
+        const target = e.target as HTMLElement | null;
         // Don't trigger in input/textarea/contenteditable
-        const tag = (e.target && e.target.tagName) || '';
+        const tag = (target && target.tagName) || '';
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-        if (e.target && e.target.isContentEditable) return;
+        if (target && target.isContentEditable) return;
 
         if (eventMatchesHotkey(e)) {
             e.preventDefault();

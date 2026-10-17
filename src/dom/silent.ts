@@ -1,14 +1,14 @@
-// src/dom/silent.js
+// src/dom/silent.ts
 // Silent mode (ghost/indicators/stealth). Extracted from legacy utils.js (lines 1642-1732).
 (function() {
     'use strict';
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function toggleThinkingContent(headerEl) {
-        const c = headerEl.nextElementSibling;
+    function toggleThinkingContent(headerEl: Element): void {
+        const c = headerEl.nextElementSibling as HTMLElement | null;
         if (!c) return;
-        const toggle = headerEl.querySelector('.xd-thinking-toggle');
+        const toggle = headerEl.querySelector<HTMLElement>('.xd-thinking-toggle');
         const isHidden = c.style.display === 'none' || getComputedStyle(c).display === 'none';
         const newDisplay = isHidden ? 'block' : 'none';
         c.style.setProperty('display', newDisplay, 'important');
@@ -19,7 +19,7 @@
     }
 
     // Mini exit-silent-mode button (barely visible, bottom-right corner)
-    function addSilentExitButton() {
+    function addSilentExitButton(): void {
         if (document.getElementById('xd-silent-exit-btn')) return;
         const btn = document.createElement('div');
         btn.id = 'xd-silent-exit-btn';
@@ -46,8 +46,8 @@
             // Show helper
             if (window.xdAnswers.helperContainer) {
                 window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
-                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn');
-                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#silent-mode-inline-select');
+                const silentModeBtn = window.xdAnswers.helperContainer.querySelector<HTMLElement>('#silent-mode-btn');
+                const silentModeSelect = window.xdAnswers.helperContainer.querySelector<HTMLSelectElement>('#silent-mode-inline-select');
                 if (silentModeBtn) { silentModeBtn.classList.remove('active'); silentModeBtn.title = 'Silent mode: Off'; }
                 if (silentModeSelect) { silentModeSelect.value = ''; silentModeSelect.style.display = 'none'; }
             }
@@ -55,7 +55,7 @@
         document.body.appendChild(btn);
     }
 
-    function applySilentMode(answerText, parsed) {
+    function applySilentMode(answerText: string, parsed: XdParsedResponse): void {
         const I = window.xdAnswers._internal;
         const mode = window.xdAnswers.settings.silentMode;
         if (!mode) return;
@@ -79,7 +79,7 @@
                 : allOptEls;
             const matched = I.matchAnswerToOptions(answerText, optionElements);
             for (const el of matched) {
-                const wrapper = el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el;
+                const wrapper = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
                 wrapper.style.position = 'relative';
                 const indicator = document.createElement('span');
                 indicator.className = 'xd-indicator-dot';
