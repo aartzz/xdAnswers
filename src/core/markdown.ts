@@ -1,10 +1,10 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.renderMarkdown = function(text) {
+    window.xdAnswers.renderMarkdown = function(text: string): string {
         if (!text) return '';
         let h = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -29,7 +29,7 @@
         return h;
     };
 
-    function escapeHTML(value) {
+    function escapeHTML(value: unknown): string {
         return String(value || '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')

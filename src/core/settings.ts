@@ -1,10 +1,10 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function getActiveProvider(s) {
+    function getActiveProvider(s: XdSettings): XdProviderConfig | null {
         if (!s.providers || !s.providers.length) return null;
         const active = s.providers.find(p => p.id === s.activeProviderId);
         if (active && active.kind !== 'search') return active;
@@ -12,7 +12,7 @@
         return s.providers.find(p => p.kind !== 'search') || null;
     }
 
-    function getEffectiveSettings(s) {
+    function getEffectiveSettings(s: XdSettings): XdEffectiveSettings {
         const I = window.xdAnswers._internal;
         const DEFAULT_BASE_URLS = I.DEFAULT_BASE_URLS;
         const API_FORMAT_MAP = I.API_FORMAT_MAP;
@@ -34,7 +34,7 @@
         };
     }
 
-    function getEffectiveSettingsForRun(s, run) {
+    function getEffectiveSettingsForRun(s: XdSettings, run: XdConsensusRun): XdEffectiveSettings {
         const I = window.xdAnswers._internal;
         const DEFAULT_BASE_URLS = I.DEFAULT_BASE_URLS;
         const API_FORMAT_MAP = I.API_FORMAT_MAP;
@@ -51,30 +51,31 @@
             model: run.model || s.model,
             promptPrefix: s.promptPrefix,
             webSearchEnabled: false,
-            calculatorEnabled: s.calculatorEnabled !== false
+            calculatorEnabled: s.calculatorEnabled !== false,
+            themeEngine: s.themeEngine || 'material3'
         };
     }
 
-    window.xdAnswers.loadSettings = async function() {
+    window.xdAnswers.loadSettings = async function(): Promise<XdSettings> {
         const I = window.xdAnswers._internal;
         const DEFAULT_SETTINGS = I.DEFAULT_SETTINGS;
         const DEFAULT_BASE_URLS = I.DEFAULT_BASE_URLS;
 
-        const data = await chrome.storage.local.get('xdAnswers_settings');
-        let s = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+        const data = await chrome.storage.local.get('xdAnswers_settings') as Record<string, unknown>;
+        let s: XdSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
         if (data.xdAnswers_settings) {
             try {
-                const p = JSON.parse(data.xdAnswers_settings);
+                const p = JSON.parse(String(data.xdAnswers_settings));
 
                 // Migration from old flat format
                 if (p.apiFormat && !p.providers) {
-                    const oldDefaults = { openai: 'https://api.openai.com/v1', anthropic: 'https://api.anthropic.com', google: 'https://generativelanguage.googleapis.com' };
+                    const oldDefaults: Record<string, string> = { openai: 'https://api.openai.com/v1', anthropic: 'https://api.anthropic.com', google: 'https://generativelanguage.googleapis.com' };
                     let baseUrl = p.baseUrl || DEFAULT_BASE_URLS[p.apiFormat] || '';
                     if (oldDefaults[p.apiFormat] === baseUrl) {
                         baseUrl = DEFAULT_BASE_URLS[p.apiFormat];
                     }
                     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-                    const providerNames = { openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google (Gemini)' };
+                    const providerNames: Record<string, string> = { openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google (Gemini)' };
                     p.providers = [{
                         id: id,
                         type: p.apiFormat,
@@ -121,8 +122,9 @@
                     s.promptPrefix = DEFAULT_SETTINGS.promptPrefix;
                 }
                 // Migrate silentMode: true/false → string
-                if (typeof s.silentMode === 'boolean') {
-                    s.silentMode = s.silentMode ? 'ghost' : '';
+                const legacySilentMode = (s as { silentMode?: unknown }).silentMode;
+                if (typeof legacySilentMode === 'boolean') {
+                    s.silentMode = legacySilentMode ? 'ghost' : '';
                 }
                 // Migrate: add consensus defaults if missing
                 if (!s.consensus) {

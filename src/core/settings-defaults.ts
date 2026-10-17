@@ -1,12 +1,12 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
     const I = window.xdAnswers._internal;
 
-    const DEFAULT_SETTINGS = {
+    const DEFAULT_SETTINGS: XdSettings = {
         providers: [
             {
                 id: 'unturf-hermes-default',
@@ -79,11 +79,11 @@
         customThemes: []
     };
 
-    const defaultHelperState = {
+    const defaultHelperState: XdHelperState = {
         width: '380px', height: 'auto', maxHeight: '450px',
         bottom: '20px', right: '20px', top: 'auto', left: 'auto'
     };
-    const maximizedHelperState = {
+    const maximizedHelperState: XdHelperState = {
         width: '70vw', height: '70vh', maxHeight: 'none',
         top: '15vh', left: '15vw', bottom: 'auto', right: 'auto'
     };

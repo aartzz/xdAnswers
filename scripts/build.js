@@ -98,7 +98,7 @@ async function bundle(name, files) {
 }
 
 function scriptName(file) {
-    return path.basename(file).replace(/\.js$/, '') + '.js';
+    return path.basename(file).replace(/\.(js|ts)$/, '') + '.js';
 }
 
 // popup.html keeps only the bundled popup.js; the four setup scripts move into the bundle.
@@ -176,8 +176,8 @@ async function main() {
     await bundle('background.js', ['background.js']);
     await bundle('popup.js', [
         'version.js',
-        'src/core/constants.js',
-        'src/core/settings-defaults.js',
+        'src/core/constants.ts',
+        'src/core/settings-defaults.ts',
         'src/ui/i18n.js',
         'popup.js'
     ]);

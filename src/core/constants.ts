@@ -1,12 +1,12 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
     const DEFAULT_SYSTEM_PROMPT = `Ти обираєш правильні відповіді в тестах. УВАЖНО: коли питання супроводжується списком Варіанти: — твоє єдине завдання ОБРАТИ один або кілька пунктів із цього списку.
 
-КРИТИЧНО: НЕ повторюй інструкції і шаблони. НЕ пиши жодних роздумів, ланцюжків думок чи вступів (ніяких "The user asks...", "Here's a thinking process", "I need to select...", "<think>" тощо). Виводь ТІЛЬКИ фінальний результат у форматі полів!
+КРИТИЧНО: НЕ повторюй інструкції і шаблони. НЕ пиши жодних роздумів, ланцюжків думок чи вступів (ніяких "The user asks...", "Here's a thinking process", "I need to select...", " thinking" тощо). Виводь ТІЛЬКИ фінальний результат у форматі полів!
 
 Формат відповіді — суворо поля, кожне з нового рядка:
 answer: <скопіюй точний текст обраного варіанту>
@@ -32,7 +32,7 @@ answer: <скопіюй точний текст вибраного варіан�
 - Мова питання
 - ТІЛЬКИ "answer: ..." — без пояснень`;
 
-    const DEFAULT_BASE_URLS = {
+    const DEFAULT_BASE_URLS: Record<string, string> = {
         openai: 'https://api.openai.com/v1',
         anthropic: 'https://api.anthropic.com/v1',
         google: 'https://generativelanguage.googleapis.com/v1beta',
@@ -58,7 +58,7 @@ answer: <скопіюй точний текст вибраного варіан�
         searxng: 'https://search.mdosch.de'
     };
 
-    const API_FORMAT_MAP = {
+    const API_FORMAT_MAP: Record<string, string> = {
         openai: 'openai', anthropic: 'anthropic', google: 'google',
         deepseek: 'openai', groq: 'openai', openrouter: 'openai',
         cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',

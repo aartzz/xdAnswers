@@ -149,6 +149,15 @@ interface XdHelperState {
     left?: string;
 }
 
+interface XdPositionPreset {
+    top?: string;
+    left?: string;
+    right?: string;
+    bottom?: string;
+    /** Axis to translate by 50% to keep the preset visually centered. */
+    translate?: 'x' | 'y' | 'xy';
+}
+
 interface XdAnswersInternal {
     // Constants and defaults
     DEFAULT_SETTINGS: XdSettings;
@@ -165,7 +174,7 @@ interface XdAnswersInternal {
     getEffectiveSettings(s: XdSettings): XdEffectiveSettings;
     getEffectiveSettingsForRun(s: XdSettings, run: XdConsensusRun): XdEffectiveSettings;
     getVersionString(): string;
-    resolvePositionPreset(preset: string): XdHelperState;
+    resolvePositionPreset(preset: string): XdPositionPreset;
 
     // Markdown
     escapeHTML(value: unknown): string;
@@ -275,15 +284,15 @@ interface XdAnswers {
     streamRequest(
         options: XdStreamRequestOptions,
         onChunk: (chunk: unknown) => void,
-        onDone: (result: unknown) => void,
-        onError: (error: unknown) => void
+        onDone: (result?: unknown) => void,
+        onError: (error: unknown, details?: unknown) => void
     ): () => void;
     addStyle(css: string): void;
     imageToBase64(url: string): Promise<string | null>;
 
     loadSettings(): Promise<XdSettings>;
     renderMarkdown(text: string): string;
-    resolvePositionPreset(preset: string): XdHelperState;
+    resolvePositionPreset(preset: string): XdPositionPreset;
 
     getAnswer(questionData: XdQuestionData, effectiveSettingsOverride?: XdEffectiveSettings, showAnswerOnlyOverride?: boolean): Promise<string>;
     streamAnswer(questionData: XdQuestionData, outerStartTime?: number, overrides?: unknown): Promise<unknown>;

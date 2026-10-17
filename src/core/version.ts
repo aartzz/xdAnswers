@@ -1,8 +1,8 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
     // Version string for UI display
     // _buildVersion is written by scripts/inject-version.js during the build
@@ -20,9 +20,9 @@
 
     // Map a 3x3 grid preset to top/left/bottom/right CSS values.
     // Container is ~380px wide; keep 20px margin from viewport edges.
-    function resolvePositionPreset(preset) {
+    function resolvePositionPreset(preset: string): XdPositionPreset {
         const M = '20px';
-        const presets = {
+        const presets: Record<string, XdPositionPreset> = {
             'top-left':      { top: M,     left: M,    right: 'auto', bottom: 'auto' },
             'top-center':    { top: M,     left: '50%', right: 'auto', bottom: 'auto', translate: 'x' },
             'top-right':     { top: M,     right: M,   left: 'auto',  bottom: 'auto' },

@@ -1,10 +1,13 @@
 (function() {
     'use strict';
 
-    window.xdAnswers = window.xdAnswers || {};
-    window.xdAnswers._internal = window.xdAnswers._internal || {};
+    window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
+    window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    window.xdAnswers.makeRequest = function(options) {
+    type RequestOptions = XdMakeRequestOptions & { _retryCount?: number };
+    type StreamOptions = XdStreamRequestOptions & { _retryCount?: number };
+
+    window.xdAnswers.makeRequest = function(options: RequestOptions): Promise<XdTransportResult> {
         return new Promise((resolve, reject) => {
             let settled = false;
             const timeoutMs = options.timeout || 120000;
@@ -68,8 +71,13 @@
         });
     };
 
-    window.xdAnswers.streamRequest = function(options, onChunk, onDone, onError) {
-        let port;
+    window.xdAnswers.streamRequest = function(
+        options: StreamOptions,
+        onChunk: (chunk: unknown) => void,
+        onDone: (result?: unknown) => void,
+        onError: (error: unknown, details?: unknown) => void
+    ): () => void {
+        let port: chrome.runtime.Port | undefined;
         let finished = false;
         const retryCount = options._retryCount || 0;
         const maxRetries = 3;
@@ -94,12 +102,12 @@
                 else if (msg.type === 'done') {
                     finished = true;
                     onDone();
-                    try { port.disconnect(); } catch(e) {}
+                    try { port?.disconnect(); } catch(e) {}
                 }
                 else if (msg.type === 'error') {
                     finished = true;
                     onError(msg.error, msg.details);
-                    try { port.disconnect(); } catch(e) {}
+                    try { port?.disconnect(); } catch(e) {}
                 }
             });
 
@@ -135,13 +143,13 @@
         };
     };
 
-    window.xdAnswers.addStyle = function(css) {
+    window.xdAnswers.addStyle = function(css: string): void {
         let el = document.getElementById('xdAnswers-styles');
         if (!el) { el = document.createElement('style'); el.id = 'xdAnswers-styles'; document.head.appendChild(el); }
         if (el.textContent !== css) el.textContent = css;
     };
 
-    window.xdAnswers.imageToBase64 = async function(url) {
+    window.xdAnswers.imageToBase64 = async function(url: string): Promise<string | null> {
         try {
             const response = await window.xdAnswers.makeRequest({ method: 'GET', url, responseType: 'blob' });
             if (response?.success && response.data && typeof response.data === 'string' && response.data.startsWith('data:')) {
