@@ -176,7 +176,9 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/vseosvita.js"
+        "src/providers/vseosvita/dom.ts",
+        "src/providers/vseosvita/apply.ts",
+        "src/providers/vseosvita/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
