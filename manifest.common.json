@@ -139,7 +139,9 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
-        "providers/naurok-round.js"
+        "src/providers/naurok-round/dom.ts",
+        "src/providers/naurok-round/apply.ts",
+        "src/providers/naurok-round/main.ts"
       ],
       "run_at": "document_end",
       "all_frames": true
