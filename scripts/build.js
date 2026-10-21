@@ -12,7 +12,7 @@
 //        - per-provider remainder        -> dist/<provider>.js
 //        - single-file blocks (disabler) -> dist/<file>.js
 //   3. bundles background.js, popup.js and the web-accessible page scripts.
-//      The page disabler (dist/disabler.js) is composed from src/core/disabler.ts
+//      The page disabler (dist/disabler.js) is composed from src/core/disabler/page.ts
 //      plus every src/providers/**/disabler.ts so provider-specific page-world
 //      patches ship inside the single injected script.
 //   4. copies static assets (images, lib, popup html/css) into dist
@@ -118,8 +118,8 @@ function blockBundleName(remainder) {
 }
 
 // Provider page-world disabler modules: every src/providers/<...>/disabler.ts.
-// They are bundled together with src/core/disabler.ts into dist/disabler.js
-// (injected by src/core/disabler-inject.ts) and gate themselves on hostname.
+// They are bundled together with src/core/disabler/page.ts into dist/disabler.js
+// (injected by src/core/disabler/disabler-inject.ts) and gate themselves on hostname.
 function providerPageDisablers() {
     const base = path.join(ROOT, 'src', 'providers');
     const found = [];
@@ -220,7 +220,7 @@ async function main() {
                 resources.push(resource);
                 continue;
             }
-            if (resource === 'src/core/disabler.ts') {
+            if (resource === 'src/core/disabler/page.ts') {
                 await bundle('disabler.js', [resource, ...pageDisablerFiles]);
                 resources.push('disabler.js');
                 continue;

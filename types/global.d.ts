@@ -265,6 +265,7 @@ interface XdAnswersInternal {
     getActiveSearchProvider(s: XdSettings): XdProviderConfig | null;
     getEligibleProviders(s: XdSettings): XdProviderConfig[];
     buildWebSearchTool(apiFormat: string): unknown[];
+    searchWithProvider(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string>;
     executeSearch(query: string, count?: number, preferredSource?: string): Promise<string>;
 
     // Calculator
@@ -308,8 +309,18 @@ interface XdAnswersInternal {
     parseAIResponse(text: string): XdParsedResponse;
     renderParsedResponse(parsed: XdParsedResponse): string;
 
+    // AI answer pipeline (src/ai/process/, src/ai/answer/)
+    getProcessElapsed(startTime: number): string;
+    startWaitingStatus(startTime: number): void;
+    buildConsensusTabs(answerContentDiv: HTMLElement, runs: XdConsensusRun[], setActiveTab: (tabIndex: number, shouldUpdateFooter: boolean) => void): void;
+    runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string): Promise<void>;
+    renderSingleResult(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void;
+    executeAnswerTool(name: string, args: Record<string, any>): Promise<string>;
+    answerGoogleFunctionCalls(s: XdEffectiveSettings, body: Record<string, unknown>, parts: any[]): Promise<string>;
+
     // DOM matching / grids
     findOptionElements(): Element[];
+    isHiddenOrDisabled(el: Element | null): boolean;
     normalizeText(t: unknown): string;
     levenshtein(a: string, b: string): number;
     textSimilarity(a: string, b: string): number;
@@ -328,6 +339,10 @@ interface XdAnswersInternal {
     formatDateForMSForms(text: string): string;
     autoSelectAnswer(answerText: string, force?: boolean): void;
     clearOneClickHandlers(): void;
+
+    // Helper window CSS (src/ui/styles/)
+    buildHelperBaseCss(): string;
+    buildHelperContentCss(): string;
 
     /**
      * Per-provider helper namespace filled by split provider modules

@@ -1,74 +1,13 @@
-// src/dom/select.ts
-// Answer highlighting and auto-selection. Extracted from legacy utils.js (lines 1479-1639).
+// src/dom/select/auto-select.ts
+// Clicks or fills the matched answer elements, then saves multiquiz answers.
 (function() {
     'use strict';
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
     window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    function highlightCorrectAnswer(answerText: string): void {
-        const I = window.xdAnswers._internal;
-        // Only highlight when setting is enabled and not in any silent mode
-        if (!window.xdAnswers.settings.highlightCorrect) return;
-        const silentMode = window.xdAnswers.settings.silentMode || '';
-        if (silentMode !== '') return; // silent mode handles its own indicators/title/clipboard
-        // Clear previous highlights first
-        document.querySelectorAll('.xd-highlight-correct').forEach(el => {
-            el.classList.remove('xd-highlight-correct');
-            (el as HTMLElement).style.removeProperty('outline');
-            (el as HTMLElement).style.removeProperty('background-color');
-            (el as HTMLElement).style.removeProperty('border-radius');
-        });
-        const allOptionElements = I.findOptionElements();
-        const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
-        const optionElements = scopedContainer
-            ? allOptionElements.filter(el => scopedContainer.contains(el))
-            : allOptionElements;
-        const elements = I.matchAnswerToOptions(answerText, optionElements);
-        for (const el of elements) {
-            const target = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
-            target.classList.add('xd-highlight-correct');
-            target.style.setProperty('outline', '3px solid #22c55e', 'important');
-            target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');
-            target.style.setProperty('border-radius', '4px', 'important');
-        }
-    }
-
-    function formatDateForMSForms(text: string): string {
-        if (!text) return text;
-        text = text.trim();
-        // Already in dd.MM.yyyy format
-        if (/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(text)) return text;
-        // ISO: yyyy-MM-dd → dd.MM.yyyy
-        const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
-        // dd/mm/yyyy or dd-mm-yyyy where day > 12 (unambiguous day-first)
-        const dmy = text.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-        if (dmy) {
-            const a = parseInt(dmy[1]), b = parseInt(dmy[2]);
-            if (a > 12 && b <= 12) {
-                // a must be day, b is month
-                return `${String(a).padStart(2,'0')}.${String(b).padStart(2,'0')}.${dmy[3]}`;
-            }
-            if (b > 12 && a <= 12) {
-                // b must be day, a is month (US mm/dd/yyyy)
-                return `${String(b).padStart(2,'0')}.${String(a).padStart(2,'0')}.${dmy[3]}`;
-            }
-        }
-        // Try native Date parse for text formats ("January 15, 2024", etc.)
-        try {
-            const date = new Date(text);
-            if (!isNaN(date.getTime()) && date.getFullYear() > 1900) {
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}.${month}.${year}`;
-            }
-        } catch (e) {}
-        return text;
-    }
+    const I = window.xdAnswers._internal;
 
     function autoSelectAnswer(answerText: string, force?: boolean): void {
-        const I = window.xdAnswers._internal;
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
         const allOptionElements = I.findOptionElements();
         const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
@@ -169,8 +108,5 @@
         }, window.xdAnswers.settings.autoAnswerCooldown);
     }
 
-    // Export to _internal for cross-file access
-    window.xdAnswers._internal.highlightCorrectAnswer = highlightCorrectAnswer;
-    window.xdAnswers._internal.formatDateForMSForms = formatDateForMSForms;
-    window.xdAnswers._internal.autoSelectAnswer = autoSelectAnswer;
+    I.autoSelectAnswer = autoSelectAnswer;
 })();

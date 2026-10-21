@@ -1,8 +1,11 @@
+// src/ai/search/adapters.ts
+// Per-provider search HTTP adapters that normalize results to a shared JSON shape.
 (function() {
     'use strict';
 
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
     window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
+    const I = window.xdAnswers._internal;
 
     interface SearchResultItem {
         title: string;
@@ -21,93 +24,6 @@
         knowledge?: SearchKnowledge;
         peopleAlsoAsk?: Array<{ title: string; snippet: string }>;
         answerBox?: string;
-    }
-
-    function getEligibleProviders(s: XdSettings): XdProviderConfig[] {
-        if (!s.providers) return [];
-        return s.providers.filter(function(p) {
-            return p.kind === 'search' && (p.apiKey || p.type === 'searxng' || p.type === 'exa');
-        });
-    }
-
-    function getActiveSearchProvider(s: XdSettings): XdProviderConfig | null {
-        var all = getEligibleProviders(s);
-        return all.length > 0 ? all[0] : null;
-    }
-
-    function findProviderBySource(s: XdSettings, source?: string | null): XdProviderConfig | null {
-        var all = getEligibleProviders(s);
-        if (!source) return all.length > 0 ? all[0] : null;
-        var src = source.toLowerCase().trim();
-        var match = all.find(function(p) {
-            var name = (p.name || '').toLowerCase();
-            var type = (p.type || '').toLowerCase();
-            return name.indexOf(src) !== -1 || type.indexOf(src) !== -1;
-        });
-        return match || (all.length > 0 ? all[0] : null);
-    }
-
-    function buildWebSearchTool(apiFormat: string): unknown[] {
-        var desc = 'Search the web for current information. Use this when you need up-to-date facts, references, or details that may not be in your training data. Call this before answering if you are unsure about something.';
-        var params = {
-            type: 'object',
-            properties: {
-                query: { type: 'string', description: 'The search query to look up on the web' },
-                source: { type: 'string', description: 'Optional: which search provider to use (SearXNG, Serper, LangSearch, etc.). Leave empty to auto-select.' }
-            },
-            required: ['query'],
-            additionalProperties: false
-        };
-
-        if (apiFormat === 'openai') {
-            return [{ type: 'function', function: { name: 'web_search', description: desc, parameters: params, strict: true } }];
-        }
-        if (apiFormat === 'anthropic') {
-            return [{ name: 'web_search', description: desc, input_schema: params }];
-        }
-        if (apiFormat === 'google') {
-            return [{ function_declarations: [{ name: 'web_search', description: desc, parameters: params }] }];
-        }
-        return [];
-    }
-
-    async function executeSearch(query: string, count?: number, preferredSource?: string | null): Promise<string> {
-        var DEFAULT_BASE_URLS = window.xdAnswers._internal.DEFAULT_BASE_URLS;
-        var s: XdSettings = window.xdAnswers.settings || ({} as XdSettings);
-        var sp = preferredSource
-            ? findProviderBySource(s, preferredSource)
-            : getActiveSearchProvider(s);
-
-        if (!sp) throw new Error('No search provider configured');
-
-        var num = Math.min(Math.max(count || 5, 1), 10);
-        var lastError: unknown = null;
-
-        // Try the requested provider first; on failure, fall through to others
-        var providers = getEligibleProviders(s);
-
-        // If a specific source was requested, start with it; otherwise start from beginning
-        var startIdx = 0;
-        if (preferredSource && sp) {
-            startIdx = providers.indexOf(sp);
-            if (startIdx < 0) startIdx = 0;
-        }
-
-        for (var i = startIdx; i < providers.length; i++) {
-            var p = providers[i];
-            try {
-                console.log('[xdAnswers] executeSearch:', p.type, '(' + p.name + ')', '| query="' + query + '" | count=' + num);
-                var result = await searchWithProvider(p, query, num, DEFAULT_BASE_URLS);
-                return result;
-            } catch (e) {
-                var errMsg = e instanceof Error ? e.message : String(e);
-                console.warn('[xdAnswers] Search provider ' + p.name + ' (' + p.type + ') failed:', errMsg);
-                lastError = e;
-                // Continue to next provider
-            }
-        }
-
-        throw lastError || new Error('All search providers failed');
     }
 
     async function searchWithProvider(sp: XdProviderConfig, query: string, num: number, DEFAULT_BASE_URLS: Record<string, string>): Promise<string> {
@@ -297,8 +213,5 @@
         return JSON.stringify(normalized);
     }
 
-    window.xdAnswers._internal.getActiveSearchProvider = getActiveSearchProvider;
-    window.xdAnswers._internal.getEligibleProviders = getEligibleProviders;
-    window.xdAnswers._internal.buildWebSearchTool = buildWebSearchTool;
-    window.xdAnswers._internal.executeSearch = executeSearch;
+    I.searchWithProvider = searchWithProvider;
 })();
