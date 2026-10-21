@@ -287,6 +287,7 @@ interface XdAnswersInternal {
     buildNonStreamUrl(s: XdEffectiveSettings): string;
     buildHeaders(s: XdEffectiveSettings): Record<string, string>;
     buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown;
+    isOpenCodeFreeModel(s: XdEffectiveSettings): boolean;
 
     // Streaming and parsing
     parseSSEChunks(rawText: string, apiFormat: string): XdSseEvent[];

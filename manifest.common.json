@@ -8,11 +8,21 @@
     "clipboardWrite",
     "tabs",
     "webNavigation",
-    "alarms"
+    "alarms",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "opencode_identity",
+        "enabled": true,
+        "path": "rules/opencode-identity.json"
+      }
+    ]
+  },
   "web_accessible_resources": [
     {
       "resources": [

@@ -8,6 +8,9 @@
     const I = window.xdAnswers._internal;
 
     I.executeAnswerTool = async function(name: string, args: Record<string, any>): Promise<string> {
+        if (['bash', 'edit', 'glob', 'grep', 'read'].includes(name)) {
+            return JSON.stringify({ error: 'This tool is not available in this client. Answer from the question only.' });
+        }
         const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(name);
         if (isCalc) {
             const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
