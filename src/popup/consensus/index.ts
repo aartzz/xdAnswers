@@ -1,10 +1,11 @@
-// src/popup/consensus.ts
+// src/popup/consensus/index.ts
 // @ts-nocheck — popup UI module. Consensus runs UI and per-run model selectors.
-import { autoSave } from './settings';
-import { escapeHTML } from './utils';
-import { fetchModelsForProvider, formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from './models';
-import { modelsDevCache, providerModelsCache, settings, uiElements } from './state';
-import { t } from './i18n';
+import { autoSave } from '../core/settings';
+import { escapeHTML } from '../core/utils';
+import { fetchModelsForProvider, formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from '../models';
+import { modelsDevCache, providerModelsCache, settings, uiElements } from '../core/state';
+import { t } from '../core/i18n';
+
 
 export const consensusModelSaveTimers = {};
 

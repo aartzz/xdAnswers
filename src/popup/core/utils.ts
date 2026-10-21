@@ -1,4 +1,4 @@
-// src/popup/utils.ts
+// src/popup/core/utils.ts
 // @ts-nocheck — popup UI module. Small helpers shared by the popup modules.
 
 export function escapeHTML(value) {

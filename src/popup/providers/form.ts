@@ -1,11 +1,11 @@
 // @ts-nocheck — popup UI module. Provider configuration form and M3 palette.
-import { autoSave } from './settings';
-import { escapeHTML, generateId } from './utils';
-import { fetchModels, renderModelList } from './models';
-import { setAllModels, settings, uiElements } from './state';
-import { t } from './i18n';
-import { API_PROVIDERS, getApiProviderMeta } from './providers-data';
-import { renderActiveProviderSelector, renderProvidersTab } from './providers-render';
+import { autoSave } from '../core/settings';
+import { escapeHTML, generateId } from '../core/utils';
+import { settings, uiElements } from '../core/state';
+import { t } from '../core/i18n';
+import { API_PROVIDERS, getApiProviderMeta } from './data';
+import { renderActiveProviderSelector, renderProvidersTab } from './render';
+
 
 export function showProviderForm(existing, isOther, isSearch) {
     const container = uiElements.providersContainer;

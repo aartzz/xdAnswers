@@ -1,7 +1,8 @@
-// src/popup/navigation.ts
+// src/popup/core/navigation.ts
 // @ts-nocheck — popup UI module. AOSP-style settings search and category navigation.
 import { settings } from './state';
 import { t } from './i18n';
+
 
 export function initAospSettingsNavigation() {
     const catView = document.getElementById('settings-categories-view');

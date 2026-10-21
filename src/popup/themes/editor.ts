@@ -1,9 +1,9 @@
 // @ts-nocheck — popup UI module. Custom theme editor, hex normalisation and colour input wiring.
-import { M3_PALETTE_COLORS } from './providers';
-import { autoSave, saveSettingsAndNotify } from './settings';
-import { initM3Selects, populateUI } from './ui';
-import { settings, uiElements } from './state';
-import { t } from './i18n';
+import { saveSettingsAndNotify } from '../core/settings';
+import { populateUI } from '../core/ui';
+import { settings, uiElements } from '../core/state';
+import { t } from '../core/i18n';
+
 
 export function openThemeEditor() {
     const el = uiElements;

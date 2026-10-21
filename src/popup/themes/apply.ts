@@ -1,10 +1,9 @@
 // @ts-nocheck — popup UI module. Preset themes, colour helpers and applying the theme to the popup.
-import { M3_PALETTE_COLORS } from './providers';
-import { autoSave, saveSettingsAndNotify } from './settings';
-import { initM3Selects, populateUI } from './ui';
-import { settings, uiElements } from './state';
-import { t } from './i18n';
-import { renderThemeSettings } from './themes-settings';
+import { initM3Selects } from '../core/ui';
+import { settings } from '../core/state';
+import { t } from '../core/i18n';
+import { renderThemeSettings } from './panel';
+
 
 export const PREDEFINED_THEMES = {
     'Dark': { borderColor: '#cccccc', contentColor: '#1c1c1c', headerColor: '#333333', textColor: '#e0e0e0' },

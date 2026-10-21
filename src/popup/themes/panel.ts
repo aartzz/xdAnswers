@@ -1,10 +1,10 @@
 // @ts-nocheck — popup UI module. Theme settings tab and inline custom colour picker.
-import { M3_PALETTE_COLORS } from './providers';
-import { autoSave, saveSettingsAndNotify } from './settings';
-import { initM3Selects, populateUI } from './ui';
-import { settings, uiElements } from './state';
-import { t } from './i18n';
-import { applyThemeToPopup, isColorDark } from './themes-apply';
+import { M3_PALETTE_COLORS } from '../providers';
+import { autoSave } from '../core/settings';
+import { settings } from '../core/state';
+import { t } from '../core/i18n';
+import { applyThemeToPopup, isColorDark } from './apply';
+
 
 export function renderThemeSettings() {
     const c = settings.customization || {};

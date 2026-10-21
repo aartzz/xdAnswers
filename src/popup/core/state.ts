@@ -1,4 +1,4 @@
-// src/popup/state.ts
+// src/popup/core/state.ts
 // @ts-nocheck — shared mutable popup state (settings, DOM refs, caches).
 
 export let settings: any;

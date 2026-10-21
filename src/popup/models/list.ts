@@ -1,10 +1,11 @@
 // @ts-nocheck — popup UI module. Model list rendering.
-import { PROVIDER_ICON_MAP, getActiveProvider } from './providers';
-import { allModels, modelsDevCache, providerModelsCache, setAllModels, setModelsDevCache, settings, uiElements } from './state';
-import { autoSave } from './settings';
-import { escapeHTML, makeRequest } from './utils';
-import { t } from './i18n';
-import { formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from './models-meta';
+import { getActiveProvider } from '../providers';
+import { allModels, modelsDevCache, settings } from '../core/state';
+import { autoSave } from '../core/settings';
+import { escapeHTML } from '../core/utils';
+import { t } from '../core/i18n';
+import { formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from './meta';
+
 
 export function renderModelList() {
     const list = document.getElementById('model-list');

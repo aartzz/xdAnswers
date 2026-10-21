@@ -1,11 +1,10 @@
 // @ts-nocheck — popup UI module. Model list normalization and provider model fetching.
-import { PROVIDER_ICON_MAP, getActiveProvider } from './providers';
-import { allModels, modelsDevCache, providerModelsCache, setAllModels, setModelsDevCache, settings, uiElements } from './state';
-import { autoSave } from './settings';
-import { escapeHTML, makeRequest } from './utils';
-import { t } from './i18n';
-import { NON_CHAT_TYPES } from './models-meta';
-import { renderModelList } from './models-list';
+import { getActiveProvider } from '../providers';
+import { allModels, providerModelsCache, setAllModels, settings, uiElements } from '../core/state';
+import { makeRequest } from '../core/utils';
+import { NON_CHAT_TYPES } from './meta';
+import { renderModelList } from './list';
+
 
 export function processModels(rawModels, format) {
     let models;

@@ -1,11 +1,12 @@
 // @ts-nocheck — popup UI module. Provider selector, providers tab and provider cards.
-import { autoSave } from './settings';
-import { escapeHTML, generateId } from './utils';
-import { fetchModels, renderModelList } from './models';
-import { setAllModels, settings, uiElements } from './state';
-import { t } from './i18n';
-import { getActiveProvider, getApiProviderMeta } from './providers-data';
-import { showProviderForm } from './providers-form';
+import { autoSave } from '../core/settings';
+import { escapeHTML } from '../core/utils';
+import { fetchModels, renderModelList } from '../models';
+import { setAllModels, settings, uiElements } from '../core/state';
+import { t } from '../core/i18n';
+import { getActiveProvider, getApiProviderMeta } from './data';
+import { showProviderForm } from './form';
+
 
 export function renderActiveProviderSelector() {
     const trigger = uiElements.activeProviderTrigger;

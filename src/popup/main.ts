@@ -1,16 +1,17 @@
 // src/popup/main.ts
 // @ts-nocheck — popup UI module. Popup entry point: boot, initial data loads and render.
+import { allModels, modelsDevCache, providerModelsCache, setSettings, settings, uiElements } from './core/state';
+import { attachEventListeners } from './core/events';
+import { fetchModels, fetchModelsForProvider, loadModelsDevCache, renderModelList } from './models';
+import { initAospSettingsNavigation } from './core/navigation';
+import { loadSettings } from './core/settings';
+import { populateUI } from './core/ui';
+import { renderConsensusRuns } from './consensus';
+
 import '../../version.js';
 import '../core/constants';
 import '../core/settings-defaults';
 import '../ui/i18n';
-import { allModels, modelsDevCache, providerModelsCache, setSettings, settings, uiElements } from './state';
-import { attachEventListeners } from './events';
-import { fetchModels, fetchModelsForProvider, loadModelsDevCache, renderModelList } from './models';
-import { initAospSettingsNavigation } from './navigation';
-import { loadSettings } from './settings';
-import { populateUI } from './ui';
-import { renderConsensusRuns } from './consensus';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Populate version string in popup header

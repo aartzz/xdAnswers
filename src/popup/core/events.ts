@@ -1,14 +1,15 @@
-// src/popup/events.ts
+// src/popup/core/events.ts
 // @ts-nocheck — popup UI module. Event wiring for every popup control.
 import { applyLanguage, t } from './i18n';
-import { applyThemeToPopup, closeThemeEditor, normaliseHex, populateThemesGrid, renderThemeSettings, saveCustomTheme } from './themes';
+import { applyThemeToPopup, closeThemeEditor, normaliseHex, populateThemesGrid, renderThemeSettings, saveCustomTheme } from '../themes';
 import { autoSave } from './settings';
-import { fetchModels, renderModelList } from './models';
+import { fetchModels, renderModelList } from '../models';
 import { generateId } from './utils';
 import { initM3Selects } from './ui';
-import { renderConsensusRuns } from './consensus';
-import { renderProvidersTab } from './providers';
+import { renderConsensusRuns } from '../consensus';
+import { renderProvidersTab } from '../providers';
 import { settings, uiElements } from './state';
+
 
 export function attachEventListeners() {
     const el = uiElements;

@@ -1,9 +1,8 @@
 // @ts-nocheck — popup UI module. Models.dev metadata, model name formatting and icons.
-import { PROVIDER_ICON_MAP, getActiveProvider } from './providers';
-import { allModels, modelsDevCache, providerModelsCache, setAllModels, setModelsDevCache, settings, uiElements } from './state';
-import { autoSave } from './settings';
-import { escapeHTML, makeRequest } from './utils';
-import { t } from './i18n';
+import { PROVIDER_ICON_MAP } from '../providers';
+import { modelsDevCache, setModelsDevCache } from '../core/state';
+import { t } from '../core/i18n';
+
 
 export const NON_CHAT_TYPES = new Set(['embedding', 'rerank', 'audio', 'image', 'video', 'tts', 'stt', 'speech']);
 

@@ -1,11 +1,12 @@
-// src/popup/ui.ts
+// src/popup/core/ui.ts
 // @ts-nocheck — popup UI module. Beer CSS select widgets and the main populateUI() pass.
 import { applyLanguage } from './i18n';
-import { applyThemeToPopup, populateThemesGrid } from './themes';
-import { renderActiveProviderSelector, renderProvidersTab } from './providers';
-import { renderConsensusRuns } from './consensus';
-import { renderModelList } from './models';
+import { applyThemeToPopup, populateThemesGrid } from '../themes';
+import { renderActiveProviderSelector, renderProvidersTab } from '../providers';
+import { renderConsensusRuns } from '../consensus';
+import { renderModelList } from '../models';
 import { settings, uiElements } from './state';
+
 
 export function initM3Selects() {
     const isM3 = (settings.themeEngine || 'material3') !== 'legacy';

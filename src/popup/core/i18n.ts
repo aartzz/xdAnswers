@@ -1,6 +1,7 @@
-// src/popup/i18n.ts
+// src/popup/core/i18n.ts
 // @ts-nocheck — popup UI module. Popup translations lookup and applyLanguage() DOM pass.
 import { settings } from './state';
+
 
 export function t(key) {
     const I = window.xdAnswers._internal;

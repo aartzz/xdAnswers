@@ -1,9 +1,4 @@
 // @ts-nocheck — popup UI module. Provider catalogue, icon map and active provider lookup.
-import { autoSave } from './settings';
-import { escapeHTML, generateId } from './utils';
-import { fetchModels, renderModelList } from './models';
-import { setAllModels, settings, uiElements } from './state';
-import { t } from './i18n';
 
 export const API_PROVIDERS = [
     { id: 'openai', name: 'OpenAI', hint: 'OpenAI API', logo: 'openai' },

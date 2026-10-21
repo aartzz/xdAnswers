@@ -1,8 +1,9 @@
-// src/popup/settings.ts
+// src/popup/core/settings.ts
 // @ts-nocheck — popup UI module. Settings load/save and autoSave().
 import { generateId } from './utils';
-import { getApiProviderMeta } from './providers';
+import { getApiProviderMeta } from '../providers';
 import { settings, uiElements } from './state';
+
 
 export async function loadSettings() {
     const data = await chrome.storage.local.get('xdAnswers_settings');
