@@ -109,6 +109,7 @@ interface XdSettings {
 }
 
 interface XdEffectiveSettings {
+    type?: string;
     apiFormat: string;
     baseUrl: string;
     apiKey: string;

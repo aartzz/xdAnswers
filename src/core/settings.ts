@@ -19,10 +19,11 @@
         const getActiveSearchProvider = I.getActiveSearchProvider;
 
         const active = getActiveProvider(s);
-        if (!active) return { apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix, webSearchEnabled: s.webSearchEnabled || false, calculatorEnabled: s.calculatorEnabled !== false, themeEngine: s.themeEngine || 'material3' };
+        if (!active) return { type: 'openai', apiFormat: 'openai', baseUrl: DEFAULT_BASE_URLS.openai, apiKey: '', model: s.model, promptPrefix: s.promptPrefix, webSearchEnabled: s.webSearchEnabled || false, calculatorEnabled: s.calculatorEnabled !== false, themeEngine: s.themeEngine || 'material3' };
         const apiFormat = API_FORMAT_MAP[active.type] || (active.type === 'other' ? 'openai' : active.type);
         const baseUrl = active.baseUrl || DEFAULT_BASE_URLS[active.type] || DEFAULT_BASE_URLS.openai;
         return {
+            type: active.type,
             apiFormat: apiFormat,
             baseUrl: baseUrl,
             apiKey: active.apiKey,
@@ -45,6 +46,7 @@
         const apiFormat = API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
         const baseUrl = provider.baseUrl || DEFAULT_BASE_URLS[provider.type] || DEFAULT_BASE_URLS.openai;
         return {
+            type: provider.type,
             apiFormat: apiFormat,
             baseUrl: baseUrl,
             apiKey: provider.apiKey,

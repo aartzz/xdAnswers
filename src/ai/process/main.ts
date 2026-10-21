@@ -47,6 +47,10 @@
             try {
                 result = await window.xdAnswers.streamAnswer(questionData, startTime);
             } catch (streamErr) {
+                const s = I.getEffectiveSettings(window.xdAnswers.settings);
+                if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) {
+                    throw streamErr;
+                }
                 console.warn('xdAnswers: Streaming failed, falling back:', (streamErr as Error).message);
                 const answer = await window.xdAnswers.getAnswer(questionData);
                 result = { content: answer, thinking: '' };
