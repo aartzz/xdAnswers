@@ -45,19 +45,6 @@
         return n === 'calculator' || n === 'calculate' || n === 'math_eval' || n === 'latex_calculator' || n === 'latex_eval';
     }
 
-    function buildOpenCodeCoreTools(): unknown[] {
-        // Zen's free-tier gate reads names only (schemas/descriptions are ignored).
-        // These are stubs so the real calculator tool still works below.
-        return ['bash', 'edit', 'glob', 'grep', 'read'].map(name => ({
-            type: 'function',
-            function: {
-                name,
-                description: 'OpenCode internal tool. Not available in this client; do not call.',
-                parameters: { type: 'object', properties: {}, additionalProperties: true }
-            }
-        }));
-    }
-
     function buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[] {
         const tools: unknown[] = [];
         const I = window.xdAnswers._internal;
@@ -65,7 +52,6 @@
         const calculator = s.calculatorEnabled !== false;
 
         if (apiFormat === 'openai') {
-            if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) tools.push(...buildOpenCodeCoreTools());
             if (webSearch && I.buildWebSearchTool) tools.push(...I.buildWebSearchTool('openai'));
             if (calculator) tools.push(...buildCalculatorTool('openai'));
             return tools;

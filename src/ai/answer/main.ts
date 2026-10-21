@@ -20,9 +20,6 @@
         const buildHeaders = I.buildHeaders;
 
         const s = effectiveSettingsOverride || getEffectiveSettings(window.xdAnswers.settings);
-        if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) {
-            throw new Error('OpenCode Zen free models only support streaming requests');
-        }
         const { systemPrompt, userMsg } = buildMessages(questionData, showAnswerOnlyOverride);
         const images = questionData.base64Images || [];
 

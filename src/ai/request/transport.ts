@@ -20,38 +20,9 @@
         throw new Error('Unknown API format: ' + s.apiFormat);
     }
 
-    function isOpenCodeEndpoint(s: XdEffectiveSettings): boolean {
-        const providerType = (s as XdEffectiveSettings & { type?: string }).type;
-        return !!(s.baseUrl && s.baseUrl.includes('opencode.ai')) ||
-            providerType === 'opencode-zen' ||
-            providerType === 'opencode-go';
-    }
-
-    function isOpenCodeFreeModel(s: XdEffectiveSettings): boolean {
-        if (!isOpenCodeEndpoint(s) || s.apiFormat !== 'openai') return false;
-        const model = String(s.model || '').toLowerCase();
-        // big-pickle is the default free Zen model; the rest carry a -free suffix.
-        return model.includes('big-pickle') || /(?:^|[-_/])free(?:$|[-_/])/.test(model);
-    }
-
-    let opencodeSession = '';
-    function opencodeSessionId(): string {
-        if (opencodeSession) return opencodeSession;
-        // Zen free-tier gate: ses_<12 lowercase hex><14 alphanumeric>.
-        const hex = '0123456789abcdef';
-        const alnum = 'abcdefghijklmnopqrstuvwxyz0123456789';
-        const bytes = new Uint8Array(26);
-        if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
-        else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-        let id = 'ses_';
-        for (let i = 0; i < 12; i++) id += hex[bytes[i] & 15];
-        for (let i = 12; i < bytes.length; i++) id += alnum[bytes[i] % alnum.length];
-        opencodeSession = id;
-        return id;
-    }
-
     function buildHeaders(s: XdEffectiveSettings): Record<string, string> {
         const h: Record<string, string> = { 'Content-Type': 'application/json' };
+        const providerType = (s as XdEffectiveSettings & { type?: string }).type;
         if (s.apiFormat === 'openai') {
             h['Authorization'] = 'Bearer ' + s.apiKey;
             // OpenRouter needs additional headers
@@ -60,8 +31,8 @@
                 h['X-Title'] = 'xdAnswers';
             }
             // OpenCode Zen / Go endpoints require session headers
-            if (isOpenCodeEndpoint(s)) {
-                const sessionId = opencodeSessionId();
+            if (s.baseUrl && (s.baseUrl.includes('opencode.ai') || providerType === 'opencode-zen' || providerType === 'opencode-go')) {
+                const sessionId = 'ses_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 h['x-session-id'] = sessionId;
                 h['x-opencode-session'] = sessionId;
                 h['x-opencode-client'] = 'opencode';
@@ -72,8 +43,8 @@
             h['x-api-key'] = s.apiKey;
             h['anthropic-version'] = '2023-06-01';
             h['anthropic-dangerous-direct-browser-access'] = 'true';
-            if (isOpenCodeEndpoint(s)) {
-                const sessionId = opencodeSessionId();
+            if (s.baseUrl && (s.baseUrl.includes('opencode.ai') || providerType === 'opencode-zen' || providerType === 'opencode-go')) {
+                const sessionId = 'ses_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
                 h['x-session-id'] = sessionId;
                 h['x-opencode-session'] = sessionId;
                 h['x-opencode-client'] = 'opencode';
@@ -127,5 +98,4 @@
     I.buildNonStreamUrl = buildNonStreamUrl;
     I.buildHeaders = buildHeaders;
     I.buildRequestBody = buildRequestBody;
-    I.isOpenCodeFreeModel = isOpenCodeFreeModel;
 })();
