@@ -181,6 +181,7 @@
         "src/ui/draggable.ts",
         "src/ui/styles.ts",
         "src/ui/helper.ts",
+        "src/providers/vseosvita/premium.ts",
         "src/providers/vseosvita/dom.ts",
         "src/providers/vseosvita/apply.ts",
         "src/providers/vseosvita/main.ts"
