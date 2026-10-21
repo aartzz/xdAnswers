@@ -269,6 +269,10 @@ interface XdAnswersInternal {
 
     // Calculator
     MATH_SCOPE: Record<string, unknown>;
+    ALLOWED_TOKENS: Set<string>;
+    isSafeExpression(expr: string, allowedVars?: string[]): boolean;
+    tokenizeMath(expr: string): unknown[];
+    compileExpression(expr: string, variableNames?: string[]): (env: Record<string, number>) => number;
     evaluateMath(rawExpression: string): XdMathEvalResult;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
