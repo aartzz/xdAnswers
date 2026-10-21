@@ -294,6 +294,12 @@ interface XdAnswersInternal {
     parseSSEChunks(rawText: string, apiFormat: string): XdSseEvent[];
     PROSE_THINKING_ANYWHERE_REGEX: RegExp;
     PROSE_TRANSITION_REGEX: RegExp;
+    extractInlineThinking(
+        st: { rawContentBuffer: string; inInlineThinking: boolean; fullContent: string; fullThinking: string; thinkingStarted: boolean; thinkingDone: boolean },
+        newText: string,
+        ensureThinkingUI: () => void,
+        updateStreamUI: () => void
+    ): void;
     extractToolExpression(args: Record<string, any>): string;
     extractToolQuery(args: Record<string, any>): string;
     thinkingBlockHtml(elapsed: string, fullThinking: string, expanded: boolean): string;
@@ -384,6 +390,7 @@ interface XdAnswers {
     _autoSelecting?: boolean;
     _answerContainer?: HTMLElement | null;
     _statusInterval?: number | null;
+    _streamTimerInterval?: number | null;
     _thinkingExpanded?: boolean;
 
     Draggable: {

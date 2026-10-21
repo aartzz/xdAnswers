@@ -57,6 +57,7 @@
             }
 
             if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
+            if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
 
             const elapsed = I.getProcessElapsed(startTime);
             const parsed = I.parseAIResponse(result.content);
@@ -90,11 +91,14 @@
             }
         } catch (error) {
             if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
+            if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
             if (!isSilent && window.xdAnswers.answerContentDiv) {
                 const errHtml = I.formatError((error as Error).message);
                 window.xdAnswers.answerContentDiv.innerHTML = errHtml;
             }
         } finally {
+            if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
+            if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
             window.xdAnswers.isProcessingAI = false;
             window.xdAnswers._oneClickContainer = null;
         }

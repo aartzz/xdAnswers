@@ -133,6 +133,8 @@ import type { NaurokDomApi } from './dom';
 
     function initNaurok(): void {
         let lastStateHash = "";
+        let currentSolvingText = "";
+        let isSolvingNaurok = false;
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
         // test-beta can spend a long time loading question images before the AI
@@ -149,6 +151,7 @@ import type { NaurokDomApi } from './dom';
 
         window.xdAnswers.onRefresh = () => {
             lastStateHash = "";
+            currentSolvingText = "";
             // Skip debounce for user-initiated refresh — question is already rendered
             if (debounceTimer) clearTimeout(debounceTimer);
             checkQuestion(true);
@@ -161,7 +164,7 @@ import type { NaurokDomApi } from './dom';
         }
 
         function checkQuestion(skipDelay?: boolean): void {
-            if (window.xdAnswers.isProcessingAI) return;
+            if (isSolvingNaurok || window.xdAnswers.isProcessingAI) return;
 
             const isBeta = dom.isBetaTest();
 
@@ -172,6 +175,11 @@ import type { NaurokDomApi } from './dom';
             // 1. Текст запитання + варіанти + картинки (див. ./dom.ts)
             const state = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
             if (!state) return;
+
+            const normalizedQuestionText = (state.questionText || state.validImages.join(',')).trim();
+            if (!skipDelay && normalizedQuestionText && normalizedQuestionText === currentSolvingText) {
+                return;
+            }
 
             // 2. Створюємо підпис стану (текст + варіанти + к-сть картинок + їхні URL).
             // Для test-beta додаємо ключ питання: однаковий текст у сусідніх
@@ -220,10 +228,8 @@ import type { NaurokDomApi } from './dom';
                     window.xdAnswers.setupOneClickHandler(container as HTMLElement, getQuestionDataFn, false);
                 }
             } else {
-                // Show status immediately so UI does not hang on 'Waiting for question...' while loading images
-                if (!window.xdAnswers.settings.silentMode) {
-                    I.startWaitingStatus(Date.now());
-                }
+                currentSolvingText = normalizedQuestionText;
+                isSolvingNaurok = true;
 
                 // Normal: auto-process after delay (skip for user-initiated refresh or test-beta)
                 const processFn = () => {
@@ -232,6 +238,8 @@ import type { NaurokDomApi } from './dom';
                         if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
                             console.log('[xdAnswers/naurok] Question changed before AI request, re-evaluating');
                             lastStateHash = "";
+                            currentSolvingText = "";
+                            isSolvingNaurok = false;
                             checkQuestion(true);
                             return;
                         }
@@ -255,12 +263,18 @@ import type { NaurokDomApi } from './dom';
                             if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
                                 console.log('[xdAnswers/naurok] Question changed during image load, re-evaluating');
                                 lastStateHash = "";
+                                currentSolvingText = "";
+                                isSolvingNaurok = false;
                                 checkQuestion(true);
                                 return;
                             }
                         }
                         questionData.base64Images = images.filter((img): img is string => img !== null);
-                        window.xdAnswers.processQuestion(questionData);
+                        window.xdAnswers.processQuestion(questionData).finally(() => {
+                            isSolvingNaurok = false;
+                        });
+                    }).catch(() => {
+                        isSolvingNaurok = false;
                     });
                 };
 

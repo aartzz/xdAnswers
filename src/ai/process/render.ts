@@ -8,6 +8,8 @@
     const I = window.xdAnswers._internal;
 
     I.renderSingleResult = function(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void {
+        if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
+        if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
         if (!window.xdAnswers.answerContentDiv) return;
         let html = '<div class="xd-elapsed"><span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed + '</div>';
         // Update footer elapsed too

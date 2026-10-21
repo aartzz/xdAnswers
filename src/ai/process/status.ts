@@ -14,6 +14,14 @@
     };
 
     I.startWaitingStatus = function(startTime: number): void {
+        if (window.xdAnswers._statusInterval) {
+            clearInterval(window.xdAnswers._statusInterval);
+            window.xdAnswers._statusInterval = null;
+        }
+        if (window.xdAnswers._streamTimerInterval) {
+            clearInterval(window.xdAnswers._streamTimerInterval);
+            window.xdAnswers._streamTimerInterval = null;
+        }
         const answerContentDiv = window.xdAnswers.answerContentDiv;
         if (!answerContentDiv) return;
         answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
@@ -29,6 +37,6 @@
             const s = window.xdAnswers.answerContentDiv?.querySelector('.xd-status');
             if (s) s.innerHTML = '<span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_empty</span> Waiting for response...';
         }, 1000);
-        window.xdAnswers._statusInterval = statusInterval;
+        window.xdAnswers._statusInterval = statusInterval as unknown as number;
     };
 })();

@@ -110,8 +110,12 @@
 
             // Single timer that always updates footer + thinking timer (stops thinking timer when thinking ends)
             function startStreamTimer() {
-                if (st.streamTimerInterval) return;
-                st.streamTimerInterval = setInterval(() => {
+                stopStreamTimer();
+                if (window.xdAnswers._statusInterval) {
+                    clearInterval(window.xdAnswers._statusInterval);
+                    window.xdAnswers._statusInterval = null;
+                }
+                const intervalId = setInterval(() => {
                     const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
                     if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + getElapsed();
                     // Only update thinking timer while thinking is still in progress
@@ -120,10 +124,13 @@
                         if (thinkingTimer) thinkingTimer.textContent = '(' + getElapsed() + ')';
                     }
                 }, 1000);
+                st.streamTimerInterval = intervalId as unknown as number;
+                window.xdAnswers._streamTimerInterval = intervalId as unknown as number;
             }
 
             function stopStreamTimer() {
                 if (st.streamTimerInterval) { clearInterval(st.streamTimerInterval); st.streamTimerInterval = null; }
+                if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
             }
 
             function clearStatus() {
@@ -140,101 +147,8 @@
 
             // Track inline thinking (<think>...</think> or prose reasoning like "The user is asking...")
 
-            const PROSE_THINKING_ANYWHERE_REGEX = I.PROSE_THINKING_ANYWHERE_REGEX;
-            const PROSE_TRANSITION_REGEX = I.PROSE_TRANSITION_REGEX;
-
             function checkAndExtractInlineThinking(newText: string) {
-                st.rawContentBuffer += newText;
-
-                // 1. Tag based: <think>...</think>
-                if (!st.inInlineThinking && st.rawContentBuffer.includes('<think>')) {
-                    const parts = st.rawContentBuffer.split('<think>');
-                    const before = parts[0];
-                    st.rawContentBuffer = '<think>' + parts.slice(1).join('<think>');
-                    st.inInlineThinking = true;
-                    ensureThinkingUI();
-                    if (before) {
-                        st.fullContent += before;
-                    }
-                }
-
-                // 2. Prose header based (e.g. Qwen / Deepseek / Llama without tags):
-                if (!st.inInlineThinking) {
-                    if (st.fullContent.length === 0) {
-                        // At stream beginning, hold buffer if it could be start of prose thinking header
-                        if (st.rawContentBuffer.length < 30) {
-                            const prefix = st.rawContentBuffer.trimStart();
-                            const possiblePrefixes = ["here", "thinking", "the", "i need", "let", "first", "we need"];
-                            const isCandidate = possiblePrefixes.some(p => p.startsWith(prefix.toLowerCase()) || prefix.toLowerCase().startsWith(p));
-                            if (isCandidate) {
-                                return; // hold buffer for more chunks
-                            }
-                        }
-                    }
-
-                    const anywhereMatch = st.rawContentBuffer.match(PROSE_THINKING_ANYWHERE_REGEX);
-                    if (anywhereMatch) {
-                        const matchIndex = anywhereMatch.index ?? 0;
-                        const before = st.rawContentBuffer.slice(0, matchIndex);
-                        st.rawContentBuffer = st.rawContentBuffer.slice(matchIndex).replace(/^\n\s*/, '');
-                        st.inInlineThinking = true;
-                        ensureThinkingUI();
-                        if (before) {
-                            st.fullContent += before;
-                        }
-                    }
-                }
-
-                if (st.inInlineThinking) {
-                    // Check for close of thinking
-                    // Check </think>
-                    const closeIndex = st.rawContentBuffer.indexOf('</think>');
-                    if (closeIndex !== -1) {
-                        const thinkPart = st.rawContentBuffer.slice(0, closeIndex).replace(/^<think>/i, '');
-                        st.fullThinking = thinkPart;
-                        st.rawContentBuffer = st.rawContentBuffer.slice(closeIndex + 8);
-                        st.inInlineThinking = false;
-                        st.thinkingDone = true;
-                        if (st.rawContentBuffer) {
-                            st.fullContent += st.rawContentBuffer;
-                            st.rawContentBuffer = '';
-                        }
-                    } else if (!st.rawContentBuffer.startsWith('<think>')) {
-                        // Check prose transition like "---", "**Answer:**", "\nAnswer:", "FINAL_ANSWER:", JSON start "{" or labeled answer "Answer:" / "Відповідь:" / "Option A"
-                        // Note: do NOT match option letters during thinking like "Options:\nA: ... B: ..."
-                        const transitionMatch = st.rawContentBuffer.search(PROSE_TRANSITION_REGEX);
-                        if (transitionMatch !== -1) {
-                            const thinkPart = st.rawContentBuffer.slice(0, transitionMatch);
-                            st.fullThinking = thinkPart;
-                            st.rawContentBuffer = st.rawContentBuffer.slice(transitionMatch + 1);
-                            st.inInlineThinking = false;
-                            st.thinkingDone = true;
-                            if (st.rawContentBuffer) {
-                                st.fullContent += st.rawContentBuffer;
-                                st.rawContentBuffer = '';
-                            }
-                        } else {
-                            // Still streaming prose thinking - push into st.fullThinking incrementally
-                            st.fullThinking = st.rawContentBuffer;
-                        }
-                    } else {
-                        // Still in <think> tags
-                        st.fullThinking = st.rawContentBuffer.replace(/^<think>/i, '');
-                    }
-
-                    if (st.fullThinking) {
-                        ensureThinkingUI();
-                    }
-                    // During prose thinking, don't display st.rawContentBuffer in the answer section
-                    updateStreamUI();
-                    return;
-                }
-
-                // Normal content flow
-                if (st.thinkingStarted && !st.thinkingDone) st.thinkingDone = true;
-                st.fullContent += st.rawContentBuffer;
-                st.rawContentBuffer = '';
-                updateStreamUI();
+                I.extractInlineThinking(st, newText, ensureThinkingUI, updateStreamUI);
             }
 
 
@@ -330,7 +244,7 @@
                 // If stream ended while still in inline thinking buffer, inspect if it contains transition or is entirely thinking
                 if (st.rawContentBuffer) {
                     if (st.inInlineThinking) {
-                        const transitionMatch = st.rawContentBuffer.search(PROSE_TRANSITION_REGEX);
+                        const transitionMatch = st.rawContentBuffer.search(I.PROSE_TRANSITION_REGEX);
                         if (transitionMatch !== -1) {
                             st.fullThinking = (st.fullThinking ? st.fullThinking + '\n' : '') + st.rawContentBuffer.slice(0, transitionMatch).replace(/^<think>/i, '').trim();
                             st.fullContent += st.rawContentBuffer.slice(transitionMatch + 1).trim();
