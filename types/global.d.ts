@@ -296,6 +296,7 @@ interface XdAnswersInternal {
     thinkingBlockHtml(elapsed: string, fullThinking: string, expanded: boolean): string;
     searchBlockHtml(searchCalls: XdSearchCallInfo[], expanded: boolean): string;
     calcBlockHtml(calcCalls: XdCalcCallInfo[], expanded: boolean): string;
+    createToolCalls(ctx: Record<string, any>): () => Promise<void>;
     parsePartialLabeled(text: string): XdParsedResponse | null;
     renderPartial(parsed: XdParsedResponse): string;
     formatError(msg: string): string;
