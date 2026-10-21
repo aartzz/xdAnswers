@@ -18,8 +18,8 @@
 //   4. copies static assets (images, lib, popup html/css) into dist
 //   5. writes dist/manifest.json with browser-specific keys
 //
-// debug   → inline source maps + git-hash version
-// release → no source maps + manifest version
+// debug   → git-hash version
+// release → manifest version
 
 const fs = require('fs');
 const path = require('path');
@@ -38,7 +38,6 @@ if (targetBrowser !== 'chrome' && targetBrowser !== 'firefox') {
 }
 
 const commonManifest = require(path.join(ROOT, 'manifest.common.json'));
-const inlineSourcemaps = mode === 'debug';
 
 function browserSpecifics(browser) {
     if (browser === 'chrome') {
@@ -94,7 +93,7 @@ async function bundle(name, files) {
         format: 'iife',
         outfile: path.join(DIST, name),
         target: ['chrome109', 'firefox109'],
-        sourcemap: inlineSourcemaps,
+        sourcemap: false,
         logLevel: 'warning',
         charset: 'utf8'
     });
