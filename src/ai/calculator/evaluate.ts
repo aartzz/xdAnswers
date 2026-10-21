@@ -1,79 +1,13 @@
+// src/ai/calculator/evaluate.ts
+// LaTeX preprocessing, tokenizer, expression compiler and evaluator.
 (function() {
     'use strict';
 
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
     window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
-    const MATH_SCOPE: Record<string, unknown> = {
-        Math: Math,
-        PI: Math.PI,
-        E: Math.E,
-        sin: Math.sin,
-        cos: Math.cos,
-        tan: Math.tan,
-        asin: Math.asin,
-        acos: Math.acos,
-        atan: Math.atan,
-        atan2: Math.atan2,
-        sinh: Math.sinh,
-        cosh: Math.cosh,
-        tanh: Math.tanh,
-        cot: function(x: number) { return 1 / Math.tan(x); },
-        ctg: function(x: number) { return 1 / Math.tan(x); },
-        tg: Math.tan,
-        sqrt: Math.sqrt,
-        cbrt: Math.cbrt,
-        abs: Math.abs,
-        pow: Math.pow,
-        exp: Math.exp,
-        ln: Math.log,
-        log: Math.log10,
-        lg: Math.log10,
-        log10: Math.log10,
-        log2: Math.log2,
-        min: Math.min,
-        max: Math.max,
-        round: Math.round,
-        floor: Math.floor,
-        ceil: Math.ceil,
-        factorial: function(n: number) {
-            n = Math.round(Number(n));
-            if (n < 0 || !isFinite(n)) return NaN;
-            if (n === 0 || n === 1) return 1;
-            if (n > 170) return Infinity;
-            let r = 1;
-            for (let i = 2; i <= n; i++) r *= i;
-            return r;
-        },
-        comb: function(n: number, k: number) {
-            n = Math.round(Number(n));
-            k = Math.round(Number(k));
-            if (k < 0 || k > n) return 0;
-            if (k === 0 || k === n) return 1;
-            k = Math.min(k, n - k);
-            let c = 1;
-            for (let i = 0; i < k; i++) c = (c * (n - i)) / (i + 1);
-            return Math.round(c);
-        },
-        perm: function(n: number, k: number) {
-            n = Math.round(Number(n));
-            k = Math.round(Number(k));
-            if (k < 0 || k > n) return 0;
-            let p = 1;
-            for (let i = 0; i < k; i++) p *= (n - i);
-            return p;
-        },
-        gcd: function(a: number, b: number) {
-            a = Math.abs(Math.round(a));
-            b = Math.abs(Math.round(b));
-            while (b) { const t = b; b = a % b; a = t; }
-            return a;
-        },
-        lcm: function(a: number, b: number) {
-            if (!a || !b) return 0;
-            return Math.abs(Math.round(a * b)) / (MATH_SCOPE.gcd as (a: number, b: number) => number)(a, b);
-        }
-    };
+    const I = window.xdAnswers._internal;
+    const MATH_SCOPE = I.MATH_SCOPE as Record<string, unknown>;
 
     function parseGroup(str: string, start: number, openChar: string, closeChar: string): { content: string; endIndex: number } | null {
         if (str[start] !== openChar) return null;
@@ -488,78 +422,6 @@
         }
     }
 
-    function buildCalculatorTool(apiFormat: string): unknown[] {
-        const desc = 'Calculate and evaluate mathematical expressions, arithmetic, algebraic formulas, or LaTeX math (e.g. fractions \\frac{a}{b}, square roots \\sqrt{x}, exponents 2^8, percentages, trigonometry, equations 2x + 5 = 15). Use this tool whenever the question involves calculations to guarantee 100% precision.';
-        const params = {
-            type: 'object',
-            properties: {
-                expression: {
-                    type: 'string',
-                    description: 'The mathematical expression or LaTeX equation to evaluate (e.g. "125 * 0.15", "\\frac{3}{4} + \\sqrt{144}", "2^8 - 15", "2x + 10 = 30")'
-                }
-            },
-            required: ['expression'],
-            additionalProperties: false
-        };
-
-        if (apiFormat === 'openai') {
-            return [{ type: 'function', function: { name: 'calculator', description: desc, parameters: params, strict: true } }];
-        }
-        if (apiFormat === 'anthropic') {
-            return [{ name: 'calculator', description: desc, input_schema: params }];
-        }
-        if (apiFormat === 'google') {
-            return [{ function_declarations: [{ name: 'calculator', description: desc, parameters: params }] }];
-        }
-        return [];
-    }
-
-    function executeCalculator(rawExpression: string): string {
-        const res = evaluateMath(rawExpression);
-        return JSON.stringify(res);
-    }
-
-    function isCalculatorToolName(name: string): boolean {
-        if (!name) return false;
-        const n = String(name).toLowerCase();
-        return n === 'calculator' || n === 'calculate' || n === 'math_eval' || n === 'latex_calculator' || n === 'latex_eval';
-    }
-
-    function buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[] {
-        const tools: unknown[] = [];
-        const I = window.xdAnswers._internal;
-        const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s as unknown as XdSettings));
-        const calculator = s.calculatorEnabled !== false;
-
-        if (apiFormat === 'openai') {
-            if (webSearch && I.buildWebSearchTool) tools.push(...I.buildWebSearchTool('openai'));
-            if (calculator) tools.push(...buildCalculatorTool('openai'));
-            return tools;
-        }
-        if (apiFormat === 'anthropic') {
-            if (webSearch && I.buildWebSearchTool) tools.push(...I.buildWebSearchTool('anthropic'));
-            if (calculator) tools.push(...buildCalculatorTool('anthropic'));
-            return tools;
-        }
-        if (apiFormat === 'google') {
-            const decls: unknown[] = [];
-            if (webSearch && I.buildWebSearchTool) {
-                const ws = I.buildWebSearchTool('google') as Array<{ function_declarations?: unknown[] }>;
-                if (ws[0]?.function_declarations) decls.push(...ws[0].function_declarations);
-            }
-            if (calculator) {
-                const calc = buildCalculatorTool('google') as Array<{ function_declarations?: unknown[] }>;
-                if (calc[0]?.function_declarations) decls.push(...calc[0].function_declarations);
-            }
-            return decls.length > 0 ? [{ function_declarations: decls }] : [];
-        }
-        return [];
-    }
-
-    window.xdAnswers._internal.evaluateMath = evaluateMath;
-    window.xdAnswers._internal.latexToMath = latexToMath;
-    window.xdAnswers._internal.buildCalculatorTool = buildCalculatorTool;
-    window.xdAnswers._internal.buildTools = buildTools;
-    window.xdAnswers._internal.executeCalculator = executeCalculator;
-    window.xdAnswers._internal.isCalculatorToolName = isCalculatorToolName;
+    I.evaluateMath = evaluateMath;
+    I.latexToMath = latexToMath;
 })();

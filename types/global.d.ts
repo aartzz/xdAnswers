@@ -268,6 +268,7 @@ interface XdAnswersInternal {
     executeSearch(query: string, count?: number, preferredSource?: string): Promise<string>;
 
     // Calculator
+    MATH_SCOPE: Record<string, unknown>;
     evaluateMath(rawExpression: string): XdMathEvalResult;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
