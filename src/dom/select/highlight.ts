@@ -26,7 +26,7 @@
             : allOptionElements;
         const elements = I.matchAnswerToOptions(answerText, optionElements);
         for (const el of elements) {
-            const target = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
+            const target = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
             target.classList.add('xd-highlight-correct');
             target.style.setProperty('outline', '3px solid #22c55e', 'important');
             target.style.setProperty('background-color', 'rgba(34, 197, 94, 0.15)', 'important');

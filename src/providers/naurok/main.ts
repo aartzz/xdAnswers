@@ -53,6 +53,14 @@ import type { NaurokDomApi } from './dom';
             console.log('[xdAnswers/naurok] Topic already known:', _naurokTopic);
             return _naurokTopic;
         }
+        if (dom.isBetaTest()) {
+            const title = document.title.replace(/^(?:тест|результат)\s*:\s*/i, '').trim();
+            if (title) {
+                _naurokTopic = title;
+                console.log('[xdAnswers/naurok] Topic from test-beta title:', _naurokTopic);
+                return _naurokTopic;
+            }
+        }
         try {
             // Strategy 1: Parse numeric session ID from ng-init attribute in DOM
             let sessionId = dom.parseSessionIdFromDOM();
@@ -135,12 +143,14 @@ import type { NaurokDomApi } from './dom';
         function checkQuestion(skipDelay?: boolean): void {
             if (window.xdAnswers.isProcessingAI) return;
 
+            const isBeta = dom.isBetaTest();
+
             // 0. Перевіряємо, чи зараз йде анімація "Відповідь зараховано" або тест завершено
             // На naurok scene==1 = показує питання, scene==2 = анімація, scene==3 = завершено
-            if (dom.getSceneBlocked()) return;
+            if (!isBeta && dom.getSceneBlocked()) return;
 
             // 1. Текст запитання + варіанти + картинки (див. ./dom.ts)
-            const state = dom.getQuestionState();
+            const state = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
             if (!state) return;
 
             // 2. Створюємо підпис стану (текст + варіанти + к-сть картинок + їхні URL)
@@ -157,9 +167,9 @@ import type { NaurokDomApi } from './dom';
                 // .test-container-inner encompasses BOTH .test-question-content and
                 // .test-question-options, so autoSelectAnswer's scoped container check
                 // includes option elements that are siblings of the question.
-                const container = document.querySelector('.test-container-inner');
+                const container = isBeta ? dom.betaQuestionContainer() : document.querySelector('.test-container-inner');
                 // Also set cursor:pointer on the question text area to hint clickability
-                const questionContent = document.querySelector('.test-question-content');
+                const questionContent = isBeta ? document.querySelector('.tb-question') : document.querySelector('.test-question-content');
                 if (questionContent) (questionContent as HTMLElement).style.cursor = 'pointer';
                 if (container) {
                     // Always clear and re-register so the closure captures fresh data
@@ -167,7 +177,7 @@ import type { NaurokDomApi } from './dom';
                     window.xdAnswers.clearOneClickHandlers();
                     const getQuestionDataFn = async (): Promise<XdQuestionData | null> => {
                         // Re-read current question data from DOM at click time
-                        const current = dom.getQuestionState();
+                        const current = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
                         if (!current) return null;
 
                         const images = await Promise.all(current.validImages.map(src => window.xdAnswers.imageToBase64(src)));

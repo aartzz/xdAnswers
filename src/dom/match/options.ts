@@ -29,6 +29,8 @@
             '.v-test-questions-select-block .t-text',
             '.v-test-questions-select-block .t-text-guest',
             '.n-kahoot-p',
+            // Naurok test-beta (React): choices are button.tb-answer.
+            '.tb-answers .tb-answer',
             '.v-block-answers-cross-block .numb-item',
             '.justkids-answer-text',
             // vseosvita premium formats: true/false buttons and order-words tokens

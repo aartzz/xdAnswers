@@ -5,13 +5,19 @@
 import { getSceneBlocked, parseSessionIdFromDOM } from './session';
 import { getQuestionState } from './question';
 import type { NaurokQuestionState } from './question';
+import { betaQuestionContainer, getBetaQuestionState, isBetaTest } from './beta';
+import type { NaurokBetaQuestionState } from './beta';
 
 export type { NaurokQuestionState } from './question';
+export type { NaurokBetaQuestionState } from './beta';
 
 export interface NaurokDomApi {
     getSceneBlocked(): boolean;
     parseSessionIdFromDOM(): number | null;
     getQuestionState(): NaurokQuestionState | null;
+    isBetaTest(): boolean;
+    getBetaQuestionState(): NaurokBetaQuestionState | null;
+    betaQuestionContainer(): HTMLElement | null;
 }
 
 (function () {
@@ -27,6 +33,9 @@ export interface NaurokDomApi {
     ns.dom = {
         getSceneBlocked,
         parseSessionIdFromDOM,
-        getQuestionState
+        getQuestionState,
+        isBetaTest,
+        getBetaQuestionState,
+        betaQuestionContainer
     } as NaurokDomApi;
 })();

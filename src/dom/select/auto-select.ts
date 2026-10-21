@@ -24,7 +24,7 @@
             if (elements.length > 0) {
                 for (const el of elements) {
                     // Try multiple click target strategies
-                    const clickTarget = (el.closest('.question-option, .answer-item, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
+                    const clickTarget = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
 
                     // Strategy 1: Direct click
                     clickTarget.click();
@@ -40,12 +40,13 @@
                     clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
                     clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
                 }
-            } else if (scopedContainer && answerText) {
+            } else if ((scopedContainer || document.querySelector('.tb-type-answer input.tb-big-input')) && answerText) {
                 // No option elements matched — try text/paragraph inputs
                 // GForms: input.whsOnd (short text), textarea.KHxj8b (paragraph)
                 // Vseosvita: .a-test-lab-inp input[type="text"] (open answer)
-                const textInput = scopedContainer.querySelector<HTMLInputElement>('input.whsOnd, .a-test-lab-inp input[type="text"], input[data-automation-id="textInput"], input[role="combobox"], input[type="text"]');
-                const textArea = scopedContainer.querySelector<HTMLTextAreaElement>('textarea.KHxj8b, textarea');
+                const inputScope = scopedContainer || document.querySelector('.tb-stagebox, #tb-app') || document;
+                const textInput = inputScope.querySelector<HTMLInputElement>('input.whsOnd, .a-test-lab-inp input[type="text"], .tb-type-answer input.tb-big-input, input.tb-big-input, input[data-automation-id="textInput"], input[role="combobox"], input[type="text"]');
+                const textArea = inputScope.querySelector<HTMLTextAreaElement>('textarea.KHxj8b, textarea');
                 const target: HTMLInputElement | HTMLTextAreaElement | null = textArea || textInput;
                 if (target) {
                     // For MS Forms date combobox, parse and format as dd.MM.yyyy
@@ -63,17 +64,25 @@
                     // Dispatch input event so Google Forms/MS Forms picks up the change
                     target.dispatchEvent(new Event('input', { bubbles: true }));
                     target.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Naurok test-beta keeps React state in the input and submits from
+                    // its surrounding form, so wait one turn before clicking its button.
+                    if (target.matches('.tb-big-input')) {
+                        const submit = target.closest('form')?.querySelector<HTMLButtonElement>('button:not([disabled])');
+                        if (submit) setTimeout(() => submit.click(), 50);
+                    }
                 }
             }
             // For multiquiz questions: click the "save answers" / "confirm" button after selecting options
             // Only when checkboxes are present (multiquiz) — single-answer questions don't need a save step
             // Naurok: .test-multiquiz-save-button, [ng-click*="save"], .test-action-button with "зберегти"
             // Generic: any visible button/link containing save/confirm text after checkbox selection
+            const betaMulti = !!document.querySelector('.tb-answers .tb-answer-tick');
             const hasCheckboxes = !!document.querySelector('input[type="checkbox"]:not(.ng-hide)') ||
-                !!document.querySelector('[ng-click*="multiquiz"], .question-option-inner-multiple, .fa-check-square-o');
-            if (elements.length > 1 && hasCheckboxes) {
+                !!document.querySelector('[ng-click*="multiquiz"], .question-option-inner-multiple, .fa-check-square-o') || betaMulti;
+            if ((elements.length > 1 || betaMulti) && hasCheckboxes) {
                 let saveBtn = document.querySelector<HTMLElement>(
                     '.test-multiquiz-save-button:not(.ng-hide), ' +
+                    '.tb-answers + button:not([disabled]), ' +
                     'a[ng-click*="save"]:not(.ng-hide), ' +
                     '[ng-click*="saveAnswer"], ' +
                     '[ng-click*="check"], ' +

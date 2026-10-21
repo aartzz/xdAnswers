@@ -133,6 +133,7 @@
         "src/ui/helper/listeners.ts",
         "src/providers/naurok/dom/options.ts",
         "src/providers/naurok/dom/question.ts",
+        "src/providers/naurok/dom/beta.ts",
         "src/providers/naurok/dom/session.ts",
         "src/providers/naurok/dom/index.ts",
         "src/providers/naurok/main.ts"
