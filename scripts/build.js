@@ -109,14 +109,12 @@ function scriptName(file) {
 // directories join their segments with '-' so a provider can host several
 // routes side by side (src/providers/naurok/round/* -> naurok-round.js).
 function blockBundleName(remainder) {
-    const dirs = remainder.map(file => {
-        const match = /^src\/providers\/(.+)\/[^/]+$/.exec(file);
-        return match ? match[1] : null;
-    });
-    if (dirs[0] && dirs.every(dir => dir === dirs[0])) {
-        return dirs[0].replace(/\//g, '-') + '.js';
+    const last = remainder[remainder.length - 1];
+    const match = /^src\/providers\/(.+)\/[^/]+$/.exec(last);
+    if (match && remainder.every(file => file.startsWith('src/providers/' + match[1] + '/'))) {
+        return match[1].replace(/\//g, '-') + '.js';
     }
-    return scriptName(remainder[remainder.length - 1]);
+    return scriptName(last);
 }
 
 // Provider page-world disabler modules: every src/providers/<...>/disabler.ts.
