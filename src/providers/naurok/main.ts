@@ -135,6 +135,15 @@ import type { NaurokDomApi } from './dom';
         let lastStateHash = "";
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+        // test-beta can spend a long time loading question images before the AI
+        // pipeline starts. Mount the helper now so the answer window is visible
+        // immediately, then processQuestion reuses the same container.
+        if (dom.isBetaTest() && /^\/test-beta\/play(?:\/|$)/.test(location.pathname) &&
+            !window.xdAnswers.settings.silentMode) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+        }
+
         window.xdAnswers.onRefresh = () => {
             lastStateHash = "";
             // Skip debounce for user-initiated refresh — question is already rendered
