@@ -5,12 +5,12 @@
 import { getSceneBlocked, parseSessionIdFromDOM } from './session';
 import { getQuestionState } from './question';
 import type { NaurokQuestionState } from './question';
-import { betaQuestionContainer, getBetaQuestionState, isBetaTest, setBetaSession } from './beta';
-import type { NaurokBetaQuestionState } from './beta';
-import { applyBetaAnswer } from './beta-apply';
+import { betaQuestionContainer, getBetaQuestionState, isBetaTest, setBetaSession } from './beta/main';
+import type { NaurokBetaQuestionState } from './beta/main';
+import { applyBetaAnswer } from './beta/apply';
 
 export type { NaurokQuestionState } from './question';
-export type { NaurokBetaQuestionState } from './beta';
+export type { NaurokBetaQuestionState } from './beta/main';
 
 export interface NaurokDomApi {
     getSceneBlocked(): boolean;

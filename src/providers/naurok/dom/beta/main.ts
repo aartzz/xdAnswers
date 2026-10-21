@@ -1,4 +1,4 @@
-// src/providers/naurok/dom/beta.ts
+// src/providers/naurok/dom/beta/main.ts
 // Naurok test-beta (React) extraction. Handles every question renderer the
 // stage can show: quiz/multiquiz, short/numeric, fill, dropdown, order, match,
 // categorize, true/false grid and the hangman/anagram word modes.

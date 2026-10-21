@@ -1,4 +1,4 @@
-// src/providers/naurok/dom/beta-arcade.ts
+// src/providers/naurok/dom/beta/arcade.ts
 // Best-effort drivers for the two timed test-beta arcade renderers. Both games
 // submit automatically when the plane reaches a cloud or the runner reaches a
 // lettered zone, so the answer is applied by steering instead of clicking a

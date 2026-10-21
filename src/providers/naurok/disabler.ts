@@ -12,7 +12,7 @@
 //   * /test-beta/api/focus is dropped (teacher telemetry: fullscreen exits,
 //     tab switches and away time);
 //   * fullscreen/visibility checks are neutralized and the fullscreen gate is
-//     dismissed automatically, so the test does not block on a modal.
+//     hidden and removed, so the test never blocks on or flashes a modal.
 (function () {
     'use strict';
 
@@ -80,25 +80,41 @@
         } catch (e) { /* property patch failed */ }
     }
 
-    function dismissBetaFocusGate(): void {
+    function installBetaFocusGuard(): void {
         if (!isBetaPage) return;
-        const gate = document.querySelector<HTMLElement>('.tb-focus');
-        if (!gate || gate.getClientRects().length === 0) return;
-        const button = gate.querySelector<HTMLButtonElement>('.tb-focus-box .tb-btn-go');
-        if (!button) return;
-        console.log('[xdAnswers/naurok] Dismissing test-beta fullscreen gate');
-        button.click();
-    }
 
-    function installBetaGateDismisser(): void {
-        if (!isBetaPage) return;
+        // Hide the fullscreen gate from the first paint. The started test still
+        // needs the gate's button clicked, so keep the node in the DOM briefly
+        // and click it programmatically below.
+        if (!document.getElementById('xd-naurok-focus-style')) {
+            const style = document.createElement('style');
+            style.id = 'xd-naurok-focus-style';
+            style.textContent = '.tb-focus{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}';
+            (document.head || document.documentElement).appendChild(style);
+        }
+
+        const dismiss = (): void => {
+            document.querySelectorAll<HTMLElement>('.tb-focus').forEach(gate => {
+                const button = gate.querySelector<HTMLButtonElement>('.tb-focus-box .tb-btn-go');
+                if (button) button.click();
+                gate.style.setProperty('display', 'none', 'important');
+                gate.style.setProperty('pointer-events', 'none', 'important');
+                // Give React one turn to commit the state change, then remove
+                // the overlay entirely so a re-render cannot bring it back.
+                window.setTimeout(() => {
+                    if (gate.isConnected) gate.remove();
+                }, 50);
+            });
+        };
+
         const observer = new MutationObserver(() => {
-            window.setTimeout(dismissBetaFocusGate, 30);
+            window.setTimeout(dismiss, 0);
         });
         observer.observe(document.documentElement, { childList: true, subtree: true });
-        document.addEventListener('DOMContentLoaded', dismissBetaFocusGate);
-        window.setTimeout(dismissBetaFocusGate, 600);
-        window.setTimeout(dismissBetaFocusGate, 2000);
+        document.addEventListener('DOMContentLoaded', dismiss);
+        window.setTimeout(dismiss, 100);
+        window.setTimeout(dismiss, 600);
+        window.setTimeout(dismiss, 2000);
     }
 
     // ── Intercept window.fetch ────────────────────────────────────────
@@ -190,5 +206,5 @@
     } catch (e) { /* beacon patch failed */ }
 
     installBetaFullscreenBypass();
-    installBetaGateDismisser();
+    installBetaFocusGuard();
 })();

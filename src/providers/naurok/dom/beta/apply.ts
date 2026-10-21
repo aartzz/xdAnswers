@@ -1,12 +1,12 @@
-// src/providers/naurok/dom/beta-apply.ts
+// src/providers/naurok/dom/beta/apply.ts
 // Applies an AI answer to the test-beta React renderers. Each question type has
 // its own interaction: click options, fill inputs/selects, reorder items, pair
 // cards, assign chips to categories or answer every row of a true/false grid.
 // Every entry point verifies the question key first, so an answer produced for
 // the previous question can never land on the next one during an animation.
 
-import { getBetaQuestionState } from './beta';
-import { applyArcadeAnswer } from './beta-arcade';
+import { getBetaQuestionState } from './main';
+import { applyArcadeAnswer } from './arcade';
 
 window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
 window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
