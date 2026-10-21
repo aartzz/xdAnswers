@@ -138,10 +138,13 @@ import type { NaurokDomApi } from './dom';
         // test-beta can spend a long time loading question images before the AI
         // pipeline starts. Mount the helper now so the answer window is visible
         // immediately, then processQuestion reuses the same container.
-        if (dom.isBetaTest() && /^\/test-beta\/play(?:\/|$)/.test(location.pathname) &&
-            !window.xdAnswers.settings.silentMode) {
-            window.xdAnswers.createUI();
-            window.xdAnswers.attachAndPositionHelper();
+        if (dom.isBetaTest() && /^\/test-beta\/play(?:\/|$)/.test(location.pathname)) {
+            window.xdAnswers.addStyle?.('.tb-focus{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}');
+            document.querySelectorAll<HTMLButtonElement>('.tb-focus-box .tb-btn-go').forEach(b => b.click());
+            if (!window.xdAnswers.settings.silentMode) {
+                window.xdAnswers.createUI();
+                window.xdAnswers.attachAndPositionHelper();
+            }
         }
 
         window.xdAnswers.onRefresh = () => {
@@ -217,12 +220,19 @@ import type { NaurokDomApi } from './dom';
                     window.xdAnswers.setupOneClickHandler(container as HTMLElement, getQuestionDataFn, false);
                 }
             } else {
-                // Normal: auto-process after delay (skip for user-initiated refresh)
+                // Show status immediately so UI does not hang on 'Waiting for question...' while loading images
+                if (!window.xdAnswers.settings.silentMode) {
+                    I.startWaitingStatus(Date.now());
+                }
+
+                // Normal: auto-process after delay (skip for user-initiated refresh or test-beta)
                 const processFn = () => {
                     if (isBeta) {
                         const fresh = dom.getBetaQuestionState();
-                        if (!fresh || fresh.questionKey !== questionKey) {
-                            console.log('[xdAnswers/naurok] Question changed before AI request, skipping');
+                        if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
+                            console.log('[xdAnswers/naurok] Question changed before AI request, re-evaluating');
+                            lastStateHash = "";
+                            checkQuestion(true);
                             return;
                         }
                     }
@@ -242,8 +252,10 @@ import type { NaurokDomApi } from './dom';
                         // Never send a stale answer into the next question.
                         if (isBeta) {
                             const fresh = dom.getBetaQuestionState();
-                            if (!fresh || fresh.questionKey !== questionKey) {
-                                console.log('[xdAnswers/naurok] Question changed during image load, skipping stale answer');
+                            if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
+                                console.log('[xdAnswers/naurok] Question changed during image load, re-evaluating');
+                                lastStateHash = "";
+                                checkQuestion(true);
                                 return;
                             }
                         }
@@ -252,7 +264,7 @@ import type { NaurokDomApi } from './dom';
                     });
                 };
 
-                if (skipDelay) processFn();
+                if (skipDelay || isBeta) processFn();
                 else setTimeout(processFn, 500);
             }
         }

@@ -151,7 +151,7 @@
 
     window.xdAnswers.imageToBase64 = async function(url: string): Promise<string | null> {
         try {
-            const response = await window.xdAnswers.makeRequest({ method: 'GET', url, responseType: 'blob' });
+            const response = await window.xdAnswers.makeRequest({ method: 'GET', url, responseType: 'blob', timeout: 4000 });
             if (response?.success && response.data && typeof response.data === 'string' && response.data.startsWith('data:')) {
                 return response.data.split(',', 2)[1] || null;
             }

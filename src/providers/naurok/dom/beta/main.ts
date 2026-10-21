@@ -95,11 +95,8 @@ function questionNumber(stage: HTMLElement): number {
 
 function isAnswerAnimation(stage: HTMLElement): boolean {
     const visible = (selector: string): boolean =>
-        Array.from(document.querySelectorAll(selector)).some(el => isVisible(el));
-    if (visible('.tb-feedback, .tb-zoom')) return true;
-    if (visible('.tb-loader-dots, .tb-plus')) return true;
-    const gate = document.querySelector('.tb-focus');
-    return !!gate && isVisible(gate);
+        Array.from(stage.querySelectorAll(selector)).some(el => isVisible(el));
+    return visible('.tb-feedback, .tb-zoom, .tb-loader-dots, .tb-plus');
 }
 function sessionQuestion(stage: HTMLElement): BetaSessionQuestion | null {
     const questions = betaSession && betaSession.questions;
