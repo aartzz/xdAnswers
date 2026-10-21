@@ -1,4 +1,4 @@
-// src/ai/stream.ts
+// src/ai/stream/parse-sse.ts
 // Server-sent-events chunk parsing for the supported API formats.
 (function() {
     'use strict';

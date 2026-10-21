@@ -285,6 +285,13 @@ interface XdAnswersInternal {
 
     // Streaming and parsing
     parseSSEChunks(rawText: string, apiFormat: string): XdSseEvent[];
+    PROSE_THINKING_ANYWHERE_REGEX: RegExp;
+    PROSE_TRANSITION_REGEX: RegExp;
+    extractToolExpression(args: Record<string, any>): string;
+    extractToolQuery(args: Record<string, any>): string;
+    thinkingBlockHtml(elapsed: string, fullThinking: string, expanded: boolean): string;
+    searchBlockHtml(searchCalls: XdSearchCallInfo[], expanded: boolean): string;
+    calcBlockHtml(calcCalls: XdCalcCallInfo[], expanded: boolean): string;
     parsePartialLabeled(text: string): XdParsedResponse | null;
     renderPartial(parsed: XdParsedResponse): string;
     formatError(msg: string): string;

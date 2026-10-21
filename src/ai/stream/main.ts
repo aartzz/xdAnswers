@@ -1,4 +1,4 @@
-// src/ai/stream-answer.ts
+// src/ai/stream/main.ts
 // Streaming answer pipeline. Extracted from legacy utils.js (lines 759-1107).
 (function() {
     'use strict';
@@ -24,7 +24,6 @@
             const buildHeaders = I.buildHeaders;
             const parseSSEChunks = I.parseSSEChunks;
             const executeSearch = I.executeSearch;
-            const escapeHTML = I.escapeHTML;
             const parsePartialLabeled = I.parsePartialLabeled;
             const salvagePartialJSON = I.salvagePartialJSON;
             const renderPartial = I.renderPartial;
@@ -71,7 +70,7 @@
                 try { args = JSON.parse(argsStr); } catch {}
 
                 if (isCalc) {
-                    const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                    const expr = I.extractToolExpression(args);
                     if (!expr) return;
                     let entry = calcCalls.find(c => c.round === toolLoopDepth && c.toolIndex === toolIndex);
                     if (!entry) {
@@ -83,7 +82,7 @@
                     }
                     updateStreamUI();
                 } else {
-                    const query = args.query || args.q || '';
+                    const query = I.extractToolQuery(args);
                     if (!query) return;
                     let entry = searchCalls.find(sc => sc.round === toolLoopDepth && sc.toolIndex === toolIndex);
                     if (!entry) {
@@ -136,8 +135,8 @@
             let inInlineThinking = false;
             let rawContentBuffer = '';
 
-            const PROSE_THINKING_ANYWHERE_REGEX = /(?:^|\n)\s*(?:Here's a thinking process|Thinking Process:|Thinking:|The user (?:is asking|asks|wants|is trying)|I need to (?:select|choose|find|determine|identify)|Let's think|First, let's|Let's analyze|We need to (?:answer|find|determine|identify|select|choose))/i;
-            const PROSE_TRANSITION_REGEX = /\n(?:\s*---|(?:\*{0,2}(?:Answer|Final Answer|Correct Answer|Відповідь|Ответ|Summary)\*{0,2}\s*:)|(?:\{[\s\r\n]*"answer")|(?:\*{0,2}(?:Therefore|Thus|So),?\s*(?:the\s+)?(?:correct\s+)?(?:answer|option)\s+(?:is|=)\*{0,2}\s*:?)|(?:Conclusion\s*:)|(?:The\s+correct\s+option\s+is\s*:?))/i;
+            const PROSE_THINKING_ANYWHERE_REGEX = I.PROSE_THINKING_ANYWHERE_REGEX;
+            const PROSE_TRANSITION_REGEX = I.PROSE_TRANSITION_REGEX;
 
             function checkAndExtractInlineThinking(newText: string) {
                 rawContentBuffer += newText;
@@ -265,66 +264,13 @@
                 let html = '';
 
                 // Thinking block always first (at the top)
-                if (thinkingStarted) {
-                    const displayStyle = isThinkingExpanded ? 'block' : 'none';
-                    const toggleIcon = isThinkingExpanded 
-                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
-                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
-                    html += '<div class="xd-thinking">' +
-                        '<div class="xd-thinking-header" style="cursor:pointer;"><span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">psychology</span> Thinking <span class="xd-thinking-timer">(' + elapsed + ')</span> <span class="xd-thinking-chars">(' + fullThinking.length + ' chars)</span> <span class="xd-thinking-toggle">' + toggleIcon + '</span></div>' +
-                        '<div class="xd-thinking-content" style="display:' + displayStyle + ' !important;">' + window.xdAnswers.renderMarkdown(fullThinking) + '</div></div>';
-                }
+                if (thinkingStarted) html += I.thinkingBlockHtml(elapsed, fullThinking, isThinkingExpanded);
 
                 // Search indicator block between thinking and answer
-                if (searchCalls.length > 0) {
-                    const doneCount = searchCalls.filter(sc => sc.status === 'done').length;
-                    const searchingCount = searchCalls.length - doneCount;
-                    const headerLabel = searchingCount > 0
-                        ? '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Web Search... <span class="xd-search-count">(' + searchCalls.length + ')</span>'
-                        : '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">travel_explore</span> Web Search <span class="xd-search-count">(' + doneCount + ')</span>';
-                    const sDisplay = isSearchExpanded ? 'block' : 'none';
-                    const sToggle = isSearchExpanded 
-                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
-                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
-                    html += '<div class="xd-search-block">' +
-                        '<div class="xd-search-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-search-toggle">' + sToggle + '</span></div>' +
-                        '<div class="xd-search-content" style="display:' + sDisplay + ' !important;">';
-                    for (let i = 0; i < searchCalls.length; i++) {
-                        const sc = searchCalls[i];
-                        if (sc.status === 'searching') {
-                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_top</span> <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span></div>';
-                        } else {
-                            html += '<div class="xd-search-entry" data-xd-search-idx="' + i + '"><span class="xd-icon" style="font-size:14px !important;color:#4ade80;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-searching-query">' + escapeHTML(sc.query) + '</span> <span class="xd-searching-count">(' + sc.resultCount + ' results)</span></div>';
-                        }
-                    }
-                    html += '</div></div>';
-                }
+                if (searchCalls.length > 0) html += I.searchBlockHtml(searchCalls, isSearchExpanded);
 
                 // Calculator indicator block
-                if (calcCalls.length > 0) {
-                    const doneCount = calcCalls.filter(c => c.status === 'done').length;
-                    const calculatingCount = calcCalls.length - doneCount;
-                    const headerLabel = calculatingCount > 0
-                        ? '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculator... <span class="xd-calc-count">(' + calcCalls.length + ')</span>'
-                        : '<span class="xd-icon" style="font-size:15px !important;vertical-align:middle;margin-right:4px;">calculate</span> Calculator <span class="xd-calc-count">(' + doneCount + ')</span>';
-                    const cDisplay = isCalcExpanded ? 'block' : 'none';
-                    const cToggle = isCalcExpanded 
-                        ? '<span class="xd-icon" style="font-size:14px !important;">expand_less</span>' 
-                        : '<span class="xd-icon" style="font-size:14px !important;">expand_more</span>';
-                    html += '<div class="xd-calc-block">' +
-                        '<div class="xd-calc-header" style="cursor:pointer;">' + headerLabel + ' <span class="xd-calc-toggle">' + cToggle + '</span></div>' +
-                        '<div class="xd-calc-content" style="display:' + cDisplay + ' !important;">';
-                    for (let i = 0; i < calcCalls.length; i++) {
-                        const cc = calcCalls[i];
-                        if (cc.status === 'calculating') {
-                            html += '<div class="xd-calc-entry"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">hourglass_top</span> <span class="xd-calc-expr">' + escapeHTML(cc.expression || '...') + '</span></div>';
-                        } else {
-                            const resText = cc.result !== undefined ? ' = ' + escapeHTML(String(cc.result)) : '';
-                            html += '<div class="xd-calc-entry"><span class="xd-icon" style="font-size:14px !important;color:#38bdf8;vertical-align:middle;margin-right:2px;">check</span> <span class="xd-calc-expr">' + escapeHTML(cc.expression) + '</span><strong class="xd-calc-result">' + resText + '</strong></div>';
-                        }
-                    }
-                    html += '</div></div>';
-                }
+                if (calcCalls.length > 0) html += I.calcBlockHtml(calcCalls, isCalcExpanded);
 
                 const parsed = parsePartialLabeled(fullContent) || salvagePartialJSON(fullContent);
 
@@ -429,7 +375,7 @@
                         const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name || '');
 
                         if (isCalc) {
-                            const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                            const expr = I.extractToolExpression(args);
                             let ccEntry = calcCalls.find(c => c.round === (toolLoopDepth - 1) && c.toolIndex === tc.index);
                             if (!ccEntry && expr) {
                                 ccEntry = calcCalls.find(c => c.expression === expr && c.status === 'calculating');
@@ -459,7 +405,7 @@
                                 messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
                         } else {
-                            const query = args.query || args.q || '';
+                            const query = I.extractToolQuery(args);
                             const numResults = args.num_results || args.num || 5;
 
                             let scEntry = searchCalls.find(sc => sc.round === (toolLoopDepth - 1) && sc.toolIndex === tc.index);
@@ -525,7 +471,7 @@
                         const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name || '');
 
                         if (isCalc) {
-                            const expr = args.expression || args.expr || args.formula || args.query || args.input || '';
+                            const expr = I.extractToolExpression(args);
                             let ccEntry = calcCalls.find(c => c.round === (toolLoopDepth - 1) && c.toolIndex === tc.index);
                             if (!ccEntry && expr) {
                                 ccEntry = calcCalls.find(c => c.expression === expr && c.status === 'calculating');
