@@ -160,9 +160,9 @@ async function copyStaticAssets() {
     fs.cpSync(path.join(ROOT, 'images'), path.join(DIST, 'images'), { recursive: true });
     fs.cpSync(path.join(ROOT, 'lib'), path.join(DIST, 'lib'), { recursive: true });
     for (const css of ['popup.css', 'popup-m3.css']) {
-        fs.copyFileSync(path.join(ROOT, css), path.join(DIST, css));
+        fs.copyFileSync(path.join(ROOT, 'src', 'popup', css), path.join(DIST, css));
     }
-    const popupHtml = fs.readFileSync(path.join(ROOT, 'popup.html'), 'utf-8');
+    const popupHtml = fs.readFileSync(path.join(ROOT, 'src', 'popup', 'popup.html'), 'utf-8');
     fs.writeFileSync(path.join(DIST, 'popup.html'), transformPopupHtml(popupHtml), 'utf-8');
 }
 
@@ -211,13 +211,7 @@ async function main() {
 
     // Extension-level scripts and web-accessible page scripts.
     await bundle('background.js', ['background.ts']);
-    await bundle('popup.js', [
-        'version.js',
-        'src/core/constants.ts',
-        'src/core/settings-defaults.ts',
-        'src/ui/i18n.ts',
-        'popup.ts'
-    ]);
+    await bundle('popup.js', ['src/popup/main.ts']);
 
     const pageDisablerFiles = providerPageDisablers();
     const webAccessibleResources = [];
