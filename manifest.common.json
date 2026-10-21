@@ -278,6 +278,7 @@
         "src/providers/justclass/dom.ts",
         "src/providers/justclass/api.ts",
         "src/providers/justclass/ui.ts",
+        "src/providers/justclass/ai-fallback.ts",
         "src/providers/justclass/main.ts"
       ],
       "run_at": "document_end",

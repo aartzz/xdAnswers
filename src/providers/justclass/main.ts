@@ -1,9 +1,9 @@
 // src/providers/justclass/main.ts
-// JustClass provider entry: answer-key scan loop, AI fallback, silent modes
-// and page wiring.
+// JustClass provider entry: answer-key scan loop, silent modes and page wiring.
 import type { JustclassDomApi } from './dom';
 import type { JustclassApi, JustclassEntry } from './api';
 import type { JustclassUi } from './ui';
+import type { JustclassAiFallbackApi } from './ai-fallback';
 
 (function () {
     'use strict';
@@ -31,8 +31,6 @@ import type { JustclassUi } from './ui';
     let retryCount = 0;
     let oneClickRoot: Element | null = null;
     let oneClickHandler: ((event: Event) => Promise<void>) | null = null;
-    let aiKey = '';                  // question key for which the AI fallback was requested
-    let aiApplyAllowed = false;      // whether the AI answer may be selected automatically
 
     function domApi(): JustclassDomApi {
         return (I.providerModules as Record<string, any>).justclass.dom as JustclassDomApi;
@@ -46,6 +44,12 @@ import type { JustclassUi } from './ui';
         return (I.providerModules as Record<string, any>).justclass.ui as JustclassUi;
     }
 
+    const ai: JustclassAiFallbackApi = (I.providerModules as Record<string, any>).justclass.createAiFallback({
+        applyVisuals: (parsed?: XdParsedResponse) => applyVisuals(parsed),
+        scheduleScan: (delay: number) => scheduleScan(delay),
+        setAnsweredKey: (key: string) => { answeredKey = key; }
+    });
+
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -57,201 +61,6 @@ import type { JustclassUi } from './ui';
             initJustClass();
         }
     }, 50);
-
-    // ---------------------------------------------------------------------
-    // AI fallback (answer key API unavailable)
-    // ---------------------------------------------------------------------
-
-    function aiValues(answerText: string, count: number): string[] {
-        const cleaned = String(answerText == null ? '' : answerText).trim();
-        if (!cleaned || count < 1) return [];
-
-        const pairs = new Map<number, string>();
-        cleaned.split(/[\n;]+/).forEach(chunk => {
-            const m = domApi().norm(chunk).match(/^(\d+)\s*[=:.)\-]\s*(.+)$/);
-            if (!m) return;
-            const index = parseInt(m[1], 10);
-            if (index >= 1 && index <= count && !pairs.has(index)) pairs.set(index, m[2].trim());
-        });
-
-        if (count === 1) {
-            const single = pairs.get(1)
-                || domApi().norm(cleaned).replace(/^\s*(?:answer|відповідь)\s*[:\-]\s*/i, '');
-            return [single.split(/\n+/)[0].trim()];
-        }
-
-        const values: string[] = [];
-        for (let i = 1; i <= count; i++) values.push(pairs.get(i) || '');
-        if (values.some(Boolean)) return values;
-
-        const lines = cleaned.split(/[\n;]+/)
-            .map(line => domApi().norm(line).replace(/^\d+\s*[=:.)\-]?\s*/, ''))
-            .filter(Boolean);
-        for (let i = 0; i < count; i++) values[i] = lines[i] || '';
-        return values;
-    }
-
-    function aiEntry(values: string | string[] | undefined): JustclassEntry | null {
-        const d = domApi();
-        const seen = new Set<string>();
-        const correctValues: string[] = [];
-        const list = Array.isArray(values) ? values : (values ? [values] : []);
-
-        function push(value: string): void {
-            const clean = d.norm(value).replace(/[*`]+/g, '').replace(/^["'«»]+|["'«»]+$/g, '').trim();
-            if (!clean) return;
-            const key = d.lower(clean);
-            if (seen.has(key)) return;
-            seen.add(key);
-            correctValues.push(clean);
-        }
-
-        list.forEach(value => {
-            push(value);
-
-            const clean = d.norm(value).replace(/[*`]+/g, '').replace(/^["'«»]+|["'«»]+$/g, '').trim();
-            clean.split(/[(),;:\u2014\u2013]|\s+-\s+/).forEach(part => push(part));
-
-            const low = d.lower(clean);
-            if (low === 'правда' || low === 'вірно' || low === 'true') push('Так');
-            if (low === 'хиба' || low === 'неправда' || low === 'невірно' || low === 'false') push('Ні');
-        });
-
-        return correctValues.length
-            ? { answerId: '', options: [], correctValues: correctValues, tooltip: '' }
-            : null;
-    }
-
-    async function buildAiPayload(widgets: Element[]): Promise<XdQuestionData | null> {
-        const d = domApi();
-        const a = apiApi();
-        const stem = d.questionStem(widgets);
-        const rows: Array<{ label: string; options: string[] }> = [];
-        let hasOptions = false;
-
-        for (let i = 0; i < widgets.length; i++) {
-            const widget = widgets[i];
-            const entry = a.findEntry(widget, i);
-            let options = entry ? entry.options.map(option => option.value).filter(Boolean) : [];
-
-            if (!options.length) options = await d.readWidgetOptions(widget);
-            if (options.length) hasOptions = true;
-
-            rows.push({
-                label: d.rowLabel(widget) || ('Пункт ' + (i + 1)),
-                options: options
-            });
-        }
-
-        if (!hasOptions) return null;
-
-        let text: string;
-        let optionsText = '';
-
-        if (rows.length === 1) {
-            text = stem || 'Завдання JustClass.';
-            optionsText = rows[0].options.join('\n');
-        } else {
-            text = 'Це завдання з кількома пунктами — для кожного пункту треба вибрати правильний варіант.\n'
-                + 'Відповідай СТРОГО у форматі: 1=варіант; 2=варіант; ... (номер пункту = вибраний варіант).\n'
-                + 'Використовуй ТОЧНИЙ текст варіанту зі списку.\n\n';
-            if (stem) text += 'Завдання: ' + stem + '\n\n';
-            text += 'Пункти:';
-            rows.forEach((row, index) => {
-                text += '\n' + (index + 1) + '. ' + row.label + ' — варіанти: ' + row.options.join(' | ');
-            });
-        }
-
-        return {
-            text: text,
-            optionsText: optionsText,
-            base64Images: await d.collectQuestionImages(widgets),
-            topic: 'JustClass'
-        };
-    }
-
-    async function applyAiAnswer(answerText: string, parsed: XdParsedResponse): Promise<void> {
-        const d = domApi();
-        const u = uiApi();
-        const widgets = d.getWidgets();
-        if (!widgets.length) return;
-        const key = d.getQuestionKey(widgets);
-        if (aiKey && key !== aiKey) {
-            console.warn('[xdAnswers] JustClass: AI answer arrived for an older question, skipping');
-            return;
-        }
-        aiKey = key;
-
-        const values = aiValues(answerText, widgets.length);
-        const entries = widgets.map((widget, index) => aiEntry(values[index]));
-        entries.forEach((entry, index) => {
-            if (entry) u.setAiEntry(widgets[index], entry);
-        });
-
-        if (aiApplyAllowed) {
-            await d.applySelections(widgets, entries, key, true);
-        }
-
-        parsed = parsed || ({} as XdParsedResponse);
-        parsed._justclass = true;
-        parsed._justclassShort = entries
-            .map(entry => entry ? entry.correctValues[0] : '')
-            .filter(Boolean)
-            .join('; ');
-        window.xdAnswers.lastParsedResponse = parsed;
-
-        applyVisuals(parsed);
-    }
-
-    async function aiFallback(widgets: Element[], options: ScanOptions, key: string): Promise<void> {
-        const d = domApi();
-        const settings = window.xdAnswers.settings || ({} as XdSettings);
-        const oneclick = settings.silentMode === 'oneclick';
-
-        if (oneclick && !options.userTriggered) {
-            answeredKey = key;
-            applyVisuals();
-            return;
-        }
-
-        if (aiKey === key) {
-            answeredKey = key;
-            applyVisuals();
-            return;
-        }
-
-        if (window.xdAnswers.isProcessingAI) {
-            // Another AI request is already running; re-check once it finishes.
-            setTimeout(() => scheduleScan(0), 900);
-            return;
-        }
-
-        let payload: XdQuestionData | null = null;
-        try {
-            payload = await buildAiPayload(widgets);
-        } catch (err) {
-            console.warn('[xdAnswers] JustClass: failed to prepare AI fallback payload', err);
-        }
-
-        if (d.getQuestionKey(d.getWidgets()) !== key) return;
-
-        if (!payload) {
-            uiApi().renderError(new Error('ключ відповідей недоступний, а варіанти завдання прочитати не вдалося'));
-            answeredKey = key;
-            return;
-        }
-
-        aiApplyAllowed = !!options.userTriggered || !!settings.autoAnswer || oneclick;
-        aiKey = key;
-        answeredKey = key;
-
-        if (oneclick && options.userTriggered) {
-            window.xdAnswers._oneClickUserTriggered = true;
-        }
-
-        window.xdAnswers._customAutoAnswer = applyAiAnswer;
-        window.xdAnswers.processQuestion(payload);
-    }
 
     // ---------------------------------------------------------------------
     // One-click and silent modes
@@ -401,7 +210,7 @@ import type { JustclassUi } from './ui';
             lastScanWidgets = [];
             lastQuestionKey = '';
             answeredKey = '';
-            aiKey = '';
+            ai.reset();
             u.clearMarks();
             clearOneClick();
             return;
@@ -411,7 +220,7 @@ import type { JustclassUi } from './ui';
         if (!options.force
             && key === lastScanKey
             && d.sameWidgets(widgets, lastScanWidgets)
-            && (apiApi().getCachedHash() === hash || aiKey === key)) {
+            && (apiApi().getCachedHash() === hash || ai.isFor(key))) {
             if (window.xdAnswers.helperContainer && !document.body.contains(window.xdAnswers.helperContainer)) {
                 window.xdAnswers.attachAndPositionHelper();
             }
@@ -447,10 +256,10 @@ import type { JustclassUi } from './ui';
             && entries.every(entry => entry && entry.correctValues.length);
 
         if (!hasFullKey) {
-            await aiFallback(currentWidgets, options, key);
+            await ai.run(currentWidgets, options, key);
             return;
         }
-        aiKey = '';
+        ai.reset();
 
         const parsed = u.buildParsed(currentWidgets, entries);
         window.xdAnswers.lastParsedResponse = parsed;
@@ -494,7 +303,7 @@ import type { JustclassUi } from './ui';
             lastQuestionKey = '';
             answeredKey = '';
             retryCount = 0;
-            aiKey = '';
+            ai.reset();
             scheduleScan(0, { force: true });
         };
 
@@ -510,7 +319,7 @@ import type { JustclassUi } from './ui';
             answeredKey = '';
             retryCount = 0;
             uiApi().resetRenderKey();
-            aiKey = '';
+            ai.reset();
             uiApi().clearMarks();
             clearOneClick();
             if (hash) scheduleScan(250, { force: true });
