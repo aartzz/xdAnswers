@@ -1,5 +1,7 @@
+// src/providers/naurok/round/reorder-page.ts
 // Page-world helper for naurok.ua/round/* — reorders ng-sortable answer lists
 // through the Angular scope, since the content script cannot reach it directly.
+// Injected by ./main.ts via chrome.runtime.getURL('reorder-page.js').
 (function () {
     'use strict';
     const xdWindow = window as any;

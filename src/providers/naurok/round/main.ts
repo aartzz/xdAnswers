@@ -66,8 +66,21 @@ import type { NaurokRoundApplyApi } from './apply';
         controls.appendChild(button);
     }
 
+    // The reorder bridge in ./apply.ts posts to the page world, so the helper has
+    // to run there. Without this injection every reorder request times out and
+    // order questions fall back to simulated drags.
+    function injectReorderPageScript(): void {
+        if (document.getElementById('xd-naurok-reorder-page')) return;
+        const script = document.createElement('script');
+        script.id = 'xd-naurok-reorder-page';
+        script.src = chrome.runtime.getURL('reorder-page.js');
+        script.onload = () => script.remove();
+        (document.head || document.documentElement).appendChild(script);
+    }
+
     function initNaurokRound(): void {
         console.log('[xdAnswers] Naurok round provider loaded');
+        injectReorderPageScript();
         window.xdAnswers.onRefresh = () => scanAndInject();
 
         let scanTimer: number | undefined;

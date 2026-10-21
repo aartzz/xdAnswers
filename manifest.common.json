@@ -17,7 +17,7 @@
     {
       "resources": [
         "src/core/disabler.ts",
-        "src/core/naurok-round-page.ts",
+        "src/providers/naurok/round/reorder-page.ts",
         "lib/beercss/material-symbols-outlined.woff2"
       ],
       "matches": [
