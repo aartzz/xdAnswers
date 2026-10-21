@@ -75,7 +75,9 @@
         "*://naurok.com.ua/test/testing/*",
         "*://naurok.ua/test/testing/*",
         "*://naurok.com.ua/test/realtime-client/*",
-        "*://naurok.ua/test/realtime-client/*"
+        "*://naurok.ua/test/realtime-client/*",
+        "*://naurok.com.ua/test-beta/*",
+        "*://naurok.ua/test-beta/*"
       ],
       "js": [
         "version.js",

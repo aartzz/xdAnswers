@@ -87,7 +87,6 @@ function questionStage(): HTMLElement | null {
 function questionRoot(stage: HTMLElement): HTMLElement | null {
     return stage.querySelector<HTMLElement>('.tb-question');
 }
-
 function questionNumber(stage: HTMLElement): number {
     const text = normalize(stage.querySelector('.tb-question-num')?.textContent || '');
     const match = text.match(/(\d+)/);
@@ -95,12 +94,13 @@ function questionNumber(stage: HTMLElement): number {
 }
 
 function isAnswerAnimation(stage: HTMLElement): boolean {
-    if (stage.querySelector('.tb-feedback, .tb-zoom')) return true;
-    if (document.querySelector('.tb-loader-dots, .tb-plus')) return true;
+    const visible = (selector: string): boolean =>
+        Array.from(document.querySelectorAll(selector)).some(el => isVisible(el));
+    if (visible('.tb-feedback, .tb-zoom')) return true;
+    if (visible('.tb-loader-dots, .tb-plus')) return true;
     const gate = document.querySelector('.tb-focus');
     return !!gate && isVisible(gate);
 }
-
 function sessionQuestion(stage: HTMLElement): BetaSessionQuestion | null {
     const questions = betaSession && betaSession.questions;
     if (!questions || !questions.length) return null;
