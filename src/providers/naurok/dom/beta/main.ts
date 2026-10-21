@@ -114,6 +114,8 @@ function collectImages(root: Element | null): string[] {
     if (!root) return [];
     const urls: string[] = [];
     root.querySelectorAll<HTMLImageElement>('img').forEach(img => {
+        if (img.complete && img.naturalWidth === 0) return;
+        if (img.closest('.is-error, .tb-img-error')) return;
         const src = imageUrl(img);
         if (src && !src.startsWith('data:image/gif') && !src.startsWith('data:image/svg')) urls.push(src);
     });
@@ -134,7 +136,6 @@ function optionText(el: Element | null): string {
 function optionImages(el: Element | null): string[] {
     return el ? collectImages(el) : [];
 }
-
 function uniqueImages(...groups: string[][]): string[] {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -325,7 +326,8 @@ function questionImages(stage: HTMLElement, q: BetaSessionQuestion | null): stri
         ...textEls.flatMap(el => collectImages(el))
     ];
     const session: string[] = [];
-    if (q && q.image) session.push(q.image);
+    const questionImgFailed = !!root?.querySelector('.tb-img-error, .tb-img.is-error');
+    if (q && q.image && !questionImgFailed) session.push(q.image);
     (q && q.options || []).forEach(option => { if (option.image) session.push(option.image); });
     (q && q.left || []).forEach(option => { if (option.image) session.push(option.image); });
     (q && q.right || []).forEach(option => { if (option.image) session.push(option.image); });

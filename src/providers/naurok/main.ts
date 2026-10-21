@@ -160,7 +160,8 @@ import type { NaurokDomApi } from './dom';
         function processDOM(): void {
             // Використовуємо debounce, щоб не реагувати на кожну дрібну зміну під час рендеру Angular
             if (debounceTimer) clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => checkQuestion(false), 300);
+            const delay = dom.isBetaTest() ? 50 : 300;
+            debounceTimer = setTimeout(() => checkQuestion(false), delay);
         }
 
         function checkQuestion(skipDelay?: boolean): void {
@@ -230,6 +231,12 @@ import type { NaurokDomApi } from './dom';
             } else {
                 currentSolvingText = normalizedQuestionText;
                 isSolvingNaurok = true;
+                const solveStartTime = Date.now();
+
+                // Immediately switch from 'Waiting for question...' to 'Connecting...' / spinner
+                if (!window.xdAnswers.settings.silentMode) {
+                    I.startWaitingStatus(solveStartTime);
+                }
 
                 // Normal: auto-process after delay (skip for user-initiated refresh or test-beta)
                 const processFn = () => {
