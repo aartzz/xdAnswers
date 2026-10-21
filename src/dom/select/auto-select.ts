@@ -9,6 +9,22 @@
 
     function autoSelectAnswer(answerText: string, force?: boolean): void {
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
+
+        // test-beta is a React app with per-type renderers (order, match,
+        // categorize, grids, word games). Its provider owns those interactions
+        // so the generic option clicker cannot fire into a half-rendered stage.
+        const betaDom = I.providerModules?.naurok?.dom as { applyBetaAnswer?: (text: string) => void } | undefined;
+        if (betaDom?.applyBetaAnswer && document.querySelector('#tb-app')) {
+            window.xdAnswers._autoSelecting = true;
+            window.xdAnswers._oneClickContainer = null;
+            window.xdAnswers._answerContainer = null;
+            setTimeout(() => {
+                betaDom.applyBetaAnswer!(answerText);
+                window.setTimeout(() => { window.xdAnswers._autoSelecting = false; }, 8000);
+            }, window.xdAnswers.settings.autoAnswerCooldown || 0);
+            return;
+        }
+
         const allOptionElements = I.findOptionElements();
         const scopedContainer = window.xdAnswers._oneClickContainer || window.xdAnswers._answerContainer;
         // In oneclick/answer-scoped mode, only select options within the clicked question container

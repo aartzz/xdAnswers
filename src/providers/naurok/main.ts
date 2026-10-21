@@ -27,7 +27,13 @@ import type { NaurokDomApi } from './dom';
     window.addEventListener('message', function (event) {
         if (event.source !== window) return;
         const data = event.data as { source?: string; provider?: string; type?: string; payload?: unknown } | null;
-        if (!data || data.source !== 'xd-disabler' || data.provider !== 'naurok' || data.type !== 'session-payload') return;
+        if (!data || data.source !== 'xd-disabler' || data.provider !== 'naurok') return;
+        if (data.type === 'beta-session') {
+            dom.setBetaSession(data.payload);
+            extractTopicFromSessionPayload(data.payload);
+            return;
+        }
+        if (data.type !== 'session-payload') return;
         extractTopicFromSessionPayload(data.payload);
     });
 
@@ -35,7 +41,9 @@ import type { NaurokDomApi } from './dom';
         try {
             const p = payload as any;
             if (!p || typeof p !== 'object') return;
-            const name = p.settings && p.settings.name;
+            const name = (p.document && p.document.name) ||
+                (p.settings && p.settings.name) ||
+                (p.session && p.session.name);
             if (name && typeof name === 'string' && name.trim()) {
                 _naurokTopic = name.trim();
                 console.log('[xdAnswers/naurok] Topic extracted:', _naurokTopic);
@@ -153,12 +161,16 @@ import type { NaurokDomApi } from './dom';
             const state = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
             if (!state) return;
 
-            // 2. Створюємо підпис стану (текст + варіанти + к-сть картинок + їхні URL)
-            const currentStateHash = `${state.questionText}|${state.optionsText}|${state.validImages.join(',')}`;
+            // 2. Створюємо підпис стану (текст + варіанти + к-сть картинок + їхні URL).
+            // Для test-beta додаємо ключ питання: однаковий текст у сусідніх
+            // питаннях не повинен вважатися тим самим станом.
+            const questionKey = (state as { questionKey?: string }).questionKey || '';
+            const currentStateHash = `${state.questionText}|${state.optionsText}|${state.validImages.join(',')}|${questionKey}`;
             if (currentStateHash === lastStateHash) return;
 
             console.log("xdAnswers: New question state detected:", currentStateHash);
             lastStateHash = currentStateHash;
+            naurokModules.currentQuestionKey = questionKey;
 
             const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
 
@@ -179,6 +191,7 @@ import type { NaurokDomApi } from './dom';
                         // Re-read current question data from DOM at click time
                         const current = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
                         if (!current) return null;
+                        naurokModules.currentQuestionKey = (current as { questionKey?: string }).questionKey || '';
 
                         const images = await Promise.all(current.validImages.map(src => window.xdAnswers.imageToBase64(src)));
                         if (!_naurokTopic) { try { await fetchNaurokTopic(); } catch (e) { /* topic fetch failed */ } }
@@ -197,6 +210,13 @@ import type { NaurokDomApi } from './dom';
             } else {
                 // Normal: auto-process after delay (skip for user-initiated refresh)
                 const processFn = () => {
+                    if (isBeta) {
+                        const fresh = dom.getBetaQuestionState();
+                        if (!fresh || fresh.questionKey !== questionKey) {
+                            console.log('[xdAnswers/naurok] Question changed before AI request, skipping');
+                            return;
+                        }
+                    }
                     const questionData: XdQuestionData = {
                         text: state.questionText,
                         optionsText: state.optionsText,
@@ -209,6 +229,15 @@ import type { NaurokDomApi } from './dom';
                     const imgPromises = state.validImages.map(src => window.xdAnswers.imageToBase64(src));
 
                     Promise.all(imgPromises).then(images => {
+                        // The stage may have moved on while images were loading.
+                        // Never send a stale answer into the next question.
+                        if (isBeta) {
+                            const fresh = dom.getBetaQuestionState();
+                            if (!fresh || fresh.questionKey !== questionKey) {
+                                console.log('[xdAnswers/naurok] Question changed during image load, skipping stale answer');
+                                return;
+                            }
+                        }
                         questionData.base64Images = images.filter((img): img is string => img !== null);
                         window.xdAnswers.processQuestion(questionData);
                     });
