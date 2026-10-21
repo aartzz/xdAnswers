@@ -210,7 +210,7 @@ async function main() {
     }
 
     // Extension-level scripts and web-accessible page scripts.
-    await bundle('background.js', ['background.ts']);
+    await bundle('background.js', ['src/background.ts']);
     await bundle('popup.js', ['src/popup/main.ts']);
 
     const pageDisablerFiles = providerPageDisablers();
