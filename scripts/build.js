@@ -157,6 +157,7 @@ function transformPopupHtml(html) {
 async function copyStaticAssets() {
     fs.cpSync(path.join(ROOT, 'images'), path.join(DIST, 'images'), { recursive: true });
     fs.cpSync(path.join(ROOT, 'lib'), path.join(DIST, 'lib'), { recursive: true });
+    fs.cpSync(path.join(ROOT, 'rules'), path.join(DIST, 'rules'), { recursive: true });
     for (const css of ['popup.css', 'popup-m3.css']) {
         fs.copyFileSync(path.join(ROOT, 'src', 'popup', 'styles', css), path.join(DIST, css));
     }
