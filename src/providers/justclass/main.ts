@@ -4,6 +4,7 @@ import type { JustclassDomApi } from './dom';
 import type { JustclassApi, JustclassEntry } from './api';
 import type { JustclassUi } from './ui';
 import type { JustclassAiFallbackApi } from './ai-fallback';
+import { applyVisuals as runVisuals, clearOneClick, hookSilentMode } from './visuals';
 
 (function () {
     'use strict';
@@ -29,8 +30,6 @@ import type { JustclassAiFallbackApi } from './ai-fallback';
     let lastQuestionKey = '';
     let answeredKey = '';
     let retryCount = 0;
-    let oneClickRoot: Element | null = null;
-    let oneClickHandler: ((event: Event) => Promise<void>) | null = null;
 
     function domApi(): JustclassDomApi {
         return (I.providerModules as Record<string, any>).justclass.dom as JustclassDomApi;
@@ -44,8 +43,14 @@ import type { JustclassAiFallbackApi } from './ai-fallback';
         return (I.providerModules as Record<string, any>).justclass.ui as JustclassUi;
     }
 
+    function handleApplyVisuals(parsed?: XdParsedResponse): void {
+        runVisuals(domApi(), uiApi(), parsed, async () => {
+            await runScan({ force: true, userTriggered: true });
+        });
+    }
+
     const ai: JustclassAiFallbackApi = (I.providerModules as Record<string, any>).justclass.createAiFallback({
-        applyVisuals: (parsed?: XdParsedResponse) => applyVisuals(parsed),
+        applyVisuals: (parsed?: XdParsedResponse) => handleApplyVisuals(parsed),
         scheduleScan: (delay: number) => scheduleScan(delay),
         setAnsweredKey: (key: string) => { answeredKey = key; }
     });
@@ -61,104 +66,6 @@ import type { JustclassAiFallbackApi } from './ai-fallback';
             initJustClass();
         }
     }, 50);
-
-    // ---------------------------------------------------------------------
-    // One-click and silent modes
-    // ---------------------------------------------------------------------
-
-    function clearOneClick(): void {
-        if (oneClickRoot && oneClickHandler) {
-            oneClickRoot.removeEventListener('click', oneClickHandler, true);
-            oneClickRoot.classList.remove('xd-oneclick-ready');
-            (oneClickRoot as HTMLElement).style.removeProperty('cursor');
-        }
-        oneClickRoot = null;
-        oneClickHandler = null;
-    }
-
-    function registerOneClick(root: Element | null): void {
-        if (!root) return;
-        if (oneClickRoot === root && oneClickHandler) return;
-        clearOneClick();
-
-        oneClickRoot = root;
-        oneClickRoot.classList.add('xd-oneclick-ready');
-        (oneClickRoot as HTMLElement).style.cursor = 'pointer';
-
-        oneClickHandler = async (event: Event) => {
-            if (window.xdAnswers._autoSelecting) return;
-            const target = event && event.target as Element | null;
-            if (target && target.closest && target.closest('.ollama-helper-container')) return;
-            await runScan({ force: true, userTriggered: true });
-        };
-        oneClickRoot.addEventListener('click', oneClickHandler, true);
-    }
-
-    function applyVisuals(parsedArg?: XdParsedResponse): void {
-        const d = domApi();
-        const u = uiApi();
-        const settings = window.xdAnswers.settings || ({} as XdSettings);
-        const mode = settings.silentMode || '';
-        const parsed = parsedArg || window.xdAnswers.lastParsedResponse || {};
-
-        if (mode !== 'oneclick') clearOneClick();
-        u.clearMarks();
-
-        if (mode === 'oneclick') {
-            registerOneClick(d.questionRoot(d.getWidgets()));
-            return;
-        }
-
-        if (mode === 'ghost') {
-            if (!window.xdAnswers._originalTitle) {
-                window.xdAnswers._originalTitle = document.title;
-            }
-            const short = u.plainAnswer(parsed).substring(0, 60);
-            document.title = '[' + short + '] ' + window.xdAnswers._originalTitle;
-            return;
-        }
-
-        if (mode === 'stealth') {
-            const text = u.plainAnswer(parsed);
-            if (text) {
-                try { navigator.clipboard.writeText(text); } catch (e) {}
-            }
-            return;
-        }
-
-        const found = u.currentWidgetEntries();
-        if (!found) return;
-
-        if (mode === 'indicators') {
-            found.widgets.forEach((widget, index) => {
-                const entry = found.entries[index];
-                if (entry && entry.correctValues.length) u.markWidget(widget, entry, true);
-            });
-            return;
-        }
-
-        if (mode !== '') return;
-        if (!settings.highlightCorrect) return;
-
-        found.widgets.forEach((widget, index) => {
-            const entry = found.entries[index];
-            if (entry && entry.correctValues.length) u.markWidget(widget, entry, false);
-        });
-    }
-
-    function hookSilentMode(): void {
-        const internal = I as XdAnswersInternal & { __xdJustClassWrapped?: boolean };
-        if (!internal.applySilentMode || internal.__xdJustClassWrapped) return;
-        const original = internal.applySilentMode;
-        internal.applySilentMode = function (answerText: string, parsed: XdParsedResponse) {
-            if (parsed && parsed._justclass) {
-                applyVisuals(parsed);
-                return;
-            }
-            return original.apply(this, arguments as unknown as [string, XdParsedResponse]);
-        };
-        internal.__xdJustClassWrapped = true;
-    }
 
     // ---------------------------------------------------------------------
     // Scan loop
@@ -283,7 +190,7 @@ import type { JustclassAiFallbackApi } from './ai-fallback';
         }
 
         if (d.getHash() !== hash) return;
-        applyVisuals();
+        handleApplyVisuals();
     }
 
     // ---------------------------------------------------------------------
@@ -296,7 +203,7 @@ import type { JustclassAiFallbackApi } from './ai-fallback';
 
         console.log('[xdAnswers] JustClass provider loaded');
         lastHash = domApi().getHash();
-        hookSilentMode();
+        hookSilentMode(handleApplyVisuals);
 
         window.xdAnswers.onRefresh = () => {
             lastScanKey = '';
