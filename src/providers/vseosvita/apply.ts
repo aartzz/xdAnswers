@@ -174,16 +174,20 @@ export interface VseosvitaApplyApi {
 
     function applyOrderingSelect(meta: VseosvitaMeta, answerText: string): void {
         // AI returns items separated by "; " in correct order.
-        // For each listed item, find matching block and set its <select> to the
-        // position number (1-based).
+        // For each listed item, find matching block and set its <select> or click up-arrow.
         const wanted = answerText.split(/;\s*|\n/).map(s => normalize(s).toLowerCase()).filter(Boolean);
         wanted.forEach((want: string, positionIdx: number) => {
             const hit = meta.items.find((it: any) => {
                 const t = normalize(it.text).toLowerCase();
                 return t === want || t.includes(want) || want.includes(t);
             });
-            if (hit && hit.element && hit.element.tagName === 'SELECT') {
-                setNativeValue(hit.element, String(positionIdx + 1));
+            if (hit && hit.element) {
+                if (hit.element.tagName === 'SELECT') {
+                    setNativeValue(hit.element, String(positionIdx + 1));
+                } else {
+                    const upBtn = hit.element.querySelector('a[title="Поставити вище"], button[title="Поставити вище"]');
+                    if (upBtn) (upBtn as HTMLElement).click();
+                }
             }
         });
     }
