@@ -111,6 +111,7 @@ npx web-ext run -t chromium
 | Blooket | [blooket.com](https://blooket.com) | ❔️ | ✅ | ⚠️ | ✅ |
 | Gimkit | [gimkit.com](https://gimkit.com) | ❔️ | ✅ | ⚠️ | ✅ |
 | Wayground | [wayground.com](https://wayground.com) | ❔️ | ✅ | ⚠️ | ✅ |
+| Мрія | [school.mriia.gov.ua](https://school.mriia.gov.ua) | ❔️ | ✅ | ⚠️ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |
