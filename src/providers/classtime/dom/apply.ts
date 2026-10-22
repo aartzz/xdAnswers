@@ -81,6 +81,32 @@ export function applyCategorization(answerText: string): void {
 
     for (let m = 0; m < mappings.length; m++) {
         const map = mappings[m];
+
+        // 1. Check for modern Classtime categorizer grid: rows with cells matching category column
+        const rows = document.querySelectorAll('tr[data-testid="question-answer-row"]');
+        let gridClicked = false;
+        if (rows.length > 0) {
+            const headerCells = Array.from(document.querySelectorAll('[data-testid="category-header-cell"] [data-text="true"], [data-testid="category-header"]'));
+            const catIndex = headerCells.findIndex(h => norm(h.textContent).includes(norm(map.category)) || norm(map.category).includes(norm(h.textContent)));
+            if (catIndex >= 0) {
+                for (const row of Array.from(rows)) {
+                    const rowText = norm(row.querySelector('th [data-text="true"], th')?.textContent);
+                    if (rowText && (rowText.includes(norm(map.item)) || norm(map.item).includes(rowText))) {
+                        const cells = row.querySelectorAll('[data-testid="question-answer-cell"], td');
+                        const targetCell = cells[catIndex] || cells[catIndex + 1]; // +1 if th is index 0
+                        if (targetCell) {
+                            const btn = targetCell.querySelector('button, input, [role="radio"], [role="checkbox"]') || targetCell;
+                            (btn as HTMLElement).click();
+                            gridClicked = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (gridClicked) continue;
+
+        // 2. Fallback to Drag and drop
         const sourceEl = findElementByText(
             '[data-testid="categorizer-item"], .categorizer-item, [data-testid="draggable-item"]',
             map.item
