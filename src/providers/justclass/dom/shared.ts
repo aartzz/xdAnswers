@@ -55,8 +55,23 @@ export function getQuestionNumber(): number {
 }
 
 export function getWidgets(): Element[] {
-    return Array.from(document.querySelectorAll('justkids-select-dynamic'))
+    const selectors = [
+        'justkids-select-dynamic',
+        'justkids-text-dnd',
+        'justkids-input-dynamic',
+        'justkids-image-set-input',
+        '.answer__content'
+    ];
+    return Array.from(document.querySelectorAll(selectors.join(', ')))
         .filter(isVisible);
+}
+
+export function getWidgetType(widget: Element): 'select' | 'dnd' | 'input' | 'unscramble' | 'choice' {
+    if (widget.matches('justkids-select-dynamic') || widget.querySelector('mat-select')) return 'select';
+    if (widget.matches('justkids-text-dnd') || widget.querySelector('justkids-dnd-text-answer-drop-dynamic')) return 'dnd';
+    if (widget.matches('justkids-input-dynamic') || widget.querySelector('input')) return 'input';
+    if (widget.matches('justkids-image-set-input') || widget.querySelector('.image-set-item')) return 'unscramble';
+    return 'choice';
 }
 
 export function getSelect(widget: Element | null): Element | null {

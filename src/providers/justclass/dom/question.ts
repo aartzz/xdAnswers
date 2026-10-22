@@ -19,8 +19,17 @@ export function questionStem(widgets: Element[]): string {
     const root = questionRoot(widgets);
     if (!root) return '';
     const clone = root.cloneNode(true) as Element;
-    clone.querySelectorAll('justkids-select-dynamic').forEach(el => el.remove());
-    return norm((clone as HTMLElement).innerText || clone.textContent);
+    clone.querySelectorAll('justkids-select-dynamic, .answer__content').forEach(el => el.remove());
+
+    // If unscramble question exists, add prompt hint
+    const unscramble = root.querySelector('justkids-image-set-input');
+    let extra = '';
+    if (unscramble) {
+        const letters = (unscramble.textContent || '').replace(/\s+/g, ' ').trim();
+        extra = `\n[Завдання: анаграма / unscramble: "${letters}"]`;
+    }
+
+    return norm((clone as HTMLElement).innerText || clone.textContent) + extra;
 }
 
 export async function collectQuestionImages(widgets: Element[]): Promise<string[]> {
@@ -31,7 +40,7 @@ export async function collectQuestionImages(widgets: Element[]): Promise<string[
     root.querySelectorAll('img').forEach(img => {
         if (!img.src || img.src.startsWith('data:image/gif')) return;
         if (img.closest('justkids-select-dynamic')) return;
-        if ((img.width || img.naturalWidth || 0) < 40) return;
+        if ((img.width || img.naturalWidth || 0) < 30) return;
         if (!urls.includes(img.src)) urls.push(img.src);
     });
 
@@ -42,6 +51,28 @@ export async function collectQuestionImages(widgets: Element[]): Promise<string[
 }
 
 export async function readWidgetOptions(widget: Element): Promise<string[]> {
+    // 1. Direct choice button (.answer__content)
+    if (widget.matches('.answer__content') || widget.closest('.answer__content')) {
+        const text = norm((widget as HTMLElement).innerText || widget.textContent);
+        return text ? [text] : [];
+    }
+
+    // 2. Drag and drop text widget
+    if (widget.matches('justkids-text-dnd') || widget.querySelector('justkids-dnd-text-answer-drop-dynamic')) {
+        const items = document.querySelectorAll(
+            'justkids-dnd-text-answer-item, .justkids-dnd-text-answer-item, .dnd-item, [class*="dnd-item"]'
+        );
+        const texts = Array.from(items).map(i => norm(i.textContent)).filter(Boolean);
+        if (texts.length) return texts;
+    }
+
+    // 3. Dynamic input placeholder / blanks
+    if (widget.matches('justkids-input-dynamic') || widget.querySelector('input')) {
+        const ph = widget.getAttribute('placeholder') || widget.querySelector('input')?.getAttribute('placeholder') || '';
+        return ph ? [ph] : [];
+    }
+
+    // 4. mat-select driving
     const select = getSelect(widget);
     if (!select || isDisabled(select)) return [];
 

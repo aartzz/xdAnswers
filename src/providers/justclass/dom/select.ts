@@ -148,7 +148,27 @@ export function matchOption(options: Element[], values: string[]): Element | nul
 
 export async function selectWidget(widget: Element, entry: JustclassEntry): Promise<boolean> {
     const select = getSelect(widget);
-    if (!select || isDisabled(select)) return false;
+    if (!select || isDisabled(select)) {
+        // Direct input / textarea support
+        const input = widget.querySelector<HTMLInputElement>('input') || (widget.tagName === 'INPUT' ? widget as HTMLInputElement : null);
+        if (input && entry && entry.correctValues.length) {
+            input.value = entry.correctValues[0];
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            input.style.setProperty('outline', '2px solid #22c55e', 'important');
+            return true;
+        }
+
+        // Choice button (.answer__content) support
+        if (widget.matches('.answer__content') || widget.closest('.answer__content')) {
+            const target = (widget.matches('.answer__content') ? widget : widget.closest('.answer__content')) as HTMLElement;
+            target.click();
+            target.style.setProperty('outline', '2px solid #22c55e', 'important');
+            return true;
+        }
+
+        return false;
+    }
     if (isAlreadyCorrect(widget, entry)) return true;
 
     let panel: Element | null = null;
