@@ -1,10 +1,8 @@
 // src/providers/naurok/main.ts
-// Naurok provider entry: discovers the test topic via the sessions API and
-// feeds question data (text/options/images) into the AI pipeline, either
-// automatically or through the one-click handler. DOM extraction lives in
-// ./dom.ts; page-world session sniffing lives in ./disabler.ts and posts
-// payloads through a window.postMessage bridge.
+// Naurok provider entry: manages question polling, MutationObserver and wiring to the AI pipeline.
 import type { NaurokDomApi } from './dom';
+import { fetchNaurokTopic, getNaurokTopic, initMessageListener } from './topic';
+import { applyNaurokTextAnswer } from './autoanswer';
 
 (function () {
     'use strict';
@@ -17,116 +15,14 @@ import type { NaurokDomApi } from './dom';
     const naurokModules = modules.naurok || (modules.naurok = {});
     const dom = naurokModules.dom as NaurokDomApi;
 
-    // naurok exposes the test metadata at GET /api2/test/sessions/{numeric_id}.
-    // Topic/session come either from intercepted page traffic (see ./disabler.ts,
-    // which posts payloads from the page world) or from a direct API call once
-    // the numeric session ID is parsed from ng-init.
-    let _naurokTopic: string | null = null;
-    let _naurokSessionId: number | null = null;
-
-    window.addEventListener('message', function (event) {
-        if (event.source !== window) return;
-        const data = event.data as { source?: string; provider?: string; type?: string; payload?: unknown } | null;
-        if (!data || data.source !== 'xd-disabler' || data.provider !== 'naurok') return;
-        if (data.type === 'beta-session') {
-            dom.setBetaSession(data.payload);
-            extractTopicFromSessionPayload(data.payload);
-            return;
-        }
-        if (data.type !== 'session-payload') return;
-        extractTopicFromSessionPayload(data.payload);
-    });
-
-    function extractTopicFromSessionPayload(payload: unknown): void {
-        try {
-            const p = payload as any;
-            if (!p || typeof p !== 'object') return;
-            const name = (p.document && p.document.name) ||
-                (p.settings && p.settings.name) ||
-                (p.session && p.session.name);
-            if (name && typeof name === 'string' && name.trim()) {
-                _naurokTopic = name.trim();
-                console.log('[xdAnswers/naurok] Topic extracted:', _naurokTopic);
-            }
-            const sid = p.session && p.session.id;
-            if (typeof sid === 'number') {
-                _naurokSessionId = sid;
-                console.log('[xdAnswers/naurok] Session ID:', _naurokSessionId);
-            }
-        } catch (e) { console.warn('[xdAnswers/naurok] extractTopicFromSessionPayload error:', e); }
-    }
-
-    async function fetchNaurokTopic(): Promise<string | null> {
-        if (_naurokTopic) {
-            console.log('[xdAnswers/naurok] Topic already known:', _naurokTopic);
-            return _naurokTopic;
-        }
-        if (dom.isBetaTest()) {
-            const title = document.title.replace(/^(?:тест|результат)\s*:\s*/i, '').trim();
-            if (title) {
-                _naurokTopic = title;
-                console.log('[xdAnswers/naurok] Topic from test-beta title:', _naurokTopic);
-                return _naurokTopic;
-            }
-        }
-        try {
-            // Strategy 1: Parse numeric session ID from ng-init attribute in DOM
-            let sessionId = dom.parseSessionIdFromDOM();
-
-            // Strategy 2: If no ng-init, try extracting from page URL (UUID → may not work for API)
-            if (!sessionId) {
-                const urlMatch = window.location.pathname.match(/\/test\/testing\/([a-f0-9-]+)/i);
-                if (urlMatch) {
-                    console.log('[xdAnswers/naurok] Found UUID in URL but need numeric ID — checking DOM more thoroughly');
-                    // Try broader search for any element containing the session ID
-                    const allNgInit = document.querySelectorAll('[ng-init]');
-                    for (const el of allNgInit) {
-                        const val = el.getAttribute('ng-init') || '';
-                        const m = val.match(/init\s*\([^)]*(\d{7,})[^)]*\)/);
-                        if (m) {
-                            sessionId = parseInt(m[1], 10);
-                            console.log('[xdAnswers/naurok] Session ID found in ng-init (broad search):', sessionId);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!sessionId) {
-                console.log('[xdAnswers/naurok] No session ID found in DOM, skipping topic fetch');
-                return _naurokTopic;
-            }
-
-            _naurokSessionId = sessionId;
-
-            // Fetch topic directly from API via background proxy (bypasses CSP)
-            if (window.xdAnswers && window.xdAnswers.makeRequest) {
-                console.log('[xdAnswers/naurok] Fetching session API, sessionId:', sessionId);
-                try {
-                    const res = await window.xdAnswers.makeRequest({
-                        url: 'https://naurok.com.ua/api2/test/sessions/' + sessionId,
-                        method: 'GET',
-                        timeout: 10000
-                    });
-                    // makeRequest returns { success: true, data: <string> } from background.js
-                    const rawData = (res as any)?.data || res;
-                    const json = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
-                    extractTopicFromSessionPayload(json);
-                } catch (e) {
-                    console.warn('[xdAnswers/naurok] Session API fetch failed:', (e as any).message || e);
-                }
-            }
-        } catch (e) { console.warn('[xdAnswers/naurok] fetchNaurokTopic error:', e); }
-        if (!_naurokTopic) console.log('[xdAnswers/naurok] No topic found');
-        return _naurokTopic;
-    }
+    initMessageListener(dom);
 
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
             await window.xdAnswers.loadSettings();
             // Kick off topic discovery — parse ng-init for session ID, then API fetch
-            fetchNaurokTopic();
+            fetchNaurokTopic(dom);
             initNaurok();
         }
     }, 50);
@@ -215,14 +111,15 @@ import type { NaurokDomApi } from './dom';
                         naurokModules.currentQuestionKey = (current as { questionKey?: string }).questionKey || '';
 
                         const images = await Promise.all(current.validImages.map(src => window.xdAnswers.imageToBase64(src)));
-                        if (!_naurokTopic) { try { await fetchNaurokTopic(); } catch (e) { /* topic fetch failed */ } }
+                        let topic = getNaurokTopic();
+                        if (!topic) { try { topic = await fetchNaurokTopic(dom); } catch (e) { /* topic fetch failed */ } }
                         return {
                             text: current.questionText,
                             optionsText: current.optionsText,
                             base64Images: images.filter((img): img is string => img !== null),
                             questionType: current.questionType,
                             isMultiQuiz: current.isMultiQuiz,
-                            topic: _naurokTopic || undefined
+                            topic: topic || undefined
                         };
                     };
                     // setCursor=false — cursor:pointer is set on .test-question-content instead
@@ -257,7 +154,7 @@ import type { NaurokDomApi } from './dom';
                         base64Images: [],
                         questionType: state.questionType,
                         isMultiQuiz: state.isMultiQuiz,
-                        topic: _naurokTopic || undefined
+                        topic: getNaurokTopic() || undefined
                     };
 
                     const imgPromises = state.validImages.map(src => window.xdAnswers.imageToBase64(src));
@@ -280,16 +177,7 @@ import type { NaurokDomApi } from './dom';
 
                         if (state.questionType === 'text') {
                             window.xdAnswers._customAutoAnswer = function(answerText) {
-                                const input = (state as any).inputElement || document.querySelector<HTMLInputElement>(
-                                    '.test-content-text-inner input, .test-question-content input, .test-container input[type="text"]'
-                                );
-                                if (input) {
-                                    const clean = answerText.replace(/^(?:FINAL_ANSWER|Відповідь)\s*:\s*/i, '').trim();
-                                    input.value = clean;
-                                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                                    input.style.setProperty('outline', '2px solid #22c55e', 'important');
-                                }
+                                applyNaurokTextAnswer((state as any).inputElement, answerText);
                                 window.xdAnswers._customAutoAnswer = null;
                             };
                         } else {
