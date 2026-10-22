@@ -277,6 +277,25 @@ import type { NaurokDomApi } from './dom';
                             }
                         }
                         questionData.base64Images = images.filter((img): img is string => img !== null);
+
+                        if (state.questionType === 'text') {
+                            window.xdAnswers._customAutoAnswer = function(answerText) {
+                                const input = (state as any).inputElement || document.querySelector<HTMLInputElement>(
+                                    '.test-content-text-inner input, .test-question-content input, .test-container input[type="text"]'
+                                );
+                                if (input) {
+                                    const clean = answerText.replace(/^(?:FINAL_ANSWER|Відповідь)\s*:\s*/i, '').trim();
+                                    input.value = clean;
+                                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                                    input.style.setProperty('outline', '2px solid #22c55e', 'important');
+                                }
+                                window.xdAnswers._customAutoAnswer = null;
+                            };
+                        } else {
+                            window.xdAnswers._customAutoAnswer = null;
+                        }
+
                         window.xdAnswers.processQuestion(questionData).finally(() => {
                             isSolvingNaurok = false;
                         });
