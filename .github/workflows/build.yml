@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -23,14 +25,14 @@ jobs:
 
       - name: Build extensions for Firefox and Chrome
         run: |
-          npm run build:firefox:debug
-          npm run build:chrome:debug
+          npm run build:firefox
+          npm run build:chrome
 
       - name: Locate build artifacts
         id: artifacts
         run: |
-          firefox_path=$(find build -name "*.xpi" | head -n 1)
-          chrome_path=$(find build -name "xdAnswers-chrome-*.zip" -o -name "xdanswers-chrome-*.zip" | head -n 1)
+          firefox_path=$(find build -name "*firefox*.xpi" -o -name "*.xpi" | head -n 1)
+          chrome_path=$(find build -name "*chrome*.zip" -o -name "*.zip" | head -n 1)
 
           if [ -z "$firefox_path" ]; then
             echo "::error::Firefox .xpi artifact not found in build/ directory."
