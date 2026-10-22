@@ -86,7 +86,7 @@ function questionStage(): HTMLElement | null {
 }
 
 function questionRoot(stage: HTMLElement): HTMLElement | null {
-    return stage.querySelector<HTMLElement>('.tb-question');
+    return stage.querySelector<HTMLElement>('.tb-question, .tb-board, .tb-board-card');
 }
 function questionNumber(stage: HTMLElement): number {
     const text = normalize(stage.querySelector('.tb-question-num')?.textContent || '');
@@ -179,6 +179,10 @@ function detectType(stage: HTMLElement, q: BetaSessionQuestion | null): string {
     // A plain quiz also carries mode.kind="quiz"; only let the session payload
     // override the DOM for the special renderers it alone identifies.
     if (q && q.mode && q.mode.kind && q.mode.kind !== 'quiz') return q.mode.kind;
+    if (stage.querySelector('.tb-cw-board')) return 'crossword';
+    if (stage.querySelector('.tb-ws-board')) return 'wordsearch';
+    if (stage.querySelector('.tb-mu-board')) return 'matchup';
+    if (stage.querySelector('.tb-fm-board')) return 'findmatch';
     if (stage.querySelector('.tb-mode-hang')) return 'hangman';
     if (stage.querySelector('.tb-mode-anagram')) return 'anagram';
     if (stage.querySelector('.tb-order')) return 'order';
@@ -203,10 +207,14 @@ function aiQuestionType(type: string): string {
         case 'multiquiz': return 'multiquiz';
         case 'quiz':
         case 'show':
-        case 'whack': return 'quiz';
+        case 'whack':
+        case 'findmatch':
+        case 'matchup': return 'quiz';
         case 'short':
         case 'numeric':
         case 'hangman':
+        case 'crossword':
+        case 'wordsearch':
         case 'anagram': return 'short_text';
         case 'fill': return 'fill_blank';
         case 'dropdown': return 'select_in_text';
@@ -219,6 +227,16 @@ function aiQuestionType(type: string): string {
 }
 
 function choicesText(stage: HTMLElement): { text: string; images: string[]; multi: boolean } {
+    if (stage.querySelector('.tb-fm-board')) {
+        const tiles = Array.from(stage.querySelectorAll<HTMLElement>('.tb-fm-tile:not(.is-gone)'));
+        const text = tiles.map((tile, i) => `${BETA_OPTION_LABELS[i] || i + 1}: ${normalize(tile.textContent)}`).join('\n');
+        return { text, images: [], multi: false };
+    }
+    if (stage.querySelector('.tb-mu-board')) {
+        const chips = Array.from(stage.querySelectorAll<HTMLElement>('.tb-mu-chip'));
+        const text = chips.map((chip, i) => `${BETA_OPTION_LABELS[i] || i + 1}: ${normalize(chip.textContent)}`).join('\n');
+        return { text, images: [], multi: false };
+    }
     const answers = Array.from(stage.querySelectorAll<HTMLElement>('.tb-answers .tb-answer, .tb-holes .tb-mole'))
         .filter(isVisible);
     if (!answers.length) {
@@ -310,6 +328,17 @@ function wordModeText(stage: HTMLElement, hangman: boolean): string {
 }
 
 function questionText(stage: HTMLElement, type: string, q: BetaSessionQuestion | null): string {
+    if (type === 'crossword') {
+        const clue = stage.querySelector('.tb-cw-clue-text b');
+        const hint = stage.querySelector('.tb-cw-clue-text small');
+        const str = [readText(clue), readText(hint)].filter(Boolean).join(' · ');
+        if (str) return str;
+    }
+    if (type === 'wordsearch') {
+        const hint = stage.querySelector('.tb-board-hint, .tb-ws-word');
+        const str = readText(hint);
+        if (str) return str;
+    }
     if (type === 'fill' || type === 'dropdown') {
         const text = fillQuestionText(stage, type === 'dropdown');
         if (text) return text;

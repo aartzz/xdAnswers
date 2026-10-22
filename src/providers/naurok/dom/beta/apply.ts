@@ -363,6 +363,40 @@ function applyShort(answerText: string): void {
     setTimeout(clickSubmit, 80);
 }
 
+async function applyCrossword(answerText: string, stage: HTMLElement): Promise<void> {
+    const word = firstAnswerLine(answerText).toUpperCase().replace(/[^\p{L}\d]/gu, '');
+    if (!word) return;
+    const keys = Array.from(stage.querySelectorAll<HTMLButtonElement>('.tb-kb .tb-kb-key:not(.is-wide)'));
+    for (const char of word) {
+        const keyBtn = keys.find(k => (k.textContent || '').trim().toUpperCase() === char);
+        if (keyBtn && !keyBtn.disabled) {
+            clickElement(keyBtn);
+            await wait(45);
+        }
+    }
+    await wait(120);
+    clickSubmit();
+}
+
+function applyFindMatch(answerText: string, stage: HTMLElement): void {
+    const tiles = Array.from(stage.querySelectorAll<HTMLElement>('.tb-fm-tile:not(.is-gone)'));
+    const matched = I.matchAnswerToOptions(answerText, tiles);
+    if (matched.length > 0) {
+        clickElement(matched[0]);
+    }
+}
+
+async function applyMatchUp(answerText: string, stage: HTMLElement): Promise<void> {
+    const chips = Array.from(stage.querySelectorAll<HTMLElement>('.tb-mu-chip'));
+    const matchedChip = I.matchAnswerToOptions(answerText, chips);
+    if (matchedChip.length > 0) {
+        clickElement(matchedChip[0]);
+        await wait(60);
+        const targetRow = stage.querySelector<HTMLElement>('.tb-mu-row:not([disabled])');
+        if (targetRow) clickElement(targetRow);
+    }
+}
+
 export function applyBetaAnswer(answerText: string): void {
     const state = getBetaQuestionState();
     if (!state || !questionKeyMatches(state.questionKey)) return;
@@ -373,6 +407,12 @@ export function applyBetaAnswer(answerText: string): void {
 
     if (stage.querySelector('.tb-sky, .tb-maze')) {
         applyArcadeAnswer(answerText, stage);
+    } else if (stage.querySelector('.tb-cw-board')) {
+        void applyCrossword(answerText, stage);
+    } else if (stage.querySelector('.tb-fm-board')) {
+        applyFindMatch(answerText, stage);
+    } else if (stage.querySelector('.tb-mu-board')) {
+        void applyMatchUp(answerText, stage);
     } else if (stage.querySelector('.tb-mode-hang')) {
         void applyHangman(answerText);
     } else if (stage.querySelector('.tb-mode-anagram')) {
