@@ -29,23 +29,29 @@ import { applyMriiaChoiceAnswer, applyMriiaTextAnswer } from './autoanswer';
         }
         const domApi = dom;
 
-        function ensureHelperVisible() {
+        function updateHelperVisibility() {
             if (window.xdAnswers.settings.silentMode) return;
-            const isTestActive = !!(
-                document.querySelector('.test-choiser-card, .test-choiser-zone, .label-number-test, .homework-content, .test-pd, [class*="test-"], [class*="question"]') ||
-                /test|homework|lesson|diary/i.test(location.pathname) ||
-                domApi.readQuestion()
+            const hasTestElements = !!(
+                document.querySelector('.test-choiser-card, .test-choiser-zone, .label-number-test, .homework-content .form-control, .test-pd, [class*="test-choiser"]') ||
+                document.querySelector('.homework-answer-text, textarea.form-control, [data-testid="question-text"]')
             );
+            const q = domApi.readQuestion();
+            const isTestActive = hasTestElements || !!(q && (q.options.length > 0 || q.inputElement));
+
             if (isTestActive) {
                 if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
                     window.xdAnswers.createUI();
                     window.xdAnswers.attachAndPositionHelper();
+                } else {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
                 }
+            } else if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
             }
         }
 
-        // Show helper window when test or homework is loaded
-        ensureHelperVisible();
+        // Toggle helper window according to test presence
+        updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
@@ -54,14 +60,14 @@ import { applyMriiaChoiceAnswer, applyMriiaTextAnswer } from './autoanswer';
 
         const observer = new MutationObserver(() => {
             if (window.xdAnswers.isExtensionModifyingDOM) return;
-            ensureHelperVisible();
+            updateHelperVisibility();
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
         setInterval(checkQuestion, 800);
 
         function checkQuestion() {
-            ensureHelperVisible();
+            updateHelperVisibility();
             if (isProcessing || window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();

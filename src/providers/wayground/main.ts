@@ -29,20 +29,40 @@ import { applyWaygroundAnswer } from './autoanswer';
         }
         const domApi = dom;
 
-        // Show helper window when quiz page is active
-        if (!window.xdAnswers.settings.silentMode) {
-            window.xdAnswers.createUI();
-            window.xdAnswers.attachAndPositionHelper();
+        function updateHelperVisibility() {
+            if (window.xdAnswers.settings.silentMode) return;
+            const q = domApi.readQuestion();
+            const isQuizActive = !!(q?.text && (q?.options.length > 0 || q?.inputElement));
+
+            if (isQuizActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                } else {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                }
+            } else if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+            }
         }
+
+        updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
             checkQuestion();
         };
 
+        const observer = new MutationObserver(() => {
+            if (window.xdAnswers.isExtensionModifyingDOM) return;
+            updateHelperVisibility();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         setInterval(checkQuestion, 800);
 
         function checkQuestion() {
+            updateHelperVisibility();
             if (isProcessing || window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();

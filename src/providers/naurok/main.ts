@@ -70,9 +70,22 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
 
             const isBeta = dom.isBetaTest();
 
-            // 0. Перевіряємо, чи зараз йде анімація "Відповідь зараховано" або тест завершено
-            // На naurok scene==1 = показує питання, scene==2 = анімація, scene==3 = завершено
-            if (!isBeta && dom.getSceneBlocked()) return;
+            // 0. Перевіряємо, чи завершено тест або йде анімація
+            if (!isBeta) {
+                const scene3 = document.querySelector('[ng-show="test.scene == 3"]');
+                const isTestEnded = scene3 && !scene3.classList.contains('ng-hide');
+                if (isTestEnded && window.xdAnswers.helperContainer) {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+                    return;
+                }
+                if (dom.getSceneBlocked()) return;
+            } else {
+                const isTestEnded = location.pathname.includes('/test-beta/result/') || !!document.querySelector('.tb-results, .tb-end, .tb-finished');
+                if (isTestEnded && window.xdAnswers.helperContainer) {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+                    return;
+                }
+            }
 
             // 1. Текст запитання + варіанти + картинки (див. ./dom.ts)
             const state = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();

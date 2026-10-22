@@ -29,11 +29,25 @@ import { dismissFeedback } from './autoanswer';
         }
         const domApi = dom;
 
-        // Show helper window when game page is active
-        if (!window.xdAnswers.settings.silentMode) {
-            window.xdAnswers.createUI();
-            window.xdAnswers.attachAndPositionHelper();
+        function updateHelperVisibility() {
+            if (window.xdAnswers.settings.silentMode) return;
+            const isPlayPage = /^\/play/i.test(location.pathname);
+            const q = domApi.readQuestion();
+            const isGameActive = isPlayPage && !!(q?.text || q?.options.length || q?.feedbackEl || document.querySelector('#app [class*="question"], #app [class*="answer"]'));
+
+            if (isGameActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                } else {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                }
+            } else if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+            }
         }
+
+        updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
@@ -45,6 +59,8 @@ import { dismissFeedback } from './autoanswer';
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
         const observer = new MutationObserver(() => {
+            if (window.xdAnswers.isExtensionModifyingDOM) return;
+            updateHelperVisibility();
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(checkQuestion, 120);
         });
@@ -59,6 +75,7 @@ import { dismissFeedback } from './autoanswer';
         setInterval(checkQuestion, 800);
 
         function checkQuestion() {
+            updateHelperVisibility();
             if (isProcessing || window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();

@@ -25,13 +25,35 @@ import { applyKahootAnswer } from './autoanswer';
             return;
         }
 
-        // Show helper window when game page is active
-        if (!window.xdAnswers.settings.silentMode) {
-            window.xdAnswers.createUI();
-            window.xdAnswers.attachAndPositionHelper();
+        function updateHelperVisibility() {
+            if (window.xdAnswers.settings.silentMode) return;
+            const q = domApi.readQuestion();
+            const isGameActive = !!(
+                q?.text ||
+                document.querySelector('[data-functional-selector="block-title"], .n-kahoot-p, [data-functional-selector*="answer"]')
+            );
+
+            if (isGameActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                } else {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                }
+            } else if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+            }
         }
 
+        updateHelperVisibility();
+
         window.xdAnswers.onRefresh = () => { lastQuestionText = ''; checkQuestion(); };
+
+        const observer = new MutationObserver(() => {
+            if (window.xdAnswers.isExtensionModifyingDOM) return;
+            updateHelperVisibility();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
 
         // Poll for question changes — Kahoot is highly dynamic
         setInterval(checkQuestion, 800);
@@ -46,6 +68,7 @@ import { applyKahootAnswer } from './autoanswer';
         }
 
         function checkQuestion() {
+            updateHelperVisibility();
             if (window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();

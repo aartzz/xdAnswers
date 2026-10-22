@@ -29,20 +29,40 @@ import { applyGimkitAnswer } from './autoanswer';
         }
         const domApi = dom;
 
-        // Show helper window when game page is active
-        if (!window.xdAnswers.settings.silentMode) {
-            window.xdAnswers.createUI();
-            window.xdAnswers.attachAndPositionHelper();
+        function updateHelperVisibility() {
+            if (window.xdAnswers.settings.silentMode) return;
+            const q = domApi.readQuestion();
+            const isGameActive = !!(q?.text && (q?.options.length > 0 || q?.inputElement));
+
+            if (isGameActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                } else {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                }
+            } else if (window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+            }
         }
+
+        updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
             checkQuestion();
         };
 
+        const observer = new MutationObserver(() => {
+            if (window.xdAnswers.isExtensionModifyingDOM) return;
+            updateHelperVisibility();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         setInterval(checkQuestion, 700);
 
         function checkQuestion() {
+            updateHelperVisibility();
             if (isProcessing || window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();
