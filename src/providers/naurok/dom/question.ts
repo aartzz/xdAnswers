@@ -10,6 +10,7 @@ export interface NaurokQuestionState {
     isMultiQuiz: boolean;
     questionType: 'multiquiz' | 'quiz' | 'text';
     inputElement?: HTMLInputElement | null;
+    questionKey?: string;
 }
 
 // Question image (<img> inside .test-question-content or background-image on

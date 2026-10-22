@@ -78,16 +78,15 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
             const state = isBeta ? dom.getBetaQuestionState() : dom.getQuestionState();
             if (!state) return;
 
-            const normalizedQuestionText = (state.questionText || state.validImages.join(',')).trim();
-            if (!skipDelay && normalizedQuestionText && normalizedQuestionText === currentSolvingText) {
+            const questionKey = (state as { questionKey?: string }).questionKey || '';
+            const normalizedQuestionText = (state.questionText || (state.validImages && state.validImages.join(',')) || '').trim();
+            const currentIdentity = questionKey || normalizedQuestionText;
+            if (!skipDelay && currentIdentity && currentIdentity === currentSolvingText) {
                 return;
             }
 
-            // 2. Створюємо підпис стану (текст + варіанти + к-сть картинок + їхні URL).
-            // Для test-beta додаємо ключ питання: однаковий текст у сусідніх
-            // питаннях не повинен вважатися тим самим станом.
-            const questionKey = (state as { questionKey?: string }).questionKey || '';
-            const currentStateHash = `${state.questionText}|${state.optionsText}|${state.validImages.join(',')}|${questionKey}`;
+            // 2. Створюємо підпис стану (використовуємо стабільний questionKey або текст+варіанти)
+            const currentStateHash = questionKey || `${state.questionText}|${state.optionsText}`;
             if (currentStateHash === lastStateHash) return;
 
             console.log("xdAnswers: New question state detected:", currentStateHash);
@@ -131,7 +130,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                     window.xdAnswers.setupOneClickHandler(container as HTMLElement, getQuestionDataFn, false);
                 }
             } else {
-                currentSolvingText = normalizedQuestionText;
+                currentSolvingText = currentIdentity;
                 isSolvingNaurok = true;
                 const solveStartTime = Date.now();
 
@@ -144,7 +143,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                 const processFn = () => {
                     if (isBeta) {
                         const fresh = dom.getBetaQuestionState();
-                        if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
+                        if (fresh && fresh.questionKey && fresh.questionKey !== state.questionKey) {
                             console.log('[xdAnswers/naurok] Question changed before AI request, re-evaluating');
                             lastStateHash = "";
                             currentSolvingText = "";
@@ -169,7 +168,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                         // Never send a stale answer into the next question.
                         if (isBeta) {
                             const fresh = dom.getBetaQuestionState();
-                            if (fresh && fresh.questionText && fresh.questionText !== state.questionText) {
+                            if (fresh && fresh.questionKey && fresh.questionKey !== state.questionKey) {
                                 console.log('[xdAnswers/naurok] Question changed during image load, re-evaluating');
                                 lastStateHash = "";
                                 currentSolvingText = "";

@@ -61,6 +61,7 @@ function normalize(value: string | null | undefined): string {
 function readText(root: Element | null): string {
     if (!root) return '';
     const clone = root.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('.tb-img-error, .is-error').forEach(node => node.remove());
     clone.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode(' ')));
     clone.querySelectorAll('p, div, li, tr, h1, h2, h3, h4, h5, h6').forEach(node => node.append(' '));
     return normalize(clone.textContent || '');
@@ -125,6 +126,7 @@ function collectImages(root: Element | null): string[] {
 function optionText(el: Element | null): string {
     if (!el) return '';
     const clone = (el.cloneNode(true) as HTMLElement);
+    clone.querySelectorAll('.tb-img-error, .is-error').forEach(node => node.remove());
     if (clone.classList.contains('tb-arcade-opt')) clone.querySelector('b')?.remove();
     clone.querySelectorAll(
         '.tb-answer-key, .tb-answer-tick, .tb-match-badge, .tb-order-num, ' +
@@ -379,12 +381,11 @@ export function getBetaQuestionState(): NaurokBetaQuestionState | null {
     if (!text && !optionsText && !images.length) return null;
 
     const num = questionNumber(stage);
-    // DOM-derived key: stable before/after the session payload arrives, so a
-    // late payload cannot make the provider reprocess the same question.
-    const key = `n${num}|${normalize(text).slice(0, 80)}|${type}`;
+    const qId = q?.id ? `|q${q.id}` : '';
+    const key = `n${num}${qId}|${type}`;
 
     return {
-        questionText: text || (images.length ? '[запитання-зображення]' : ''),
+        questionText: text || '[запитання-зображення]',
         optionsText,
         validImages: images,
         isMultiQuiz,

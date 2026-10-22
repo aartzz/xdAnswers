@@ -14,6 +14,14 @@
     };
 
     I.startWaitingStatus = function(startTime: number): void {
+        const answerContentDiv = window.xdAnswers.answerContentDiv;
+        if (!answerContentDiv) return;
+
+        // If a status interval and loader are already running, keep them running without restarting the UI
+        if (answerContentDiv.querySelector('.xd-loader') && window.xdAnswers._statusInterval) {
+            return;
+        }
+
         if (window.xdAnswers._statusInterval) {
             clearInterval(window.xdAnswers._statusInterval);
             window.xdAnswers._statusInterval = null;
@@ -22,8 +30,6 @@
             clearInterval(window.xdAnswers._streamTimerInterval);
             window.xdAnswers._streamTimerInterval = null;
         }
-        const answerContentDiv = window.xdAnswers.answerContentDiv;
-        if (!answerContentDiv) return;
         answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
         const statusDiv = document.createElement('div');
         statusDiv.className = 'xd-status';

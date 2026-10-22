@@ -151,6 +151,12 @@
 
     window.xdAnswers.imageToBase64 = async function(url: string): Promise<string | null> {
         try {
+            // If image is already known to be broken in the DOM, don't waste time fetching it
+            const img = document.querySelector<HTMLImageElement>(`img[src="${url}"]`);
+            if (img && (img.closest('.is-error, .tb-img-error') || (img.complete && img.naturalWidth === 0))) {
+                return null;
+            }
+
             const response = await window.xdAnswers.makeRequest({ method: 'GET', url, responseType: 'blob', timeout: 2000 });
             if (response?.success && response.data && typeof response.data === 'string' && response.data.startsWith('data:')) {
                 return response.data.split(',', 2)[1] || null;
