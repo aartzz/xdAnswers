@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>xdAnswers Settings</title>
+    <link rel="stylesheet" href="popup.css">
+    <link id="beercss-stylesheet" rel="stylesheet" href="lib/beercss/beer.min.css">
+    <link id="beercss-m3-stylesheet" rel="stylesheet" href="popup-m3.css">
+</head>
+<body>
+    <div class="header">
+        <h3 id="popup-title">xdAnswers <small class="xd-popup-version"></small></h3>
+    </div>
+
+    <div class="tab-buttons">
+        <button class="tab-button active" data-tab="ai-tab"><span class="tab-label">AI</span></button>
+        <button class="tab-button" data-tab="providers-tab"><span class="tab-label">Providers</span></button>
+        <button class="tab-button" data-tab="features-tab"><span class="tab-label">Settings</span></button>
+        <button class="tab-button" data-tab="donate-tab"><span class="tab-label">♥</span></button>
+    </div>
+
+    <div id="ai-tab" class="tab-content active">
+        <div class="settings-card">
+            <div class="form-group provider-select-group">
+                <label for="active-provider-trigger">Provider:</label>
+                <div class="provider-select-wrapper">
+                    <button type="button" id="active-provider-trigger" class="provider-select-trigger"></button>
+                    <div id="active-provider-dropdown" class="provider-dropdown hidden"></div>
+                </div>
+            </div>
+            <div class="form-group model-select-group">
+                <label><span id="models-label-text">Models:</span> <span id="fetch-models-btn" class="fetch-models-btn" title="Fetch models from API">↻</span></label>
+                <div class="model-panel">
+                    <div class="model-panel-search">
+                        <input type="text" id="model-name" placeholder="Search or type custom model..." autocomplete="off">
+                    </div>
+                    <div id="model-list" class="model-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="form-group toggle-group">
+                <label>
+                    <input type="checkbox" id="consensus-toggle">
+                    <span id="consensus-label-text">Consensus mode</span>
+                </label>
+            </div>
+            <div id="consensus-runs-container" class="consensus-runs-container" style="display: none;"></div>
+            <button type="button" id="add-consensus-run-btn" class="add-consensus-run-btn" style="display: none;">+ Add model</button>
+        </div>
+    </div>
+
+    <div id="providers-tab" class="tab-content">
+        <div id="providers-container"></div>
+    </div>
+
+    <div id="features-tab" class="tab-content">
+        <!-- AOSP Settings Search Bar -->
+        <div class="aosp-search-wrapper">
+            <span class="aosp-search-icon">search</span>
+            <input type="text" id="settings-search-input" placeholder="Шукати в налаштуваннях" autocomplete="off">
+            <button type="button" id="settings-search-clear" class="aosp-search-clear hidden" aria-label="Clear">×</button>
+        </div>
+
+        <!-- AOSP Main Categories View -->
+        <div id="settings-categories-view" class="settings-categories-view">
+            <div class="aosp-category-card" data-category="general">
+                <div class="aosp-category-icon aosp-icon-blue">
+                    <span class="material-icon">tune</span>
+                </div>
+                <div class="aosp-category-info">
+                    <div class="aosp-category-title" id="cat-title-general">Загальні</div>
+                    <div class="aosp-category-desc" id="cat-desc-general">Мова, гарячі клавіші, розташування</div>
+                </div>
+            </div>
+
+            <div class="aosp-category-card" data-category="automation">
+                <div class="aosp-category-icon aosp-icon-cyan">
+                    <span class="material-icon">auto_mode</span>
+                </div>
+                <div class="aosp-category-info">
+                    <div class="aosp-category-title" id="cat-title-automation">Автоматизація й відповіді</div>
+                    <div class="aosp-category-desc" id="cat-desc-automation">Автовідповідь, підсвічування, обмеження</div>
+                </div>
+            </div>
+
+            <div class="aosp-category-card" data-category="ai-tools">
+                <div class="aosp-category-icon aosp-icon-purple">
+                    <span class="material-icon">extension</span>
+                </div>
+                <div class="aosp-category-info">
+                    <div class="aosp-category-title" id="cat-title-ai-tools">Інструменти ШІ</div>
+                    <div class="aosp-category-desc" id="cat-desc-ai-tools">Веб-пошук, калькулятор LaTeX</div>
+                </div>
+            </div>
+
+            <div class="aosp-category-card" data-category="stealth">
+                <div class="aosp-category-icon aosp-icon-pink">
+                    <span class="material-icon">visibility_off</span>
+                </div>
+                <div class="aosp-category-info">
+                    <div class="aosp-category-title" id="cat-title-stealth">Режим непомітності</div>
+                    <div class="aosp-category-desc" id="cat-desc-stealth">Тихий режим, індикатори, стелс</div>
+                </div>
+            </div>
+
+            <div class="aosp-category-card" data-category="appearance">
+                <div class="aosp-category-icon aosp-icon-amber">
+                    <span class="material-icon">palette</span>
+                </div>
+                <div class="aosp-category-info">
+                    <div class="aosp-category-title" id="cat-title-appearance">Оформлення й стиль</div>
+                    <div class="aosp-category-desc" id="cat-desc-appearance">Кольори, теми, система дизайну</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AOSP Subpage View (Back button + content) -->
+        <div id="settings-subpage-view" class="settings-subpage-view hidden" style="display: none;">
+            <div class="aosp-subpage-header">
+                <button type="button" id="settings-back-btn" class="aosp-back-btn" aria-label="Back">
+                    <span class="material-icon">arrow_back</span>
+                </button>
+                <h4 id="settings-subpage-title" class="aosp-subpage-title">Розділ</h4>
+            </div>
+
+            <div id="settings-section-general" class="settings-section-panel hidden" style="display: none;">
+                <div class="settings-card">
+                    <div class="form-group" data-search-terms="мова language язык">
+                        <label for="language-select">Language / Мова / Язык:</label>
+                        <select id="language-select">
+                            <option value="uk">Українська</option>
+                            <option value="ru">Русский</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                    <div class="form-group" data-search-terms="гарячі клавіші hotkey shortcut">
+                        <label id="hotkey-label">Hotkey</label>
+                        <div class="hotkey-recorder-wrapper">
+                            <button type="button" id="hotkey-recorder" class="hotkey-recorder" title="Click to record a new shortcut">
+                                <kbd id="hotkey-recorder-kbd">Ctrl+Shift+X</kbd>
+                            </button>
+                            <button type="button" id="hotkey-clear" class="hotkey-clear" title="Reset to default">↺</button>
+                        </div>
+                        <p class="field-hint" id="hotkey-hint">Click the key combination above to rebind.</p>
+                    </div>
+                    <div class="form-group" data-search-terms="позиція картка розташування position">
+                        <label>Default position</label>
+                        <div id="position-grid" class="position-grid" role="radiogroup" aria-label="Default helper position">
+                            <button type="button" class="position-cell" data-position="top-left" role="radio" aria-label="Top left" title="Top left"></button>
+                            <button type="button" class="position-cell" data-position="top-center" role="radio" aria-label="Top center" title="Top center"></button>
+                            <button type="button" class="position-cell" data-position="top-right" role="radio" aria-label="Top right" title="Top right"></button>
+                            <button type="button" class="position-cell" data-position="middle-left" role="radio" aria-label="Middle left" title="Middle left"></button>
+                            <button type="button" class="position-cell" data-position="center" role="radio" aria-label="Center" title="Center"></button>
+                            <button type="button" class="position-cell" data-position="middle-right" role="radio" aria-label="Middle right" title="Middle right"></button>
+                            <button type="button" class="position-cell" data-position="bottom-left" role="radio" aria-label="Bottom left" title="Bottom left"></button>
+                            <button type="button" class="position-cell" data-position="bottom-center" role="radio" aria-label="Bottom center" title="Bottom center"></button>
+                            <button type="button" class="position-cell" data-position="bottom-right" role="radio" aria-label="Bottom right" title="Bottom right"></button>
+                        </div>
+                        <p class="field-hint">Where the answer card appears when it opens.</p>
+                    </div>
+                    <div class="form-group toggle-group" data-search-terms="перетягування drag position">
+                        <label>
+                            <input type="checkbox" id="remember-drag-toggle">
+                            <span>Remember dragged position</span>
+                        </label>
+                        <p class="field-hint">If you move the card by dragging, save that exact spot. Otherwise it resets to the default position above.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-section-automation" class="settings-section-panel hidden" style="display: none;">
+                <div class="settings-card">
+                    <div class="form-group toggle-group" data-search-terms="автовідповідь auto answer">
+                        <label>
+                            <input type="checkbox" id="auto-answer-toggle">
+                            <span>Auto-answer</span>
+                        </label>
+                        <p class="field-hint">Automatically select the correct answer on the page.</p>
+                    </div>
+                    <div class="form-group" id="cooldown-group" data-search-terms="затримка cooldown speed">
+                        <label for="auto-answer-cooldown">Cooldown (ms):</label>
+                        <input type="number" id="auto-answer-cooldown" min="0" step="100" placeholder="1500">
+                    </div>
+                    <div class="form-group toggle-group" data-search-terms="підсвічування highlight correct answer">
+                        <label>
+                            <input type="checkbox" id="highlight-correct-toggle">
+                            <span>Highlight correct answer</span>
+                        </label>
+                        <p class="field-hint">Highlight the correct option with a green border when UI is visible.</p>
+                    </div>
+                    <div class="form-group toggle-group" data-search-terms="лише відповідь show answer only tokens">
+                        <label>
+                            <input type="checkbox" id="show-answer-only-toggle">
+                            <span>Show answer only</span>
+                        </label>
+                        <p class="field-hint">Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.</p>
+                    </div>
+                    <div class="form-group toggle-group" data-search-terms="disabler відключити перевірки списування">
+                        <label>
+                            <input type="checkbox" id="disabler-toggle">
+                            <span id="disabler-label">Disabler</span>
+                        </label>
+                        <p class="field-hint" id="disabler-hint">Відключає перевірки сайту, щоб дозволити легше списування.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-section-ai-tools" class="settings-section-panel hidden" style="display: none;">
+                <div class="settings-card">
+                    <div class="form-group toggle-group" data-search-terms="веб пошук web search internet">
+                        <label>
+                            <input type="checkbox" id="web-search-toggle">
+                            <span id="web-search-label">Web Search</span>
+                        </label>
+                        <p class="field-hint" id="web-search-hint">Enable AI to search the web for up-to-date information. Requires a search provider (LangSearch or Serper.dev) with API key in the Providers tab.</p>
+                    </div>
+                    <div class="form-group toggle-group" data-search-terms="калькулятор math latex calculator формули">
+                        <label>
+                            <input type="checkbox" id="calculator-toggle">
+                            <span id="calculator-label">Calculator (LaTeX/Math)</span>
+                        </label>
+                        <p class="field-hint" id="calculator-hint">Allow AI to use built-in math calculator for precise evaluations and LaTeX formulas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-section-stealth" class="settings-section-panel hidden" style="display: none;">
+                <div class="settings-card">
+                    <div class="form-group toggle-group" data-search-terms="тихий режим silent mode стелс">
+                        <label>
+                            <input type="checkbox" id="silent-mode-toggle">
+                            <span>Silent mode</span>
+                        </label>
+                    </div>
+                    <div class="form-group" id="silent-mode-select-group" data-search-terms="тихий режим silent mode indicators ghost stealth oneclick">
+                        <label for="silent-mode-select">Mode:</label>
+                        <select id="silent-mode-select">
+                            <option value="indicators">Indicators</option>
+                            <option value="ghost">Page title</option>
+                            <option value="stealth">Stealth</option>
+                            <option value="oneclick">One-click</option>
+                        </select>
+                        <p class="field-hint">
+                            <strong>Indicators:</strong> Overlay dot next to the correct answer.<br>
+                            <strong>Page title:</strong> Hide window. Answer shown only in browser tab title.<br>
+                            <strong>Stealth:</strong> Completely invisible. Answer auto-copied to clipboard.<br>
+                            <strong>One-click:</strong> Click on a question to instantly select the correct answer.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-section-appearance" class="settings-section-panel hidden" style="display: none;">
+                <div class="m3-section-title">Design System</div>
+                <div class="settings-card">
+                    <div class="form-group theme-engine-group" data-search-terms="система дизайну тема theme engine material3 legacy">
+                        <label for="theme-engine-select" id="theme-engine-label">Engine / Тема:</label>
+                        <select id="theme-engine-select">
+                            <option value="material3">Material 3 Expressive (Beer CSS)</option>
+                            <option value="legacy">Legacy (Dark Glass)</option>
+                        </select>
+                        <p class="field-hint" id="theme-engine-hint">Material 3 Expressive (Beer CSS) або класичний стиль (Legacy).</p>
+                    </div>
+                </div>
+
+                <div class="m3-section-title">Appearance</div>
+                <div class="settings-card">
+                    <div class="form-group" data-search-terms="темна світла тема dark light mode">
+                        <label id="theme-mode-label">Theme mode:</label>
+                        <div class="theme-mode-segmented" id="theme-mode-segmented" role="radiogroup">
+                            <button type="button" class="theme-mode-btn" data-mode="dark" role="radio" aria-checked="true">
+                                <span class="theme-mode-icon">dark_mode</span>
+                                <span class="theme-mode-text" id="theme-mode-dark-text">Dark</span>
+                            </button>
+                            <button type="button" class="theme-mode-btn" data-mode="light" role="radio" aria-checked="false">
+                                <span class="theme-mode-icon">light_mode</span>
+                                <span class="theme-mode-text" id="theme-mode-light-text">Light</span>
+                            </button>
+                        </div>
+                        <p class="field-hint" id="theme-mode-hint">Switch between dark and light theme.</p>
+                    </div>
+
+                    <div class="form-group" data-search-terms="колір палітра palette accent color колірна">
+                        <label id="theme-palette-label">Color palette (accent):</label>
+                        <div class="theme-palette-swatches" id="theme-palette-swatches"></div>
+                        <div id="theme-palette-picker-container" class="theme-palette-picker-container hidden"></div>
+                        <p class="field-hint" id="theme-palette-hint">Choose an accent color for the interface.</p>
+                    </div>
+
+                    <div class="form-group toggle-group" data-search-terms="світіння glow effect">
+                        <label>
+                            <input type="checkbox" id="glow-effect-toggle">
+                            <span>Glow effect</span>
+                        </label>
+                        <p class="field-hint">Soft accent-colored glow around the on-page answer card.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="theme-editor" class="theme-editor-overlay hidden">
+        <div class="theme-editor-card">
+            <div class="theme-editor-header">
+                <span class="theme-editor-title">New theme</span>
+                <button type="button" id="theme-editor-close" class="theme-editor-close" aria-label="Close">×</button>
+            </div>
+            <div class="form-group">
+                <label for="theme-editor-name">Name:</label>
+                <input type="text" id="theme-editor-name" maxlength="24" placeholder="My theme">
+            </div>
+            <div class="form-group">
+                <label for="editor-border-input">Accent:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-border-input" maxlength="7" placeholder="#6366f1">
+                    <input type="color" id="editor-border-picker" class="color-swatch" aria-label="Pick accent color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-header-input">Header:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-header-input" maxlength="7" placeholder="#2a2a3e">
+                    <input type="color" id="editor-header-picker" class="color-swatch" aria-label="Pick header color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-content-input">Background:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-content-input" maxlength="7" placeholder="#1e1e2e">
+                    <input type="color" id="editor-content-picker" class="color-swatch" aria-label="Pick background color">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editor-text-input">Text:</label>
+                <div class="color-input-wrapper">
+                    <input type="text" id="editor-text-input" maxlength="7" placeholder="#cdd6f4">
+                    <input type="color" id="editor-text-picker" class="color-swatch" aria-label="Pick text color">
+                </div>
+            </div>
+            <div class="theme-editor-actions">
+                <button type="button" id="theme-editor-cancel" class="theme-editor-btn secondary">Cancel</button>
+                <button type="button" id="theme-editor-save" class="theme-editor-btn primary">Save theme</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="donate-tab" class="tab-content">
+        <div class="donate-content">
+            <p>If you like this extension, consider supporting the developer.</p>
+            <a href="https://t.me/migor1103_donate" target="_blank" rel="noopener" class="donate-button telegram">
+                <svg class="donate-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M9.04 15.47 8.86 19c.4 0 .57-.17.77-.37l1.85-1.77 3.84 2.81c.7.39 1.21.19 1.39-.65l2.53-11.86c.24-1.08-.39-1.5-1.08-1.25L3.37 10.23c-1.05.41-1.04.99-.18 1.26l3.98 1.24 9.25-5.82c.44-.28.83-.12.5.19l-7.88 8.37Z"/>
+                </svg>
+                <span>Subscribe on Telegram</span>
+            </a>
+        </div>
+    </div>
+
+    <script src="src/core/constants.js"></script>
+    <script src="src/core/settings-defaults.js"></script>
+    <script src="src/ui/i18n.js"></script>
+    <script type="module" src="lib/beercss/beer.min.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

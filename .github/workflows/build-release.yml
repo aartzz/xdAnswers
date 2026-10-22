@@ -54,8 +54,8 @@ jobs:
       - name: Locate build artifacts
         id: artifacts
         run: |
-          firefox_path=$(find build -name "*.xpi" | head -n 1)
-          chrome_path=$(find build -name "xdAnswers-chrome-*.zip" -o -name "xdanswers-chrome-*.zip" | head -n 1)
+          firefox_path=$(find build -name "*firefox*.xpi" -o -name "*.xpi" | head -n 1)
+          chrome_path=$(find build -name "*chrome*.zip" -o -name "*.zip" | head -n 1)
 
           if [ -z "$firefox_path" ]; then
             echo "::error::Firefox .xpi artifact not found in build/ directory."
@@ -66,12 +66,12 @@ jobs:
             exit 1
           fi
 
-          # Нормалізуємо імена файлів, щоб користувач у Releases бачив узгоджені назви
+          # Нормалізуємо імена файлів, якщо назва відрізняється
           tag="${{ github.ref_name }}"
           firefox_final="build/xdAnswers-firefox-${tag}.xpi"
           chrome_final="build/xdAnswers-chrome-${tag}.zip"
-          mv "$firefox_path" "$firefox_final"
-          mv "$chrome_path"  "$chrome_final"
+          [ "$firefox_path" != "$firefox_final" ] && mv "$firefox_path" "$firefox_final" || true
+          [ "$chrome_path" != "$chrome_final" ] && mv "$chrome_path" "$chrome_final" || true
 
           echo "firefox=$firefox_final" >> "$GITHUB_OUTPUT"
           echo "chrome=$chrome_final"   >> "$GITHUB_OUTPUT"
