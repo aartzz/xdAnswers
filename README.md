@@ -1,92 +1,55 @@
-# xdAnswers
+<img src="images/icon128.png" width="150" align="left"/>
 
-**🇺🇦 Українська** | [🇬🇧 English](README-en.md)
+## xdAnswers
+*[Licensed under the GNU General Public License v3.0](LICENSE)*
+
+Безкоштовне розширення з відкритим кодом, яке розв'язує тестові питання за допомогою ШІ.
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/aartzz/xdAnswers/build.yml)
 ![GitHub Repo stars](https://img.shields.io/github/stars/aartzz/xdAnswers?style=flat)
+[![Cash App](https://img.shields.io/badge/Donate-00C244&logo=cashapp&logoColor=white)](https://t.me/s/migor1103_donate)
 
-Безкоштовне розширення для Chrome, яке розв'язує тестові питання за допомогою ШІ.
-
-Працює з коробки — вбудовані безкоштовні провайдери, API-ключ не потрібен.
 > [!IMPORTANT]  
-> **Бета** — баги бувають. [Звітуйте про них](https://github.com/aartzz/xdAnswers/issues).
+> Проект може мати баги. Будь ласка, [Звітуйте про них](https://github.com/aartzz/xdAnswers/issues).
 
-![Screenshot](images/README/ui.png)
+![showcase](./images/README/showcase.webp)
 
-## Можливості
+### Можливості
 
-- **Безкоштовно за замовчуванням** — 4 вбудовані провайдери без API-ключа: Unturf Hermes, Unturf Qwen, Unturf Vision (для зображень), OpenCode Zen
+- **Безкоштовні моделі з коробки** — DeepSeek, MiMo, Nemotron, Qwen etc.
 - **Будь-який OpenAI-сумісний API** — OpenAI, Anthropic, Gemini, DeepSeek, Groq, локальний Ollama, що завгодно
 - **Розпізнавання зображень** — обробляє зображення в питаннях та варіантах відповідей (через провайдери з підтримкою vision)
-- **Пошук в інтернеті** — модель може самостійно шукати актуальну інформацію в мережі (через LangSearch / SearXNG, до 3 ітерацій)
+- **Пошук в інтернеті** — модель може самостійно шукати актуальну інформацію в мережі (пару безкоштовних інстанцій SearXNG інтегровано з коробки)
 - **Тихі режими** — індикатори (точка біля правильної відповіді), заголовок сторінки, стелс (тільки буфер обміну) або one-click (клік на питання для відповіді)
 - **Автовідповідь** — автоматично обирає правильний варіант із налаштовуваною затримкою (cooldown)
 - **Консенсус** — запускає відповідь кількома моделями одночасно та обирає варіант більшості
 - **Плаваючий помічник** — перетягуваний, показує відповідь + пояснення + витрачений час
 - **Мультиязичність** — інтерфейс українською, російською та англійською
 - **Кастомні теми** — обери готову або створи свою з + кнопкою
-- **Disabler (обхід анти-читу)** — універсальний та специфічний для кожного сайту (детальніше нижче)
+- **Disabler (обхід анти-читу)** — універсальний та специфічний для кожного сайту
 
-## Disabler (обхід анти-читу)
+### Встановлення
 
-Розширення містить **два рівні обходу анти-чит систем**:
-
-### Універсальний (вмикається в налаштуваннях)
-Працює на всіх сайтах одночасно:
-- **Blur / Focus bypass** — блокує події blur, focus, focusin, focusout, щоб сайт не бачив перемикання між вкладками
-- **Visibility API spoofing** — завжди повідомляє `visibilityState = 'visible'` та `hidden = false`
-- **Перехоплення visibilitychange** — приховує справжній стан видимості сторінки
-
-### Специфічний для сайту (вбудований у провайдери)
-Кожна платформа має власні методи обходу:
-- **Naurok** — приховування помічника, мінімізація слідів у DOM
-- **Vseosvita** — обхід захисту від копіювання та перемикання
-- **JustClass / Classtime / Miyklas / lCloud** — специфічні патчі для кожного сайту
-
-> [!WARNING]
-> Disabler не гарантує 100% невидимості. Використовуйте на власний розсуд.
-
-## Тихі режими (Silent Modes)
-
-Режими, коли помічник прихований або мінімізований:
-
-| Режим | Опис |
-|:---|:---|
-| **Indicators** | Зелена точка біля правильної відповіді, без показу тексту |
-| **Ghost** | Відповідь показується тільки в заголовку вкладки браузера |
-| **Stealth** | Відповідь копіюється в буфер обміну, ніяких візуальних ознак на сторінці |
-| **One-click** | Клік по контейнеру питання запускає відповідь (без автоматичного спрацювання) |
-
-## Консенсус (Consensus)
-
-Запускає одне й те саме питання через кілька різних моделей одночасно, потім:
-- Нормалізує відповіді (ігнорує регістр, зайві пробіли, префікси типу "А:")
-- Обчислює більшість (majority voting)
-- Показує рівень згоди (agreement %) між моделями
-- Стани: `unanimous` (одноголосно), `majority` (більшість), `no-consensus` (немає згоди)
-
-## Встановлення
-
-### Десктоп (Chrome, Brave, Edge, Vivaldi)
+#### PC (Chromium-based browsers)
 
 1. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
 2. Розпакуйте
 3. Відкрийте `chrome://extensions`, увімкніть **Режим розробника** (справа вгорі)
 4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
 
-### Мобільний (Kiwi Browser)
-
-1. Встановіть [Kiwi Browser](https://github.com/kiwibrowser/src.next/releases/tag/14310011181) з GitHub
-2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
-3. Відкрийте `kiwi://extensions`, увімкніть **Режим розробника**
-4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
-
-### Firefox
+#### PC (Gecko-based browsers)
 
 Розширення підписано Mozilla — працює на будь-якій версії Firefox без додаткових налаштувань.
 
 1. Завантажте `xdAnswers-firefox-*.xpi` з [Releases](https://github.com/aartzz/xdAnswers/releases)
 2. Перетягніть файл `.xpi` у вікно Firefox → підтвердіть встановлення
+
+#### Android (Kiwi Browser)
+
+1. Встановіть [Kiwi Browser](https://github.com/kiwibrowser/src.next/releases/tag/14310011181) з GitHub
+2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
+3. Відкрийте `kiwi://extensions`, увімкніть **Режим розробника**
+4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
 
 ### Збірка з вихідного коду
 
@@ -101,28 +64,26 @@ npm install
 Далі оберіть ціль:
 
 ```bash
-# Firefox — підписаний .xpi у ./build/xdAnswers-firefox-<version>.xpi
-npm run sign:firefox
+# Firefox — готовий .xpi (не підписаний)
+npm run build:firefox
 
-# Chrome/Brave/Edge/Vivaldi — готовий .zip у ./build/xdAnswers-chrome-<version>.zip
+# Chrome/Brave/Edge/Vivaldi — готовий .zip
 npm run build:chrome
 ```
 
 > [!NOTE]
-> Для підписання Firefox-розширення потрібні облікові дані Mozilla Add-ons API. Створи файл `.env` у корені проєкту (дивись `.env.example`) або передай їх через змінні середовища `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET`.
+> Для підписання Firefox-розширення потрібні облікові дані Mozilla Add-ons API. Створи файл `.env` у корені проєкту (дивись `.env.example`) або передай їх через змінні середовища `WEB_EXT_API_KEY` / `WEB_EXT_API_SECRET`, потім запусти `npm run sign:firefox` щоб скомпілювати підписаний .xpi.
 
 Готові артефакти лежать у папці `./build`. Далі встановлюйте їх так само, як і реліз-файли (див. розділи вище).
 
 > [!TIP]
 > Скрипти `build:firefox` / `build:chrome` крос-платформні (працюють на Windows, macOS, Linux) — вони автоматично генерують правильний `manifest.json` для вибраного браузера, пакують розширення через `web-ext` і прибирають тимчасові файли.
 
-### Режим розробки (hot reload)
-
 Для ітеративної розробки зручно використовувати режим `web-ext run`, який запускає тимчасовий профіль браузера з уже завантаженим розширенням і автоматично перезавантажує його при змінах у файлах:
 
 ```bash
 # Спочатку зберіть розширення у ./dist
-npm run dev                               # або: node scripts/build.js firefox
+npm run dev # або: node scripts/build.js firefox
 
 # Firefox — відкриється тимчасовий Firefox з розширенням
 npx web-ext run
@@ -131,30 +92,30 @@ npx web-ext run
 npx web-ext run -t chromium
 ```
 
-Після завершення сесії каталог `./dist` можна видалити — він генерується заново кожним білдом.
-
-## Використання
-
-1. Натисніть іконку розширення → відкриються налаштування
-2. Оберіть провайдер (Unturf Vision за замовчуванням, працює безкоштовно)
-3. Якщо використовуєте платний API, вставте свій ключ
-4. Відкрийте тест на підтримуваному сайті — помічник з'явиться автоматично
-
-## Підтримувані сайти
+### Підтримувані сайти
 
 | Сайт | URL | Статус | Авто-Відповідь | Disabler | Silent mode |
 |------|-----|--------|:--------------:|:--------:|:-----------:|
-| НаУрок | [naurok.com.ua](https://naurok.com.ua) | стабільний | ✅ | ➖ | ✅ |
-| Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | бета | ✅ | ✅ | ✅ |
-| JustClass | [justclass.com.ua](https://justclass.com.ua) | бета | ❌ | ⚠️ | ⚠️ |
-| Kahoot! | [kahoot.it](https://kahoot.it) | бета | ❌ | ✅ | ⚠️ |
-| Classtime | [classtime.com](https://classtime.com) | бета | ❌ | ⚠️ | ⚠️ |
-| МійКлас | [miyklas.com.ua](https://miyklas.com.ua) | бета | ❌ | ⚠️ | ⚠️ |
-| LCloud | [lcloud.in.ua](https://lcloud.in.ua) | бета | ❌ | ⚠️ | ⚠️ |
-| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | бета | ✅ | ➖ | ✅ |
-| Microsoft Forms | [forms.office.com](https://forms.office.com) | бета | ✅ | ➖ | ✅ |
-| Quizlet | [quizlet.com](https://quizlet.com) | бета | ❌ | ⚠️ | ⚠️ |
-| Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | бета | ❌ | ⚠️ | ⚠️ |
-| TestPortal | [testportal.pl](https://testportal.pl) | бета | ❌ | ⚠️ | ⚠️ |
+| НаУрок | [naurok.com.ua](https://naurok.com.ua) | 🟢 | ✅ | ✅ | ✅ |
+| Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | 🟡 | ✅ | ✅ | ✅ |
+| JustClass | [justclass.com.ua](https://justclass.com.ua) | 🟡 | ✅ | ⚠️ | ✅ |
+| Kahoot! | [kahoot.it](https://kahoot.it) | ❔️ | ✅ | ✅ | ✅ |
+| Classtime | [classtime.com](https://classtime.com) | ❔️ | ✅ | ⚠️ | ✅ |
+| МійКлас | [miyklas.com.ua](https://miyklas.com.ua) | ❔️ | ✅ | ⚠️ | ✅ |
+| LCloud | [lcloud.in.ua](https://lcloud.in.ua) | ❔️ | ⚠️ | ⚠️ | ✅ |
+| Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | 🟢 | ✅ | ➖ | ✅ |
+| Microsoft Forms | [forms.office.com](https://forms.office.com) | 🟡 | ✅ | ➖ | ✅ |
+| Quizlet | [quizlet.com](https://quizlet.com) | ❔️ | ⚠️ | ⚠️ | ✅ |
+| Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | ❔️ | ⚠️ | ⚠️ | ✅ |
+| TestPortal | [testportal.pl](https://testportal.pl) | ❔️ | ⚠️ | ⚠️ | ✅ |
 
-**Умовні позначення:** "стабільний" — повне покриття форматів питання | "бета" — часткове покриття форматів питання | ✅ — повністю підтримується | ⚠️ — частково / у розробці | ❌ — не підтримується | ➖ — не планується
+#### Умовні позначення
+| Позначення | Пояснення |
+|------------|-----------|
+| ✅ | повністю підтримується |
+| ⚠️ | використовується універсальне рішення або ще в розробці |
+| ❌ | не підтримується |
+| ➖ | не планується |
+| 🟢 | роботу перевірено повністю |
+| 🟡 | роботу перевірено не повністю |
+| ❔️ | роботу не було перевірено |
