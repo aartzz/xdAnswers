@@ -1,6 +1,7 @@
 // src/providers/miyklas/main.ts
 // Miyklas provider entry: watches the page and forwards questions to the AI pipeline.
 import type { MiyklasDomApi } from './dom';
+import { applyMiyklasDndAnswer, applyMiyklasInputsAnswer } from './autoanswer';
 
 (function() {
     'use strict';
@@ -46,12 +47,12 @@ import type { MiyklasDomApi } from './dom';
                 // Install custom applier for dragdrop or text inputs
                 if (state.fields.length > 0 && state.options.length > 0) {
                     window.xdAnswers._customAutoAnswer = function(answerText) {
-                        domApi.applyDndAnswer(answerText);
+                        applyMiyklasDndAnswer(answerText);
                         window.xdAnswers._customAutoAnswer = null;
                     };
                 } else if (state.inputIds.length > 0) {
                     window.xdAnswers._customAutoAnswer = function(answerText) {
-                        domApi.applyInputsAnswer(answerText);
+                        applyMiyklasInputsAnswer(answerText);
                         window.xdAnswers._customAutoAnswer = null;
                     };
                 } else {

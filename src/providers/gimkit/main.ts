@@ -1,6 +1,7 @@
 // src/providers/gimkit/main.ts
 // Gimkit provider entry: polls game questions, auto-inputs text answers and feeds choices to AI.
 import type { GimkitDomApi } from './dom';
+import { applyGimkitAnswer } from './autoanswer';
 
 (function() {
     'use strict';
@@ -58,14 +59,8 @@ import type { GimkitDomApi } from './dom';
 
                 if (state.questionType === 'text' && state.inputElement) {
                     window.xdAnswers._customAutoAnswer = function(answerText) {
-                        const input = state.inputElement;
-                        if (input) {
-                            const clean = answerText.replace(/^(?:FINAL_ANSWER|Відповідь)\s*:\s*/i, '').trim();
-                            input.value = clean;
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                            input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
-                            input.style.setProperty('outline', '2px solid #22c55e', 'important');
+                        if (state.inputElement) {
+                            applyGimkitAnswer(state.inputElement, answerText);
                         }
                         window.xdAnswers._customAutoAnswer = null;
                     };

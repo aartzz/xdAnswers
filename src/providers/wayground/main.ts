@@ -1,6 +1,7 @@
 // src/providers/wayground/main.ts
 // Wayground provider entry: polls questions, handles fill-in-the-blank and MCQ.
 import type { WaygroundDomApi } from './dom';
+import { applyWaygroundAnswer } from './autoanswer';
 
 (function() {
     'use strict';
@@ -58,13 +59,8 @@ import type { WaygroundDomApi } from './dom';
 
                 if (state.questionType === 'text' && state.inputElement) {
                     window.xdAnswers._customAutoAnswer = function(answerText) {
-                        const input = state.inputElement;
-                        if (input) {
-                            const clean = answerText.replace(/^(?:FINAL_ANSWER|Відповідь)\s*:\s*/i, '').trim();
-                            input.value = clean;
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new Event('change', { bubbles: true }));
-                            input.style.setProperty('outline', '2px solid #22c55e', 'important');
+                        if (state.inputElement) {
+                            applyWaygroundAnswer(state.inputElement, answerText);
                         }
                         window.xdAnswers._customAutoAnswer = null;
                     };

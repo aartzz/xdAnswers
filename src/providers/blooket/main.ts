@@ -1,6 +1,7 @@
 // src/providers/blooket/main.ts
 // Blooket provider entry: watches #app mutations, auto-dismisses feedback and feeds questions to AI.
 import type { BlooketDomApi } from './dom';
+import { dismissFeedback } from './autoanswer';
 
 (function() {
     'use strict';
@@ -59,8 +60,7 @@ import type { BlooketDomApi } from './dom';
 
             // Auto-advance on feedback overlay
             if (state.feedbackEl && window.xdAnswers.settings.autoSubmit) {
-                state.feedbackEl.click();
-                document.body.click();
+                dismissFeedback(state.feedbackEl);
             }
 
             if (!state.text || state.options.length === 0) return;

@@ -1,6 +1,7 @@
 // src/providers/kahoot/main.ts
 // Kahoot provider entry: polling, character-by-character numeric/text input, one-click mode.
 import type { KahootDomApi, KahootQuestionState } from './dom';
+import { applyKahootAnswer } from './autoanswer';
 
 (function() {
     'use strict';
@@ -62,58 +63,10 @@ import type { KahootDomApi, KahootQuestionState } from './dom';
                     window.xdAnswers._customAutoAnswer = function(answerText) {
                         const input = domApi.findInputElement();
                         if (!input) {
-                            // Fallback to default auto-select if input vanished
                             window.xdAnswers._internal.autoSelectAnswer(answerText, true);
                             return;
                         }
-
-                        // Use native value setter to set initial empty state
-                        const proto = window.HTMLInputElement.prototype;
-                        const nativeSetter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-                        if (nativeSetter) nativeSetter.call(input, '');
-                        else input.value = '';
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-
-                        // Type character by character at 15ms intervals (matching InRoute)
-                        const cleanAnswer = answerText.replace(/[^0-9a-zA-Z\s.,\-]/g, '').trim();
-                        const chars = cleanAnswer.split('');
-                        let idx = 0;
-
-                        const typeInterval = setInterval(function() {
-                            if (idx >= chars.length) {
-                                clearInterval(typeInterval);
-
-                                // Dot animation buffer (400ms) — InRoute Kahoot anti-detect
-                                // After typing completes, wait before submitting
-                                setTimeout(function() {
-                                    if (nativeSetter) nativeSetter.call(input, cleanAnswer);
-                                    else input.value = cleanAnswer;
-                                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                                    input.dispatchEvent(new Event('change', { bubbles: true }));
-                                    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, key: 'Enter' }));
-                                }, 400);
-
-                                return;
-                            }
-
-                            const current = chars.slice(0, idx + 1).join('');
-                            if (nativeSetter) nativeSetter.call(input, current);
-                            else input.value = current;
-
-                            input.dispatchEvent(new Event('input', { bubbles: true }));
-                            input.dispatchEvent(new KeyboardEvent('keydown', {
-                                bubbles: true,
-                                key: chars[idx],
-                                code: 'Key' + chars[idx].toUpperCase()
-                            }));
-                            input.dispatchEvent(new KeyboardEvent('keyup', {
-                                bubbles: true,
-                                key: chars[idx],
-                                code: 'Key' + chars[idx].toUpperCase()
-                            }));
-
-                            idx++;
-                        }, 15);
+                        applyKahootAnswer(input, answerText);
                     };
                 } else {
                     // MCQ question — clear any previous custom applier
