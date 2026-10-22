@@ -25,6 +25,12 @@ import { applyMiyklasDndAnswer, applyMiyklasInputsAnswer } from './autoanswer';
             return;
         }
 
+        // Show helper window when exercise or test page is active
+        if (!window.xdAnswers.settings.silentMode) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+        }
+
         window.xdAnswers.onRefresh = function() { lastQuestionText = ''; checkQuestion(); };
 
         setInterval(checkQuestion, 800);

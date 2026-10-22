@@ -24,6 +24,12 @@ import type { ClasstimeDomApi } from './dom';
             return;
         }
 
+        // Show helper window when session is active
+        if (!window.xdAnswers.settings.silentMode) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+        }
+
         window.xdAnswers.onRefresh = function() { lastQuestionText = ''; checkQuestion(); };
 
         const observer = new MutationObserver(function() { checkQuestion(); });

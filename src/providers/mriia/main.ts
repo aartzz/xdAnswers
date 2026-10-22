@@ -29,14 +29,39 @@ import { applyMriiaChoiceAnswer, applyMriiaTextAnswer } from './autoanswer';
         }
         const domApi = dom;
 
+        function ensureHelperVisible() {
+            if (window.xdAnswers.settings.silentMode) return;
+            const isTestActive = !!(
+                document.querySelector('.test-choiser-card, .test-choiser-zone, .label-number-test, .homework-content, .test-pd, [class*="test-"], [class*="question"]') ||
+                /test|homework|lesson|diary/i.test(location.pathname) ||
+                domApi.readQuestion()
+            );
+            if (isTestActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                }
+            }
+        }
+
+        // Show helper window when test or homework is loaded
+        ensureHelperVisible();
+
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
             checkQuestion();
         };
 
+        const observer = new MutationObserver(() => {
+            if (window.xdAnswers.isExtensionModifyingDOM) return;
+            ensureHelperVisible();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
         setInterval(checkQuestion, 800);
 
         function checkQuestion() {
+            ensureHelperVisible();
             if (isProcessing || window.xdAnswers.isProcessingAI) return;
 
             const state = domApi.readQuestion();

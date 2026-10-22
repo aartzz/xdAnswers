@@ -29,6 +29,12 @@ import { applyWaygroundAnswer } from './autoanswer';
         }
         const domApi = dom;
 
+        // Show helper window when quiz page is active
+        if (!window.xdAnswers.settings.silentMode) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+        }
+
         window.xdAnswers.onRefresh = () => {
             lastQuestionKey = '';
             checkQuestion();

@@ -25,6 +25,12 @@ import { applyKahootAnswer } from './autoanswer';
             return;
         }
 
+        // Show helper window when game page is active
+        if (!window.xdAnswers.settings.silentMode) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+        }
+
         window.xdAnswers.onRefresh = () => { lastQuestionText = ''; checkQuestion(); };
 
         // Poll for question changes — Kahoot is highly dynamic
