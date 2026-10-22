@@ -108,6 +108,9 @@ npx web-ext run -t chromium
 | Quizlet | [quizlet.com](https://quizlet.com) | ❔️ | ⚠️ | ⚠️ | ✅ |
 | Szkoła w Chmurze | [szkolawchmurze.org](https://szkolawchmurze.org) | ❔️ | ⚠️ | ⚠️ | ✅ |
 | TestPortal | [testportal.pl](https://testportal.pl) | ❔️ | ⚠️ | ⚠️ | ✅ |
+| Blooket | [blooket.com](https://blooket.com) | ❔️ | ✅ | ⚠️ | ✅ |
+| Gimkit | [gimkit.com](https://gimkit.com) | ❔️ | ✅ | ⚠️ | ✅ |
+| Wayground | [wayground.com](https://wayground.com) | ❔️ | ✅ | ⚠️ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |
