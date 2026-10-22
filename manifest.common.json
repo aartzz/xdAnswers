@@ -156,6 +156,8 @@
         "src/providers/naurok/dom/beta/apply.ts",
         "src/providers/naurok/dom/session.ts",
         "src/providers/naurok/dom/index.ts",
+        "src/providers/naurok/topic.ts",
+        "src/providers/naurok/autoanswer.ts",
         "src/providers/naurok/main.ts"
       ],
       "run_at": "document_end",
@@ -296,7 +298,7 @@
         "src/providers/vseosvita/dom/premium.ts",
         "src/providers/vseosvita/dom/text.ts",
         "src/providers/vseosvita/dom/index.ts",
-        "src/providers/vseosvita/apply.ts",
+        "src/providers/vseosvita/autoanswer.ts",
         "src/providers/vseosvita/main.ts"
       ],
       "run_at": "document_end",
@@ -436,6 +438,7 @@
         "src/providers/justclass/api.ts",
         "src/providers/justclass/ui.ts",
         "src/providers/justclass/ai-fallback.ts",
+        "src/providers/justclass/visuals.ts",
         "src/providers/justclass/main.ts"
       ],
       "run_at": "document_end",
@@ -505,7 +508,7 @@
         "src/providers/msforms/dom/question.ts",
         "src/providers/msforms/dom/type.ts",
         "src/providers/msforms/dom/index.ts",
-        "src/providers/msforms/apply.ts",
+        "src/providers/msforms/autoanswer.ts",
         "src/providers/msforms/main.ts"
       ],
       "run_at": "document_end",
@@ -573,6 +576,7 @@
         "src/providers/kahoot/dom/input.ts",
         "src/providers/kahoot/dom/question.ts",
         "src/providers/kahoot/dom/index.ts",
+        "src/providers/kahoot/autoanswer.ts",
         "src/providers/kahoot/main.ts"
       ],
       "run_at": "document_end",
@@ -636,7 +640,7 @@
         "src/ui/helper/mount.ts",
         "src/ui/helper/controls.ts",
         "src/ui/helper/listeners.ts",
-        "src/providers/classtime/dom/apply.ts",
+        "src/providers/classtime/autoanswer.ts",
         "src/providers/classtime/dom/question.ts",
         "src/providers/classtime/dom/index.ts",
         "src/providers/classtime/main.ts"
@@ -702,9 +706,9 @@
         "src/ui/helper/mount.ts",
         "src/ui/helper/controls.ts",
         "src/ui/helper/listeners.ts",
-        "src/providers/miyklas/dom/dnd.ts",
         "src/providers/miyklas/dom/question.ts",
         "src/providers/miyklas/dom/index.ts",
+        "src/providers/miyklas/autoanswer.ts",
         "src/providers/miyklas/main.ts"
       ],
       "run_at": "document_end",
@@ -1038,6 +1042,7 @@
         "src/providers/blooket/dom/images.ts",
         "src/providers/blooket/dom/question.ts",
         "src/providers/blooket/dom/index.ts",
+        "src/providers/blooket/autoanswer.ts",
         "src/providers/blooket/main.ts"
       ],
       "run_at": "document_end",
@@ -1105,6 +1110,7 @@
         "src/providers/gimkit/dom/images.ts",
         "src/providers/gimkit/dom/question.ts",
         "src/providers/gimkit/dom/index.ts",
+        "src/providers/gimkit/autoanswer.ts",
         "src/providers/gimkit/main.ts"
       ],
       "run_at": "document_end",
@@ -1172,6 +1178,7 @@
         "src/providers/wayground/dom/images.ts",
         "src/providers/wayground/dom/question.ts",
         "src/providers/wayground/dom/index.ts",
+        "src/providers/wayground/autoanswer.ts",
         "src/providers/wayground/main.ts"
       ],
       "run_at": "document_end",
