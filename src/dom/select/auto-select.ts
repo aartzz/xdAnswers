@@ -56,6 +56,18 @@
                     clickTarget.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
                     clickTarget.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
                 }
+
+                // Naurok auto-advance: click "Далі" when feedback overlay appears
+                if (location.hostname.includes('naurok')) {
+                    setTimeout(() => {
+                        const nextBtn = document.querySelector<HTMLButtonElement>(
+                            '.tb-feedback button.tb-btn-white, .tb-feedback .tb-btn, .tb-feedback button, .tb-board-foot button.tb-btn-go, button.tb-btn-white.tb-btn-lg, .test-multiquiz-save'
+                        );
+                        if (nextBtn && nextBtn.offsetParent !== null && !nextBtn.disabled) {
+                            nextBtn.click();
+                        }
+                    }, 350);
+                }
             } else if ((scopedContainer || document.querySelector('.tb-type-answer input.tb-big-input')) && answerText) {
                 // No option elements matched — try text/paragraph inputs
                 // GForms: input.whsOnd (short text), textarea.KHxj8b (paragraph)

@@ -109,6 +109,40 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectE
     el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+function scheduleFeedbackClick(): void {
+    let attempts = 0;
+    const timer = setInterval(() => {
+        attempts++;
+        if (attempts > 50) {
+            clearInterval(timer);
+            return;
+        }
+        const nextButton = document.querySelector<HTMLButtonElement>(
+            '.tb-feedback button.tb-btn-white, .tb-feedback .tb-btn, .tb-feedback button, .tb-board-foot button.tb-btn-go, .tb-team-foot button.tb-btn-go'
+        );
+        if (nextButton && nextButton.offsetParent !== null && !nextButton.disabled) {
+            clearInterval(timer);
+            setTimeout(() => {
+                clickElement(nextButton);
+            }, 120);
+            return;
+        }
+        const feedback = document.querySelector('.tb-feedback');
+        if (feedback) {
+            const btn = Array.from(feedback.querySelectorAll<HTMLButtonElement>('button')).find(
+                b => /^(Далі|Завершити)\b/i.test(b.textContent || '')
+            );
+            if (btn && !btn.disabled) {
+                clearInterval(timer);
+                setTimeout(() => {
+                    clickElement(btn);
+                }, 120);
+                return;
+            }
+        }
+    }, 100);
+}
+
 function clickSubmit(): void {
     const button = document.querySelector<HTMLButtonElement>(
         '.tb-submit-row button.tb-btn-white:not([disabled]), ' +
@@ -118,6 +152,7 @@ function clickSubmit(): void {
     );
     if (!button) return;
     clickElement(button);
+    scheduleFeedbackClick();
 }
 
 function stageRoot(): HTMLElement | null {
@@ -143,6 +178,7 @@ function applyChoices(answerText: string, stage: HTMLElement): void {
         clickElement(target);
     });
     if (multi && chosen.length) setTimeout(clickSubmit, 140);
+    else if (!multi && chosen.length) scheduleFeedbackClick();
 }
 
 function applyFill(answerText: string, stage: HTMLElement): void {

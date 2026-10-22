@@ -2,7 +2,7 @@
 // Naurok provider entry: manages question polling, MutationObserver and wiring to the AI pipeline.
 import type { NaurokDomApi } from './dom';
 import { fetchNaurokTopic, getNaurokTopic, initMessageListener } from './topic';
-import { applyNaurokTextAnswer } from './autoanswer';
+import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
 
 (function () {
     'use strict';
@@ -62,6 +62,11 @@ import { applyNaurokTextAnswer } from './autoanswer';
 
         function checkQuestion(skipDelay?: boolean): void {
             if (isSolvingNaurok || window.xdAnswers.isProcessingAI) return;
+
+            // Auto-advance if "Далі" / feedback overlay is present
+            if (window.xdAnswers.settings.autoAnswer && clickNaurokNextButton()) {
+                return;
+            }
 
             const isBeta = dom.isBetaTest();
 
@@ -200,6 +205,15 @@ import { applyNaurokTextAnswer } from './autoanswer';
         // MutationObserver стежить за змінами в основному контейнері тесту
         const observer = new MutationObserver(() => {
             if (window.xdAnswers.isExtensionModifyingDOM) return;
+
+            // Auto-advance if feedback overlay or next button appeared
+            if (window.xdAnswers.settings.autoAnswer) {
+                const feedback = document.querySelector('.tb-feedback, .tb-board-foot, .tb-team-foot');
+                if (feedback) {
+                    setTimeout(clickNaurokNextButton, 120);
+                }
+            }
+
             processDOM();
             // Only re-attach if container was removed from DOM (e.g. Angular re-render);
             // do NOT call attachAndPositionHelper unconditionally — it clears transform
