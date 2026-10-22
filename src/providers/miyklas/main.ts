@@ -43,10 +43,15 @@ import type { MiyklasDomApi } from './dom';
                     questionType: state.questionType
                 };
 
-                // Install DND custom applier for dragdrop questions
+                // Install custom applier for dragdrop or text inputs
                 if (state.fields.length > 0 && state.options.length > 0) {
                     window.xdAnswers._customAutoAnswer = function(answerText) {
                         domApi.applyDndAnswer(answerText);
+                        window.xdAnswers._customAutoAnswer = null;
+                    };
+                } else if (state.inputIds.length > 0) {
+                    window.xdAnswers._customAutoAnswer = function(answerText) {
+                        domApi.applyInputsAnswer(answerText);
                         window.xdAnswers._customAutoAnswer = null;
                     };
                 } else {
