@@ -4,16 +4,11 @@
   "private": true,
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
-    "_build:firefox": "node scripts/build.js firefox",
-    "build:firefox": "npm run _build:firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && npm run clean",
-    "build:firefox:debug": "node scripts/build.js firefox debug && cross-env TARGET=firefox web-ext build --config .web-ext-config.js && node -e \"const h=require('child_process').execSync('git rev-parse --short HEAD',{encoding:'utf8'}).trim();const f=require('fs').readdirSync('build').find(f=>f.endsWith('.xpi'));if(f)require('fs').renameSync('build/'+f,'build/xdanswers-firefox-'+h+'.xpi')\" && npm run clean",
+    "build:firefox": "node scripts/build.js firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js",
+    "build:chrome": "node scripts/build.js chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js",
     "sign:firefox": "node scripts/sign-firefox.js",
-    "_build:chrome": "node scripts/build.js chrome",
-    "build:chrome": "npm run _build:chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && npm run clean",
-    "build:chrome:debug": "node scripts/build.js chrome debug && cross-env TARGET=chrome web-ext build --config .web-ext-config.js && node -e \"const h=require('child_process').execSync('git rev-parse --short HEAD',{encoding:'utf8'}).trim();const f=require('fs').readdirSync('build').find(f=>f.match(/xdanswers-chrome.*\\.zip$/));if(f)require('fs').renameSync('build/'+f,'build/xdanswers-chrome-'+h+'.zip')\" && npm run clean",
-    "clean": "node -e \"require('fs').rmSync('manifest.json',{force:true});require('fs').rmSync('version.js',{force:true})\"",
     "typecheck": "tsc --noEmit",
-    "dev": "node scripts/build.js chrome debug",
+    "dev": "node scripts/build.js chrome",
     "version": "node scripts/sync-version.js && git add manifest.common.json"
   },
   "devDependencies": {

@@ -10,7 +10,10 @@
 //   - ignoreFiles: обидва таргети ділять спільний базовий список "сміття",
 //                  яке ніколи не має потрапити в архів розширення.
 
+const { getBuildVersion } = require('./scripts/version-helper');
+
 const target = (process.env.TARGET || 'firefox').toLowerCase();
+const version = getBuildVersion();
 
 if (target !== 'firefox' && target !== 'chrome') {
   throw new Error(
@@ -53,11 +56,11 @@ const commonIgnore = [
 
 const byTarget = {
   firefox: {
-    filename: 'xdAnswers-firefox-{version}.xpi',
+    filename: `xdAnswers-firefox-${version}.xpi`,
     ignoreFiles: commonIgnore,
   },
   chrome: {
-    filename: 'xdAnswers-chrome-{version}.zip',
+    filename: `xdAnswers-chrome-${version}.zip`,
     ignoreFiles: commonIgnore,
   },
 };

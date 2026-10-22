@@ -24,13 +24,13 @@
 const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
-const { injectVersion } = require('./inject-version');
+const { getBuildVersion } = require('./version-helper');
 
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
 
 const targetBrowser = process.argv[2];
-const mode = process.argv[3] === 'debug' ? 'debug' : 'release';
+const buildVersion = getBuildVersion();
 
 if (targetBrowser !== 'chrome' && targetBrowser !== 'firefox') {
     console.error('Error: Target browser not specified. Use "chrome" or "firefox".');
@@ -95,7 +95,10 @@ async function bundle(name, files) {
         target: ['chrome109', 'firefox109'],
         sourcemap: false,
         logLevel: 'warning',
-        charset: 'utf8'
+        charset: 'utf8',
+        define: {
+            '__XD_VERSION__': JSON.stringify(buildVersion)
+        }
     });
 }
 
@@ -135,10 +138,9 @@ function providerPageDisablers() {
     return found;
 }
 
-// popup.html keeps only the bundled popup.js; the four setup scripts move into the bundle.
+// popup.html keeps only the bundled popup.js; the three setup scripts move into the bundle.
 function transformPopupHtml(html) {
     const movedScripts = [
-        'version.js',
         'src/core/constants.js',
         'src/core/settings-defaults.js',
         'src/ui/i18n.js'
@@ -165,12 +167,10 @@ async function copyStaticAssets() {
 }
 
 async function main() {
-    console.log(`Building ${targetBrowser} (${mode})...`);
+    console.log(`Building ${targetBrowser} (${buildVersion})...`);
 
     fs.rmSync(DIST, { recursive: true, force: true });
     fs.mkdirSync(DIST, { recursive: true });
-
-    injectVersion(mode);
 
     // Content script blocks: shared core prefix + per-block remainder.
     const multiBlocks = commonManifest.content_scripts.filter(block => block.js.length > 3);
@@ -237,6 +237,7 @@ async function main() {
     const manifest = {
         ...commonManifest,
         ...browserSpecifics(targetBrowser),
+        version_name: buildVersion,
         content_scripts: contentScripts,
         web_accessible_resources: webAccessibleResources
     };

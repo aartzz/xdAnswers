@@ -96,7 +96,6 @@
         "*://naurok.ua/test-beta/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -169,7 +168,6 @@
         "*://naurok.com.ua/round/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -238,7 +236,6 @@
         "*://vseosvita.ua/test/start/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -312,7 +309,6 @@
         "*://docs.google.com/forms/d/e/*/formResponse*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -378,7 +374,6 @@
         "*://justclass.com.ua/hw/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -451,7 +446,6 @@
         "*://forms.office.com/r/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -519,7 +513,6 @@
         "*://kahoot.it/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -587,7 +580,6 @@
         "*://classtime.com/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -653,7 +645,6 @@
         "*://miyklas.com.ua/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -719,7 +710,6 @@
         "*://lcloud.in.ua/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -784,7 +774,6 @@
         "*://quizlet.com/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -851,7 +840,6 @@
         "*://*.testportal.net/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -918,7 +906,6 @@
         "*://*.szkolawchmurze.org/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -986,7 +973,6 @@
         "*://blooket.com/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -1054,7 +1040,6 @@
         "*://gimkit.com/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",
@@ -1122,7 +1107,6 @@
         "*://*.wayground.com/*"
       ],
       "js": [
-        "version.js",
         "src/core/constants.ts",
         "src/core/settings-defaults.ts",
         "src/core/state.ts",

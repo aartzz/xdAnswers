@@ -3,8 +3,10 @@
 // Every core module and provider attaches its public surface to
 // `window.xdAnswers` (root) and `window.xdAnswers._internal` (shared internals).
 // This file mirrors the inventory in the TS migration plan: 41 root members,
-// 59 `_internal` members. `_buildVersion` is generated into `version.js` at
-// package time and kept here for typing only.
+// 59 `_internal` members. `_buildVersion` is set at package time via compile-time define
+// and kept here for typing only.
+
+declare const __XD_VERSION__: string;
 //
 // Note: the popup document loads only a subset of the core scripts, so at
 // runtime it sees a partial `_internal` object. The types describe the full

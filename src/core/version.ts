@@ -4,15 +4,20 @@
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
     window.xdAnswers._internal = window.xdAnswers._internal || ({} as XdAnswersInternal);
 
+    if (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) {
+        window.xdAnswers._buildVersion = __XD_VERSION__;
+    }
+
     // Version string for UI display
-    // _buildVersion is written by scripts/inject-version.js during the build
-    // (bundled into dist/core.js by scripts/build.js)
-    // Release: "v5.0.3", Debug: "6774ea7", Fallback: reads manifest version
-    function getVersionString() {
+    // Set via esbuild compile-time define (__XD_VERSION__)
+    function getVersionString(): string {
+        if (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) {
+            return __XD_VERSION__;
+        }
         if (window.xdAnswers._buildVersion) return window.xdAnswers._buildVersion;
         try {
-            const v = chrome.runtime.getManifest().version;
-            return v ? 'v' + v : '';
+            const manifest = chrome.runtime.getManifest();
+            return (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
         } catch (e) {
             return '';
         }

@@ -8,7 +8,6 @@ import { loadSettings } from './core/settings';
 import { populateUI } from './core/ui';
 import { renderConsensusRuns } from './consensus';
 
-import '../../version.js';
 import '../core/constants';
 import '../core/settings-defaults';
 import '../ui/i18n';
@@ -18,11 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const versionEl = document.querySelector('.xd-popup-version');
     if (versionEl) {
         try {
-            // _buildVersion is set by version.js (debug: git hash, release: manifest version)
-            let v = window.xdAnswers && window.xdAnswers._buildVersion;
+            let v = (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) || (window.xdAnswers && window.xdAnswers._buildVersion);
             if (!v) {
-                v = chrome.runtime.getManifest().version;
-                v = v ? 'v' + v : '';
+                const manifest = chrome.runtime.getManifest();
+                v = (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
             }
             versionEl.textContent = v;
         } catch (e) {}

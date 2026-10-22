@@ -72,11 +72,8 @@ try {
 
   console.log('Signing complete. Signed .xpi is in ./build/');
 } finally {
-  // always clean up temporary manifest.json and version.js
+  // clean up temporary manifest.json
   try {
     fs.rmSync(path.join(root, 'manifest.json'), { force: true });
-  } catch {}
-  try {
-    fs.rmSync(path.join(root, 'version.js'), { force: true });
   } catch {}
 }
