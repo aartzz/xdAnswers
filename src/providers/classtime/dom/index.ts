@@ -2,7 +2,7 @@
 // Classtime DOM layer entry: publishes the question/option extraction plus categorization and DND applying.
 import { readQuestion, loadImages } from './question';
 import type { ClasstimeQuestionState } from './question';
-import { applyCategorization, applyDndDrag } from './apply';
+import { applyCategorization, applyDndDrag } from '../autoanswer';
 
 export type { ClasstimeQuestionState } from './question';
 

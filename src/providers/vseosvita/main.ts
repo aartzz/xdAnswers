@@ -5,7 +5,7 @@
 // sniffing fetch/XHR patches live in ./disabler.ts (page world) and post the
 // sniffed topic/description through a window.postMessage bridge.
 import type { VseosvitaDomApi } from './dom';
-import type { VseosvitaApplyApi } from './apply';
+import type { VseosvitaApplyApi } from './autoanswer';
 
 (function () {
     'use strict';

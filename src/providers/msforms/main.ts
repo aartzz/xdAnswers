@@ -3,7 +3,7 @@
 // (or one-click handlers) and forwards questions to the AI pipeline.
 
 import type { MsformsDomApi, MsformsQuestionType } from './dom';
-import type { MsformsApplyApi } from './apply';
+import type { MsformsApplyApi } from './autoanswer';
 
 (function() {
     'use strict';
