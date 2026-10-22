@@ -8,6 +8,9 @@ export function findInputElement(): HTMLInputElement | null {
            || document.querySelector('[data-functional-selector*="answer"] input[type="text"]')
            || document.querySelector('[data-functional-selector*="answer"] input')
            || document.querySelector('input[type="number"]')
-           || document.querySelector('input[data-functional-selector*="answer"]');
+           || document.querySelector('input[data-functional-selector*="answer"]')
+           || document.querySelector('.numb-item input')
+           || document.querySelector('input[data-testid="text-input"]')
+           || document.querySelector('input[data-testid="pin-input"]');
     return el as HTMLInputElement | null;
 }

@@ -10,7 +10,7 @@
 
     if (location.hostname.indexOf('kahoot.it') === -1) return;
 
-    // Block visibilitychange handlers (Kahoot uses them for focus-out detection)
+    // Neutralize proctoring watermark hooks & telemetry while keeping DOM element intact
     try {
         const w = window as any;
         if (!w.__xdAnswersKahootHooked) {
@@ -22,9 +22,19 @@
                 listener: EventListenerOrEventListenerObject,
                 options?: boolean | AddEventListenerOptions
             ) {
-                if (type === 'visibilitychange' || type === 'webkitvisibilitychange') { return; }
+                if (type === 'visibilitychange' || type === 'webkitvisibilitychange' || type === 'blur') {
+                    // Drop page-level blur & visibility handlers used by proctoring
+                    if (this === window || this === document) return;
+                }
                 return vcAdd.call(this, type, listener, options);
             } as typeof EventTarget.prototype.addEventListener;
+
+            // Prevent watermark detection loops from overriding user focus
+            Object.defineProperty(window, 'onblur', {
+                get: () => null,
+                set: () => {},
+                configurable: true
+            });
         }
     } catch (e) { /* ignore */ }
 
