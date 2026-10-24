@@ -37,14 +37,9 @@ if (!WEB_EXT_API_KEY || !WEB_EXT_API_SECRET) {
   process.exit(1);
 }
 
-// ---------- build manifest + inject version ----------
-console.log('Generating manifest.json for firefox...');
-execSync('node scripts/build-manifest.js firefox', { stdio: 'inherit', cwd: root });
-
-// version.js is gitignored and referenced from manifest content_scripts;
-// must be generated before web-ext sign or AMO rejects the upload.
-console.log('Generating version.js...');
-execSync('node scripts/inject-version.js', { stdio: 'inherit', cwd: root });
+// ---------- build dist tree (manifest + bundles + version.js) ----------
+console.log('Building Firefox bundle...');
+execSync('node scripts/build.js firefox', { stdio: 'inherit', cwd: root });
 
 // ---------- sign ----------
 const buildDir = path.join(root, 'build');
@@ -77,11 +72,8 @@ try {
 
   console.log('Signing complete. Signed .xpi is in ./build/');
 } finally {
-  // always clean up temporary manifest.json and version.js
+  // clean up temporary manifest.json
   try {
     fs.rmSync(path.join(root, 'manifest.json'), { force: true });
-  } catch {}
-  try {
-    fs.rmSync(path.join(root, 'version.js'), { force: true });
   } catch {}
 }

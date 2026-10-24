@@ -1,10 +1,10 @@
 // scripts/sync-version.js
 //
 // Викликається з npm version hook. Бере свіжу версію з package.json
-// і синхронізує її у manifest.common.json (джерело правди для build-manifest.js,
-// який генерує остаточний manifest.json для firefox/chrome).
+// і синхронізує її у manifest.common.json (джерело правди для scripts/build.js,
+// який генерує остаточний dist/manifest.json для firefox/chrome).
 //
-// manifest.json у репозиторії НЕ існує — він генерується build-manifest.js
+// manifest.json у репозиторії НЕ існує — він генерується scripts/build.js
 // перед кожним білдом, тому писати туди не має сенсу.
 
 const fs = require('fs');
