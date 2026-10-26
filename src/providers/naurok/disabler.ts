@@ -18,10 +18,10 @@
 
     if (location.hostname.indexOf('naurok') === -1) return;
 
-    const BETA_SESSION_RE = /\/test-beta\/api\/session(?:\?|$)/;
-    const BETA_FOCUS_RE = /\/test-beta\/api\/focus(?:\?|$)/;
+    const BETA_SESSION_RE = /\/(?:test-beta|test)\/api\/session(?:\?|$)/;
+    const BETA_FOCUS_RE = /\/(?:test-beta|test)\/api\/focus(?:\?|$)/;
     const LEGACY_SESSION_RE = /\/api2\/test\/sessions\//;
-    const isBetaPage = /^\/test-beta\//.test(location.pathname);
+    const isBetaPage = /^\/(?:test-beta(?:\/|$)|test\/(?:play|result|start)(?:\/|$))/.test(location.pathname);
 
     function postPayload(json: unknown, type: string): void {
         try {

@@ -64,7 +64,7 @@ export async function fetchNaurokTopic(dom: NaurokDomApi): Promise<string | null
         let sessionId = dom.parseSessionIdFromDOM();
 
         if (!sessionId) {
-            const urlMatch = window.location.pathname.match(/\/test\/testing\/([a-f0-9-]+)/i);
+            const urlMatch = window.location.pathname.match(/\/test\/(?:testing|play)\/([a-f0-9-]+)/i);
             if (urlMatch) {
                 const allNgInit = document.querySelectorAll('[ng-init]');
                 for (const el of allNgInit) {

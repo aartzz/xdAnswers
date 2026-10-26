@@ -33,17 +33,44 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
         let isSolvingNaurok = false;
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+        function updateHelperVisibility(): void {
+            if (window.xdAnswers.settings.silentMode) return;
+            const isBeta = dom.isBetaTest();
+            let isTestActive = false;
+            let isTestEnded = false;
+
+            if (!isBeta) {
+                const scene3 = document.querySelector('[ng-show="test.scene == 3"]');
+                isTestEnded = !!(scene3 && !scene3.classList.contains('ng-hide'));
+                const scene1 = document.querySelector('[ng-show="test.scene == 1"]');
+                const hasQuestion = !!(scene1 && !scene1.classList.contains('ng-hide')) || !!document.querySelector('.test-question-content, .test-content-text');
+                isTestActive = hasQuestion && !isTestEnded;
+            } else {
+                isTestEnded = /^\/(?:test-beta|test)\/result(?:\/|$)/.test(location.pathname) || !!document.querySelector('.tb-results, .tb-end, .tb-finished');
+                isTestActive = (/^\/(?:test-beta|test)\/play(?:\/|$)/.test(location.pathname) || !!document.querySelector('#tb-app, .tb-stagebox, .tb-question, .tb-board')) && !isTestEnded;
+            }
+
+            if (isTestActive) {
+                if (!window.xdAnswers.helperContainer || !document.body.contains(window.xdAnswers.helperContainer)) {
+                    window.xdAnswers.createUI();
+                    window.xdAnswers.attachAndPositionHelper();
+                } else if (window.xdAnswers.helperContainer.style.display === 'none') {
+                    window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
+                }
+            } else if (isTestEnded && window.xdAnswers.helperContainer) {
+                window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
+            }
+        }
+
         // test-beta can spend a long time loading question images before the AI
         // pipeline starts. Mount the helper now so the answer window is visible
         // immediately, then processQuestion reuses the same container.
-        if (dom.isBetaTest() && /^\/test-beta\/play(?:\/|$)/.test(location.pathname)) {
+        if (dom.isBetaTest() && /^\/(?:test-beta|test)\/play(?:\/|$)/.test(location.pathname)) {
             window.xdAnswers.addStyle?.('.tb-focus{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}');
             document.querySelectorAll<HTMLButtonElement>('.tb-focus-box .tb-btn-go').forEach(b => b.click());
-            if (!window.xdAnswers.settings.silentMode) {
-                window.xdAnswers.createUI();
-                window.xdAnswers.attachAndPositionHelper();
-            }
         }
+
+        updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
             lastStateHash = "";
@@ -61,6 +88,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
         }
 
         function checkQuestion(skipDelay?: boolean): void {
+            updateHelperVisibility();
             if (isSolvingNaurok || window.xdAnswers.isProcessingAI) return;
 
             // Auto-advance if "Далі" / feedback overlay is present
@@ -80,7 +108,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                 }
                 if (dom.getSceneBlocked()) return;
             } else {
-                const isTestEnded = location.pathname.includes('/test-beta/result/') || !!document.querySelector('.tb-results, .tb-end, .tb-finished');
+                const isTestEnded = /^\/(?:test-beta|test)\/result(?:\/|$)/.test(location.pathname) || !!document.querySelector('.tb-results, .tb-end, .tb-finished');
                 if (isTestEnded && window.xdAnswers.helperContainer) {
                     window.xdAnswers.helperContainer.style.setProperty('display', 'none', 'important');
                     return;
@@ -226,6 +254,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                 }
             }
 
+            updateHelperVisibility();
             processDOM();
             // Only re-attach if container was removed from DOM (e.g. Angular re-render);
             // do NOT call attachAndPositionHelper unconditionally — it clears transform

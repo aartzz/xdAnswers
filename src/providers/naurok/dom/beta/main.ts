@@ -51,7 +51,7 @@ export function setBetaSession(payload: unknown): void {
 }
 
 export function isBetaTest(): boolean {
-    return !!document.querySelector('#tb-app[data-mode]') || /^\/test-beta\/(?:play|result)\//.test(location.pathname);
+    return !!document.querySelector('#tb-app') || /^\/(?:test-beta|test)\/(?:play|result)(?:\/|$)/.test(location.pathname);
 }
 
 function normalize(value: string | null | undefined): string {
