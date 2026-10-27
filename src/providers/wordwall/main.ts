@@ -17,9 +17,7 @@ import type { WordwallContentApi, WordwallContent } from './content';
     let lastRenderKey = '';
     let currentContent: WordwallContent | null = null;
     let fetchError: string | null = null;
-    let loggedOnce = false;
     let playedSinceLoad = false;
-    let contentLogged = false;
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -108,10 +106,9 @@ import type { WordwallContentApi, WordwallContent } from './content';
         if (!document.body.contains(window.xdAnswers.helperContainer)) {
             window.xdAnswers.attachAndPositionHelper();
         }
-        console.log('[xdAnswers] wordwall: render helper, container=', !!window.xdAnswers.helperContainer);
 
         const div = window.xdAnswers.answerContentDiv;
-        if (!div) { console.warn('[xdAnswers] wordwall: no answerContentDiv'); return; }
+        if (!div) return;
         const html = I.renderParsedResponse(parsed);
         div.innerHTML = html || '<div class="xd-answer">Готово.</div>';
     }
@@ -188,25 +185,19 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         async function run(force: boolean): Promise<void> {
             const info = domApi().readPageInfo();
-            if (!loggedOnce) { loggedOnce = true; console.log('[xdAnswers] wordwall: page info', info, location.href); }
             if (!info || !info.activityGuid) return;
             const url = contentUrl(info);
             if (!url) { console.warn('[xdAnswers] wordwall: no content url', info); return; }
 
             if (!currentContent) {
-                const content = await contentApi().fetchContent(url);                if (!content) {
-                    console.warn('[xdAnswers] wordwall: fetch failed', url);
+                const content = await contentApi().fetchContent(url);
+                if (!content) {
                     if (force || !fetchError) {
                         fetchError = 'Не вдалося завантажити контент Wordwall: помилка мережі або ресурс приватний.';
                         renderError(fetchError);
                     }
                     return;
                 }
-                if (!contentLogged) {
-                    console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
-                    contentLogged = true;
-                }
-
                 if (content.kind === 'pairs') {
                     if (gameActive()) {
                         try { renderHelper(buildParsed(content), true); }
