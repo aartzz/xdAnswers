@@ -18,6 +18,8 @@ import type { WordwallContentApi, WordwallContent } from './content';
     let currentContent: WordwallContent | null = null;
     let fetchError: string | null = null;
     let loggedOnce = false;
+    let playedSinceLoad = false;
+    let contentLogged = false;
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -70,13 +72,14 @@ import type { WordwallContentApi, WordwallContent } from './content';
     }
 
     /** Game start often mounts a full-screen overlay; keep the helper pinned above it. */
-    /** Wordwall start screen: «Розпочати» button + preload overlay. Game active when none of them on screen. */
+    /** Wordwall start screen: helper stays hidden until the engine reports an actual play.
+     * Signal: resourceajax/trackplay fires exactly when «Гра» launched; template gating via
+     * the start-screen markup is unreliable since the engine renders/detaches it. */
     function gameActive(): boolean {
-        const preload = document.querySelector('.js-play-preload');
-        if (preload && !preload.classList.contains('hidden')) return false;
-        const startBtn = document.querySelector('.js-next-start');
-        if (startBtn && !startBtn.classList.contains('hidden')) return false;
-        return true;
+        if (playedSinceLoad) return true;
+        const entries = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+        if (entries.some(e => e.name.includes('/resourceajax/trackplay'))) { playedSinceLoad = true; return true; }
+        return false;
     }
 
     function ensureHelperMounted(): void {
@@ -156,6 +159,12 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         window.xdAnswers.onRefresh = () => { lastRenderKey = ''; run(true); };
 
+        // Only the top frame drives rendering; resource pages embed iframes of the
+        // same tooling and each extra frame would refetch and duplicate the helper.
+        try {
+            if (window.self !== window.top && window.top!.location.hostname.endsWith('wordwall.net')) return;
+        } catch { /* cross-origin top: keep running (external embeds) */ }
+
         function syncHelperState(): void {
             if (!currentContent || currentContent.kind !== 'pairs') return;
             if (!gameActive()) {
@@ -185,8 +194,7 @@ import type { WordwallContentApi, WordwallContent } from './content';
             if (!url) { console.warn('[xdAnswers] wordwall: no content url', info); return; }
 
             if (!currentContent) {
-                const content = await contentApi().fetchContent(url);
-                if (!content) {
+                const content = await contentApi().fetchContent(url);                if (!content) {
                     console.warn('[xdAnswers] wordwall: fetch failed', url);
                     if (force || !fetchError) {
                         fetchError = 'Не вдалося завантажити контент Wordwall: помилка мережі або ресурс приватний.';
@@ -194,7 +202,11 @@ import type { WordwallContentApi, WordwallContent } from './content';
                     }
                     return;
                 }
-                console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
+                if (!contentLogged) {
+                    console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
+                    contentLogged = true;
+                }
+
                 if (content.kind === 'pairs') {
                     if (gameActive()) {
                         try { renderHelper(buildParsed(content), true); }
