@@ -17,6 +17,7 @@ import type { WordwallContentApi, WordwallContent } from './content';
     let lastRenderKey = '';
     let currentContent: WordwallContent | null = null;
     let fetchError: string | null = null;
+    let loggedOnce = false;
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -78,9 +79,10 @@ import type { WordwallContentApi, WordwallContent } from './content';
         if (!document.body.contains(window.xdAnswers.helperContainer)) {
             window.xdAnswers.attachAndPositionHelper();
         }
+        console.log('[xdAnswers] wordwall: render helper, container=', !!window.xdAnswers.helperContainer);
 
         const div = window.xdAnswers.answerContentDiv;
-        if (!div) return;
+        if (!div) { console.warn('[xdAnswers] wordwall: no answerContentDiv'); return; }
         const html = I.renderParsedResponse(parsed);
         div.innerHTML = html || '<div class="xd-answer">Готово.</div>';
     }
@@ -135,7 +137,7 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         async function run(force: boolean): Promise<void> {
             const info = domApi().readPageInfo();
-            console.log('[xdAnswers] wordwall: page info', info);
+            if (!loggedOnce) { loggedOnce = true; console.log('[xdAnswers] wordwall: page info', info, location.href); }
             if (!info || !info.activityGuid) return;
             const url = contentUrl(info);
             if (!url) { console.warn('[xdAnswers] wordwall: no content url', info); return; }
@@ -153,7 +155,8 @@ import type { WordwallContentApi, WordwallContent } from './content';
                 console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
                 currentContent = content;
                 if (content.kind === 'pairs') {
-                    renderHelper(buildParsed(content), true);
+                    try { renderHelper(buildParsed(content), true); }
+                    catch (e) { console.error('[xdAnswers] wordwall: render failed', e); }
                 } else {
                     // Unknown shape: let the standard AI pipeline help with whatever is on screen
                     const strings = collectStrings(content.raw, 60);
