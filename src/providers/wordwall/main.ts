@@ -17,7 +17,6 @@ import type { WordwallContentApi, WordwallContent } from './content';
     let lastRenderKey = '';
     let currentContent: WordwallContent | null = null;
     let fetchError: string | null = null;
-
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
@@ -136,23 +135,32 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         async function run(force: boolean): Promise<void> {
             const info = domApi().readPageInfo();
+            console.log('[xdAnswers] wordwall: page info', info);
             if (!info || !info.activityGuid) return;
             const url = contentUrl(info);
-            if (!url) return;
+            if (!url) { console.warn('[xdAnswers] wordwall: no content url', info); return; }
 
             if (!currentContent) {
                 const content = await contentApi().fetchContent(url);
                 if (!content) {
-                    if (force) renderError('Не вдалося завантажити контент Wordwall: помилка мережі або ресурс приватний.');
+                    console.warn('[xdAnswers] wordwall: fetch failed', url);
+                    if (force || !fetchError) {
+                        fetchError = 'Не вдалося завантажити контент Wordwall: помилка мережі або ресурс приватний.';
+                        renderError(fetchError);
+                    }
                     return;
                 }
+                console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
                 currentContent = content;
                 if (content.kind === 'pairs') {
                     renderHelper(buildParsed(content), true);
                 } else {
                     // Unknown shape: let the standard AI pipeline help with whatever is on screen
                     const strings = collectStrings(content.raw, 60);
-                    renderError('Тип гри ще не підтримується локально. Натисніть гарячих клавіш (Ctrl+Shift+X) — відповість ШІ.');
+                    if (!fetchError) {
+                        fetchError = 'Тип гри ще не підтримується локально. Натисніть гарячих клавіш (Ctrl+Shift+X) — відповість ШІ.';
+                        renderError(fetchError);
+                    }
                     if (window.xdAnswers.settings.silentMode !== 'oneclick') {
                         window.xdAnswers.processQuestion({
                             text: info.activityTitle || domApi().title(),

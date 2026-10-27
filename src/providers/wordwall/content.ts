@@ -58,9 +58,9 @@ export interface WordwallContentApi {
 
     async function fetchContent(baseUrl: string): Promise<WordwallContent | null> {
         try {
-            const resp = await fetch(baseUrl, { credentials: 'omit' });
-            if (!resp.ok) return null;
-            const data: unknown = await resp.json();
+            // page-origin fetch would hit CORS on user.cdn.wordwall.net — go through background
+            const resp = await window.xdAnswers.makeRequest({ url: baseUrl, method: 'GET', responseType: 'text' });
+            const data: unknown = JSON.parse(resp.data);
             const userCdn = baseUrl.match(/^(https?:\/\/[^/]+)/)?.[1] || 'https://user.cdn.wordwall.net';
             const pairs = parsePairs(data, userCdn);
             if (pairs) {
