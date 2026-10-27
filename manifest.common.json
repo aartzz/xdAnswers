@@ -1319,9 +1319,6 @@
         "src/ui/helper/mount.ts",
         "src/ui/helper/controls.ts",
         "src/ui/helper/listeners.ts",
-        "src/providers/lcloud/dom/question.ts",
-        "src/providers/lcloud/dom/index.ts",
-        "src/providers/lcloud/main.ts",
         "src/providers/wordwall/dom/index.ts",
         "src/providers/wordwall/content.ts",
         "src/providers/wordwall/main.ts"
