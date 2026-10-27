@@ -70,6 +70,15 @@ import type { WordwallContentApi, WordwallContent } from './content';
     }
 
     /** Game start often mounts a full-screen overlay; keep the helper pinned above it. */
+    /** Wordwall start screen: «Розпочати» button + preload overlay. Game active when none of them on screen. */
+    function gameActive(): boolean {
+        const preload = document.querySelector('.js-play-preload');
+        if (preload && !preload.classList.contains('hidden')) return false;
+        const startBtn = document.querySelector('.js-next-start');
+        if (startBtn && !startBtn.classList.contains('hidden')) return false;
+        return true;
+    }
+
     function ensureHelperMounted(): void {
         const c = window.xdAnswers.helperContainer as HTMLElement | null;
         if (!c || !document.body.contains(c) || !window.xdAnswers.answerContentDiv
@@ -147,17 +156,26 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         window.xdAnswers.onRefresh = () => { lastRenderKey = ''; run(true); };
 
+        function syncHelperState(): void {
+            if (!currentContent || currentContent.kind !== 'pairs') return;
+            if (!gameActive()) {
+                // Hide while still on the resource/start screen
+                const c = window.xdAnswers.helperContainer as HTMLElement | null;
+                if (c && document.body.contains(c)) c.style.setProperty('display', 'none', 'important');
+                return;
+            }
+            ensureHelperMounted();
+        }
+
         // Pages are mostly static once loaded; light polling covers late content fetches
-        // and re-mounts the helper if the game overlay removes it on game start.
+        // and keeps the helper only while the game is actually running.
         run(false);
         setInterval(() => {
             run(false);
+            syncHelperState();
             markTiles();
-            if (currentContent && currentContent.kind === 'pairs') {
-                ensureHelperMounted();
-            }
-        }, 1500);
-        new MutationObserver(() => { markTiles(); ensureHelperMounted(); }).observe(document.documentElement, { childList: true, subtree: true });
+        }, 1000);
+        new MutationObserver(() => { syncHelperState(); markTiles(); }).observe(document.documentElement, { childList: true, subtree: true });
 
         async function run(force: boolean): Promise<void> {
             const info = domApi().readPageInfo();
@@ -177,10 +195,11 @@ import type { WordwallContentApi, WordwallContent } from './content';
                     return;
                 }
                 console.log('[xdAnswers] wordwall: content kind=' + content.kind, content.raw);
-                currentContent = content;
                 if (content.kind === 'pairs') {
-                    try { renderHelper(buildParsed(content), true); }
-                    catch (e) { console.error('[xdAnswers] wordwall: render failed', e); }
+                    if (gameActive()) {
+                        try { renderHelper(buildParsed(content), true); }
+                        catch (e) { console.error('[xdAnswers] wordwall: render failed', e); }
+                    }
                 } else {
                     // Unknown shape: let the standard AI pipeline help with whatever is on screen
                     const strings = collectStrings(content.raw, 60);
