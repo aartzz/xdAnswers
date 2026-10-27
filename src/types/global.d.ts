@@ -152,6 +152,9 @@ interface XdParsedResponse {
     /** Marks a parsed response produced by the JustClass provider. */
     _justclass?: boolean;
     _justclassShort?: string;
+    /** Marks a parsed response produced by the Wordwall provider. */
+    _wordwall?: boolean;
+    _wordwallShort?: string;
 }
 
 /** Event emitted by `_internal.parseSSEChunks` for one API stream chunk. */
