@@ -43,8 +43,11 @@ import type { WordwallContentApi, WordwallContent } from './content';
     }
 
     function buildParsed(content: WordwallContent): XdParsedResponse {
-        const lines: string[] = [];
-        content.items.forEach((item, i) => {
+        const lines: string[] = [];        // Sorted to a stable natural order so the sheet reads top-down
+        const items = content.items.slice().sort((a, b) =>
+            a.primary.localeCompare(b.primary, undefined, { numeric: true, sensitivity: 'base' }) ||
+            a.secondary.localeCompare(b.secondary, undefined, { numeric: true, sensitivity: 'base' }));
+        items.forEach((item, i) => {
             const left = item.primary || '(картинка)';
             const right = item.secondary || '(картинка)';
             lines.push((i + 1) + '. **' + left + '** — ' + right);
@@ -61,9 +64,23 @@ import type { WordwallContentApi, WordwallContent } from './content';
             answer: lines.join('\n'),
             explanation,
             _wordwall: true,
-            _wordwallShort: content.items.map(i => i.primary + ' — ' + i.secondary).join('; '),
+            _wordwallShort: items.map(i => i.primary + ' — ' + i.secondary).join('; '),
             isStructured: true
         };
+    }
+
+    /** Game start often mounts a full-screen overlay; keep the helper pinned above it. */
+    function ensureHelperMounted(): void {
+        const c = window.xdAnswers.helperContainer as HTMLElement | null;
+        if (!c || !document.body.contains(c) || !window.xdAnswers.answerContentDiv
+            || !document.body.contains(window.xdAnswers.answerContentDiv)) {
+            window.xdAnswers.createUI();
+            window.xdAnswers.attachAndPositionHelper();
+            if (currentContent) renderHelper(buildParsed(currentContent), true);
+            return;
+        }
+        c.style.setProperty('z-index', '2147483646', 'important');
+        c.style.setProperty('visibility', 'visible', 'important');
     }
 
     function renderHelper(parsed: XdParsedResponse, force: boolean): void {
@@ -130,10 +147,17 @@ import type { WordwallContentApi, WordwallContent } from './content';
 
         window.xdAnswers.onRefresh = () => { lastRenderKey = ''; run(true); };
 
-        // Pages are mostly static once loaded; light polling covers late content fetches.
+        // Pages are mostly static once loaded; light polling covers late content fetches
+        // and re-mounts the helper if the game overlay removes it on game start.
         run(false);
-        setInterval(() => { run(false); markTiles(); }, 1500);
-        new MutationObserver(() => markTiles()).observe(document.documentElement, { childList: true, subtree: true });
+        setInterval(() => {
+            run(false);
+            markTiles();
+            if (currentContent && currentContent.kind === 'pairs') {
+                ensureHelperMounted();
+            }
+        }, 1500);
+        new MutationObserver(() => { markTiles(); ensureHelperMounted(); }).observe(document.documentElement, { childList: true, subtree: true });
 
         async function run(force: boolean): Promise<void> {
             const info = domApi().readPageInfo();
