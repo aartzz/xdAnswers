@@ -104,7 +104,7 @@ body.theme-material3 .tab-buttons {
     bottom: 14px !important;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%) !important;
+    transform: translate3d(-50%, 0, 0) !important;
     width: fit-content !important;
     max-width: calc(100% - 40px) !important;
     display: inline-flex !important;
@@ -117,9 +117,10 @@ body.theme-material3 .tab-buttons {
     gap: 6px !important;
     margin: 0 !important;
     z-index: 100 !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.35) !important;
     box-sizing: border-box !important;
     will-change: transform !important;
+    contain: layout style !important;
 }
 
 body.theme-material3 .tab-button {
@@ -207,16 +208,13 @@ body.theme-material3 .tab-content {
     overflow-y: auto !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    transform: translateZ(0);
+    will-change: scroll-position;
+    contain: layout paint;
 }
 
 body.theme-material3 .tab-content.active {
     display: block !important;
-    animation: m3FadeSlide 0.2s var(--m3-ease);
-}
-
-@keyframes m3FadeSlide {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── AOSP Settings Search Bar & Categories ── */
@@ -402,37 +400,10 @@ body.theme-material3 .settings-subpage-view:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    animation: m3SubpageIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
 }
 
 body.theme-material3 .settings-subpage-view.hidden {
     display: none !important;
-}
-
-@keyframes m3SubpageIn {
-    from {
-        opacity: 0;
-        transform: translateX(16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes m3CatFadeIn {
-    from {
-        opacity: 0;
-        transform: translateX(-16px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-body.theme-material3 .settings-categories-view.aosp-anim-in {
-    animation: m3CatFadeIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
 }
 
 body.theme-material3 .aosp-subpage-header {
