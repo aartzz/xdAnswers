@@ -72,7 +72,8 @@
             '--xd-glow:' + (custom.glowEffect ? '0 0 8px ' + custom.borderColor : 'none') + ';' +
             '--xd-font:Roboto,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
             '}' +
-            ':host{margin:0 !important;padding:0 !important;border:none !important;box-sizing:border-box !important;contain:layout style !important;z-index:' + T.zIndex + ' !important;}' +
+            ':host{margin:0 !important;padding:0 !important;border:none !important;box-sizing:border-box !important;contain:layout style !important;z-index:' + T.zIndex + ' !important;font-family:var(--xd-font) !important;color:var(--xd-text) !important;}' +
+            '*,*:before,*:after{box-sizing:border-box !important;}' +
             '.' + T.icon + ',.xd-icon,.app-icon{font-family:"Material Symbols Outlined" !important;font-weight:normal !important;font-style:normal !important;font-size:16px !important;line-height:1 !important;letter-spacing:normal !important;text-transform:none !important;display:inline-block !important;white-space:nowrap !important;word-wrap:normal !important;direction:ltr !important;-webkit-font-smoothing:antialiased !important;font-feature-settings:"liga" 1 !important;-webkit-font-feature-settings:"liga" 1 !important;font-variant-ligatures:normal !important;vertical-align:middle !important;}' +
             '.' + T.panel + ',.app-panel,.ollama-helper-container{margin:0;padding:0;border:none;font-weight:normal;text-align:left;transform:none;' +
             'width:100% !important;height:100% !important;max-height:inherit !important;' +
@@ -84,11 +85,6 @@
             'contain:paint !important;isolation:isolate !important;background-clip:padding-box !important;' +
             'clip-path:inset(0 round ' + borderRadius + ') !important;' +
             '}' +
-            '.' + T.panel + ' *:not(.' + T.spinner + '):not(.xd-loader):not(.app-spinner):not(.' + T.bar + '):not(.app-bar):not(.ollama-helper-header):not(.' + T.footer + '):not(.app-footer):not(.ollama-helper-footer){' +
-            'all:revert !important;appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;' +
-            'font-family:var(--xd-font) !important;font-size:inherit !important;line-height:inherit !important;' +
-            'color:var(--xd-text) !important;box-sizing:border-box !important;margin:0 !important;padding:0 !important;' +
-            'background:none !important;border:none !important;}' +
             '.' + T.bar + ',.app-bar,.ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
             'padding:12px 16px !important;background-color:' + headerBg + ' !important;' +
             'border-bottom:' + (isM3 ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.06)') + ' !important;border-radius:' + headerRadius + ' !important;cursor:move !important;user-select:none !important;}' +

@@ -23,13 +23,12 @@
                     }
                 }
                 if (!exists) {
-                    const face = new FontFace('Material Symbols Outlined', `url("${fontUrl}") format("woff2")`, {
+                    const face = new FontFace('Material Symbols Outlined', `url(${fontUrl})`, {
                         weight: 'normal',
                         style: 'normal',
                         display: 'block'
                     });
-                    document.fonts.add(face);
-                    face.load().catch(() => {});
+                    face.load().then(f => document.fonts.add(f)).catch(() => {});
                 }
             } catch (e) {}
         }
