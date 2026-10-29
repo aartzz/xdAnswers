@@ -60,6 +60,11 @@
             '</div>';
 
         shadow.appendChild(innerCard);
+        window.xdAnswers.innerCard = innerCard;
+
+        // Prevent text selection / manual copy inside helper window (copy allowed via copy button only)
+        innerCard.addEventListener('selectstart', (e) => e.preventDefault());
+        innerCard.addEventListener('copy', (e) => e.preventDefault());
 
         // Delegate querySelector calls on the host wrapper to the shadow root so internal modules work seamlessly
         host.querySelector = function<E extends Element = Element>(selectors: string): E | null {

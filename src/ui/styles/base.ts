@@ -84,6 +84,7 @@
             'font-family:var(--xd-font) !important;font-size:14px !important;line-height:1.5 !important;overflow:hidden !important;' +
             'contain:paint !important;isolation:isolate !important;background-clip:padding-box !important;' +
             'clip-path:inset(0 round ' + borderRadius + ') !important;' +
+            'user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;' +
             '}' +
             '.' + T.bar + ',.app-bar,.ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
             'padding:12px 16px !important;background-color:' + headerBg + ' !important;' +

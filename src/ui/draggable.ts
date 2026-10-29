@@ -19,9 +19,37 @@
                 return { x: (e as MouseEvent).clientX, y: (e as MouseEvent).clientY };
             };
 
+            function isInteractiveTarget(e: MouseEvent | TouchEvent): boolean {
+                const path = e.composedPath ? e.composedPath() : [];
+                const target = ((path.length > 0 ? path[0] : e.target) as HTMLElement) || null;
+                if (!target || typeof target.closest !== 'function') return false;
+
+                // 1. Buttons, dropdowns, inputs, links
+                if (target.closest('button, select, option, a, input, textarea')) return true;
+
+                // 2. Interactive tabs, collapsible headers, toggles
+                if (target.closest('.xd-consensus-tabs, .xd-consensus-tab, .xd-thinking-header, .xd-search-header, .xd-calc-header, .xd-search-toggle, .xd-calc-toggle, .xd-thinking-toggle')) return true;
+
+                // 3. Pointer cursor elements
+                try {
+                    const computed = window.getComputedStyle(target);
+                    if (computed && computed.cursor === 'pointer') return true;
+                } catch (err) {}
+
+                // 4. Scrollbar interaction on scrollable content view
+                if ('clientX' in e) {
+                    const scrollable = target.closest<HTMLElement>('.app-view, .ollama-helper-content') || (target.scrollHeight > target.clientHeight ? target : null);
+                    if (scrollable && scrollable.scrollHeight > scrollable.clientHeight) {
+                        const rect = scrollable.getBoundingClientRect();
+                        if (e.clientX >= rect.left + scrollable.clientWidth) return true;
+                    }
+                }
+
+                return false;
+            }
+
             const onDragStart = (e: MouseEvent | TouchEvent) => {
-                const target = e.target as Element | null;
-                if (target && (target.tagName === 'BUTTON' || (target.parentElement && target.parentElement.tagName === 'BUTTON') || target.tagName === 'SELECT')) return;
+                if (isInteractiveTarget(e)) return;
                 e.preventDefault();
                 isDragging = true;
                 if (onDragStartCallback) onDragStartCallback();

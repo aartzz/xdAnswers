@@ -30,7 +30,8 @@
         const modeLabels: Record<string, string> = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
         silentModeBtn.title = 'Silent mode: ' + (modeLabels[currentSilentMode] || 'Off');
 
-        window.xdAnswers.Draggable.init(container, window.xdAnswers.dragHeader!, () => {
+        const handle = window.xdAnswers.innerCard || window.xdAnswers.dragHeader || container;
+        window.xdAnswers.Draggable.init(container, handle, () => {
             window.xdAnswers.isManuallyPositioned = true;
         });
 
