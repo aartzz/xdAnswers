@@ -18,12 +18,12 @@
         if (window.xdAnswers._statusInterval) { clearInterval(window.xdAnswers._statusInterval); window.xdAnswers._statusInterval = null; }
 
         const updateFooterElapsed = () => {
-            const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+            const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#lbl-elapsed, #xd-footer-elapsed');
             if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + I.getProcessElapsed(startTime);
         };
 
         const updateFooterModel = (label: string) => {
-            const footerModel = window.xdAnswers.helperContainer?.querySelector('.xd-footer-model');
+            const footerModel = window.xdAnswers.helperContainer?.querySelector('#lbl-model, .app-model, .xd-footer-model');
             if (footerModel) footerModel.textContent = label;
         };
 

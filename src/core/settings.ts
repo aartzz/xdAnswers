@@ -138,7 +138,7 @@
         }
         window.xdAnswers.settings = s;
         // Update footer model name
-        const footerModel = document.getElementById('xd-footer-model');
+        const footerModel = window.xdAnswers.helperContainer?.querySelector('#lbl-model, #xd-footer-model') || document.getElementById('xd-footer-model');
         if (footerModel) footerModel.textContent = s.model || 'select model ↗';
         return s;
     };

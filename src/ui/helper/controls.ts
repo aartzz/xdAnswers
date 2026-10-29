@@ -10,10 +10,10 @@
     window.xdAnswers.attachHelperEventListeners = function(): void {
         const container = window.xdAnswers.helperContainer;
         if (!container) return;
-        const silentModeBtn = container.querySelector('#silent-mode-btn') as HTMLButtonElement;
-        const silentModeSelect = container.querySelector('#silent-mode-inline-select') as HTMLSelectElement;
-        const copyBtn = container.querySelector('#copy-answer-btn') as HTMLButtonElement;
-        const refreshBtn = container.querySelector('#refresh-answer-btn') as HTMLButtonElement;
+        const silentModeBtn = (container.querySelector('#btn-silent') || container.querySelector('#silent-mode-btn')) as HTMLButtonElement;
+        const silentModeSelect = (container.querySelector('#sel-silent') || container.querySelector('#silent-mode-inline-select')) as HTMLSelectElement;
+        const copyBtn = (container.querySelector('#btn-copy') || container.querySelector('#copy-answer-btn')) as HTMLButtonElement;
+        const refreshBtn = (container.querySelector('#btn-refresh') || container.querySelector('#refresh-answer-btn')) as HTMLButtonElement;
         if (!refreshBtn) return;
 
         // Initialize silent mode button state

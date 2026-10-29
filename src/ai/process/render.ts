@@ -13,7 +13,7 @@
         if (!window.xdAnswers.answerContentDiv) return;
         let html = '<div class="xd-elapsed"><span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed + '</div>';
         // Update footer elapsed too
-        const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+        const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#lbl-elapsed, #xd-footer-elapsed');
         if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed;
         if (result.thinking) {
             const isExpanded = !!window.xdAnswers._thinkingExpanded;

@@ -47,8 +47,8 @@
             // Show helper
             if (window.xdAnswers.helperContainer) {
                 window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
-                const silentModeBtn = window.xdAnswers.helperContainer.querySelector<HTMLElement>('#silent-mode-btn');
-                const silentModeSelect = window.xdAnswers.helperContainer.querySelector<HTMLSelectElement>('#silent-mode-inline-select');
+                const silentModeBtn = window.xdAnswers.helperContainer.querySelector<HTMLElement>('#btn-silent, #silent-mode-btn');
+                const silentModeSelect = window.xdAnswers.helperContainer.querySelector<HTMLSelectElement>('#sel-silent, #silent-mode-inline-select');
                 if (silentModeBtn) { silentModeBtn.classList.remove('active'); silentModeBtn.title = 'Silent mode: Off'; }
                 if (silentModeSelect) { silentModeSelect.value = ''; silentModeSelect.style.display = 'none'; }
             }

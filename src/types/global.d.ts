@@ -254,6 +254,7 @@ interface XdAnswersInternal {
     TRANSLATIONS: Record<string, Record<string, string>>;
 
     // Settings and version helpers
+    ensureMaterialSymbolsFont?: () => void;
     getActiveProvider(s: XdSettings): XdProviderConfig | null;
     getEffectiveSettings(s: XdSettings): XdEffectiveSettings;
     getEffectiveSettingsForRun(s: XdSettings, run: XdConsensusRun): XdEffectiveSettings;

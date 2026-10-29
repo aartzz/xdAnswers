@@ -37,7 +37,7 @@
         answerContentDiv.appendChild(statusDiv);
         const statusInterval = setInterval(() => {
             // Always update footer elapsed
-            const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#xd-footer-elapsed');
+            const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#lbl-elapsed, #xd-footer-elapsed');
             if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + I.getProcessElapsed(startTime);
             // Update status text if still showing
             const s = window.xdAnswers.answerContentDiv?.querySelector('.xd-status');

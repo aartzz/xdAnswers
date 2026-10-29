@@ -28,7 +28,7 @@ export function registerOneClick(root: Element | null, onTrigger: () => Promise<
     oneClickHandler = async (event: Event) => {
         if (window.xdAnswers._autoSelecting) return;
         const target = event && event.target as Element | null;
-        if (target && (target === window.xdAnswers.helperContainer || (target.closest && target.closest('.ollama-helper-container')))) return;
+        if (target && (target === window.xdAnswers.helperContainer || (target.closest && target.closest('.app-panel, .ollama-helper-container')))) return;
         await onTrigger();
     };
     oneClickRoot.addEventListener('click', oneClickHandler, true);

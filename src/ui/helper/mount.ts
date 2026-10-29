@@ -9,6 +9,7 @@
 
     window.xdAnswers.createUI = function(): void {
         if (window.xdAnswers.helperContainer) return;
+        if (I.ensureMaterialSymbolsFont) I.ensureMaterialSymbolsFont();
 
         // Host element in light DOM: randomized class, no id, empty light children.
         // Page scripts running querySelector or innerText cannot detect or inspect it.
@@ -16,7 +17,7 @@
         const randId = '_' + Math.random().toString(36).slice(2, 9);
         host.className = randId;
         host.style.setProperty('position', 'fixed', 'important');
-        host.style.setProperty('z-index', '2147483647', 'important');
+        host.style.setProperty('z-index', '999999', 'important');
         host.style.setProperty('margin', '0', 'important');
         host.style.setProperty('padding', '0', 'important');
         host.style.setProperty('border', 'none', 'important');
@@ -28,26 +29,26 @@
         window.xdAnswers.shadowRoot = shadow;
 
         const innerCard = document.createElement('div');
-        innerCard.className = 'ollama-helper-container';
+        innerCard.className = 'app-panel';
         innerCard.innerHTML =
-            '<div class="ollama-helper-header" id="ollama-helper-drag-header">' +
-            '<span class="ollama-header-title">Assistant <small class="xd-version"></small></span>' +
-            '<div class="ollama-header-buttons">' +
-            '<button id="silent-mode-btn" title="Silent mode: Off"><span class="xd-icon">close</span></button>' +
-            '<select id="silent-mode-inline-select" title="Silent mode">' +
+            '<div class="app-bar" id="drag-bar">' +
+            '<span class="app-title">xdAnswers <small class="app-version xd-version"></small></span>' +
+            '<div class="app-actions">' +
+            '<button id="btn-silent" title="Silent mode: Off"><span class="xd-icon">close</span></button>' +
+            '<select id="sel-silent" title="Silent mode">' +
             '<option value="">Off</option>' +
             '<option value="indicators">Indicators</option>' +
             '<option value="ghost">Page title</option>' +
             '<option value="stealth">Stealth</option>' +
             '<option value="oneclick">One-click</option>' +
             '</select>' +
-            '<button id="refresh-answer-btn" title="Refresh"><span class="xd-icon">refresh</span></button>' +
+            '<button id="btn-refresh" title="Refresh"><span class="xd-icon">refresh</span></button>' +
             '</div></div>' +
-            '<div class="ollama-helper-content" id="ollama-answer-content">Waiting for question...</div>' +
-            '<div class="ollama-helper-footer" id="ollama-helper-footer">' +
-            '<span class="xd-footer-elapsed" id="xd-footer-elapsed"></span>' +
-            '<span class="xd-footer-model" id="xd-footer-model"></span>' +
-            '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer"><span class="xd-icon">content_copy</span></button>' +
+            '<div class="app-view" id="answer-view">Waiting for question...</div>' +
+            '<div class="app-footer" id="status-bar">' +
+            '<span class="app-time" id="lbl-elapsed"></span>' +
+            '<span class="app-model" id="lbl-model"></span>' +
+            '<button class="app-copy" id="btn-copy" title="Copy answer"><span class="xd-icon">content_copy</span></button>' +
             '</div>';
 
         shadow.appendChild(innerCard);
@@ -61,14 +62,14 @@
         };
 
         window.xdAnswers.helperContainer = host;
-        window.xdAnswers.answerContentDiv = shadow.querySelector<HTMLElement>('#ollama-answer-content');
-        window.xdAnswers.dragHeader = shadow.querySelector<HTMLElement>('#ollama-helper-drag-header');
+        window.xdAnswers.answerContentDiv = shadow.querySelector<HTMLElement>('#answer-view');
+        window.xdAnswers.dragHeader = shadow.querySelector<HTMLElement>('#drag-bar');
 
         window.xdAnswers.attachHelperEventListeners();
         window.xdAnswers.updateHelperBaseStyles();
 
         // Set current model name in footer
-        const footerModelEl = shadow.querySelector('#xd-footer-model');
+        const footerModelEl = shadow.querySelector('#lbl-model');
         if (footerModelEl) footerModelEl.innerHTML = (window.xdAnswers.settings.model || 'select model') + ' <span class="xd-icon" style="font-size:12px !important;vertical-align:baseline;">north_east</span>';
         // Set version string in header
         const versionEl = shadow.querySelector('.xd-version');
