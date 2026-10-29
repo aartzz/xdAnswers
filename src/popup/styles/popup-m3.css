@@ -56,13 +56,11 @@ body.theme-material3 {
     color: var(--m3-on-surface) !important;
     padding-bottom: 0 !important;
     overflow-x: hidden !important;
-    transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 body.theme-material3 .tab-content {
     background-color: var(--m3-surface) !important;
     color: var(--m3-on-surface) !important;
-    transition: background-color 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 /* ── Header ── */
@@ -121,6 +119,7 @@ body.theme-material3 .tab-buttons {
     z-index: 100 !important;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4) !important;
     box-sizing: border-box !important;
+    will-change: transform !important;
 }
 
 body.theme-material3 .tab-button {
@@ -1125,12 +1124,12 @@ body.theme-material3 .model-list {
 body.theme-material3 .model-item {
     border-radius: var(--m3-r-s) !important;
     margin: 2px 4px !important;
-    animation: m3ItemAppear 0.15s var(--m3-ease) both !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
     min-width: 0 !important;
+    contain: content !important;
 }
 
 body.theme-material3 .model-item-main {

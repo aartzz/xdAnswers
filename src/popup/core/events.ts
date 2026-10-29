@@ -176,8 +176,12 @@ export function attachEventListeners() {
         // When toggle is off, select change just pre-selects mode for next enable
     };
 
+    let modelSearchTimer = null;
     el.modelName.oninput = () => {
-        renderModelList();
+        if (modelSearchTimer) clearTimeout(modelSearchTimer);
+        modelSearchTimer = setTimeout(() => {
+            renderModelList();
+        }, 120);
     };
     el.modelName.onkeydown = (e) => {
         if (e.key === 'Enter') {

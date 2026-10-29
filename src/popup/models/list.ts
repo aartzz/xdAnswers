@@ -92,7 +92,7 @@ export function renderModelList() {
         if (count >= MAX_VISIBLE) break;
         const icon = getProviderIcon(provider);
         const iconHtml = icon
-            ? `<img class="provider-icon" src="https://models.dev/logos/${icon}.svg" alt="" loading="lazy">`
+            ? `<img class="provider-icon" src="https://models.dev/logos/${icon}.svg" alt="" width="16" height="16" loading="lazy" decoding="async">`
             : `<span class="provider-icon-fallback">${(provider[0] || '?').toUpperCase()}</span>`;
         html += `<div class="model-provider-group">
             <div class="model-provider-header">${iconHtml}<span>${provider}</span>
@@ -103,7 +103,7 @@ export function renderModelList() {
             const ctxHtml = m.contextLength ? `<span class="model-ctx">${formatContextLength(m.contextLength)}</span>` : '';
             const familyIcon = getModelFamilyIcon(m.id);
             const modelIcon = familyIcon
-                ? `<img class="model-icon" src="https://models.dev/logos/${familyIcon}.svg" alt="" loading="lazy">`
+                ? `<img class="model-icon" src="https://models.dev/logos/${familyIcon}.svg" alt="" width="18" height="18" loading="lazy" decoding="async">`
                 : `<span class="provider-icon-fallback">${(formatModelName(m.root || m.id)[0] || '?').toUpperCase()}</span>`;
             const providerLabel = escapeHTML(m.ownedBy || 'other');
             const isSelected = m.id === currentValue;
@@ -176,15 +176,18 @@ export function renderModelList() {
 
     list.innerHTML = html;
 
-    // Scroll selected into view
+    // Scroll selected into view only on initial render
     const selectedEl = list.querySelector('.model-item.selected');
-    if (selectedEl) selectedEl.scrollIntoView({ block: 'nearest' });
+    if (selectedEl && !query) selectedEl.scrollIntoView({ block: 'nearest' });
 
-    list.querySelectorAll('.model-item').forEach(el => {
-        el.addEventListener('click', async () => {
+    if (!list._delegatedClick) {
+        list._delegatedClick = true;
+        list.addEventListener('click', async (e) => {
+            const el = e.target.closest('.model-item');
+            if (!el || !el.dataset.modelId) return;
             input.value = el.dataset.modelId;
             await autoSave({ model: el.dataset.modelId });
             renderModelList();
         });
-    });
+    }
 }
