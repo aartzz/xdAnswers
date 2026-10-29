@@ -30,7 +30,7 @@
         if (!st.inInlineThinking) {
             if (st.fullContent.length === 0 && st.rawContentBuffer.length < 30) {
                 const prefix = st.rawContentBuffer.trimStart();
-                const possiblePrefixes = ["here", "thinking", "the", "i need", "let", "first", "we need"];
+                const possiblePrefixes = ["here's a thinking", "thinking process", "the user is", "the user asks", "the user wants", "i need to", "let's think", "first, let's", "we need to"];
                 if (possiblePrefixes.some(p => p.startsWith(prefix.toLowerCase()) || prefix.toLowerCase().startsWith(p))) {
                     return;
                 }

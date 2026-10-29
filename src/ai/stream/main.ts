@@ -263,6 +263,11 @@
                     }
                     st.rawContentBuffer = '';
                 }
+                if (!st.fullContent.trim() && st.fullThinking.trim()) {
+                    // Safety salvage: if content is empty but thinking was captured, use thinking as answer content
+                    st.fullContent = st.fullThinking;
+                    st.fullThinking = '';
+                }
                 resolve({ content: st.fullContent, thinking: st.fullThinking, searchCalls: st.searchCalls, calcCalls: st.calcCalls });
             }
 

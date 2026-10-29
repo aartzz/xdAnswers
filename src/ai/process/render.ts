@@ -46,7 +46,12 @@
             }
             html += '</div></div>';
         }
-        html += I.renderParsedResponse(parsed);
+        const renderedBody = I.renderParsedResponse(parsed);
+        if (!renderedBody && !result.thinking && (!result.searchCalls || result.searchCalls.length === 0) && (!result.calcCalls || result.calcCalls.length === 0)) {
+            html += '<div class="xd-waiting"><span class="xd-icon" style="font-size:14px !important;vertical-align:middle;margin-right:4px;">error_outline</span> Не вдалося розпізнати відповідь. Натисни ↻ щоб повторити.</div>';
+        } else {
+            html += renderedBody;
+        }
         window.xdAnswers.answerContentDiv.innerHTML = html;
 
         const th = window.xdAnswers.answerContentDiv.querySelector('.xd-thinking-header');
