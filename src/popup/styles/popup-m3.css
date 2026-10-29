@@ -220,8 +220,8 @@ body.theme-material3 .tab-content.active {
 }
 
 @keyframes m3FadeSlide {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from { opacity: 0; transform: translate3d(0, 4px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 /* ── AOSP Settings Search Bar & Categories ── */
@@ -417,18 +417,22 @@ body.theme-material3 .settings-subpage-view.hidden {
 @keyframes m3SubpageIn {
     from {
         opacity: 0;
+        transform: translate3d(14px, 0, 0);
     }
     to {
         opacity: 1;
+        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes m3CatFadeIn {
     from {
         opacity: 0;
+        transform: translate3d(-14px, 0, 0);
     }
     to {
         opacity: 1;
+        transform: translate3d(0, 0, 0);
     }
 }
 
