@@ -8,8 +8,47 @@
 
     const I = window.xdAnswers._internal;
 
+    function questionLikelyNeedsCalculator(text?: string, optionsText?: string): boolean {
+        const combined = ((text || '') + ' ' + (optionsText || '')).trim();
+        if (!combined) return false;
+
+        // 1. Explicit LaTeX math commands
+        if (/\\(?:frac|sqrt|times|div|pm|cdot|sum|int|sin|cos|tan|cot|log|ln|lim|infty)\b/.test(combined)) {
+            return true;
+        }
+
+        // 2. Clear arithmetic or algebraic expressions: "25 + 17", "12 * 8", "100 / 4", "2^8", "x^2"
+        if (/\b\d+\s*[\+\-\*\/×÷\^]\s*\d+\b/.test(combined) || /\b\d+\s*=\s*\d+\b/.test(combined)) {
+            return true;
+        }
+
+        // 3. Mathematical equations with variables: "2x + 5 = 15", "y = 3x - 1"
+        if (/\b\d*[a-zA-Z]\s*[\+\-\*\/]\s*\d*[a-zA-Z0-9]\s*=/.test(combined)) {
+            return true;
+        }
+
+        // 4. Word-based math / physics calculation keywords when digits are present
+        const hasDigits = /\d/.test(combined);
+        if (hasDigits && /обчисл|порахуй|знайдіть значення|площ[аі]|периметр|густин|швидкіст|відсот[ок|ків]|процент|розв['’]?яж(?:іть)? рівнян|градус|координат|calculate|solve|equation|formula/i.test(combined)) {
+            return true;
+        }
+
+        // 5. If options are predominantly pure numbers/math: e.g. "A: 4; B: 12; C: 25; D: 36"
+        if (optionsText) {
+            const optionLines = optionsText.split('\n').filter(Boolean);
+            if (optionLines.length >= 2) {
+                const pureNumberOptions = optionLines.filter(line => /^[A-Z0-9\.\)\s]*[\+\-]?\d+(?:[\.,]\d+)?\s*(?:см|мм|м|кг|г|с|хв|%|°)?$/i.test(line.trim()));
+                if (pureNumberOptions.length >= Math.ceil(optionLines.length / 2)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     function buildCalculatorTool(apiFormat: string): unknown[] {
-        const desc = 'Calculate and evaluate mathematical expressions, arithmetic, algebraic formulas, or LaTeX math (e.g. fractions \\frac{a}{b}, square roots \\sqrt{x}, exponents 2^8, percentages, trigonometry, equations 2x + 5 = 15). Use this tool whenever the question involves calculations to guarantee 100% precision.';
+        const desc = 'Calculate and evaluate mathematical expressions, arithmetic, algebraic formulas, or LaTeX math (e.g. fractions \\frac{a}{b}, square roots \\sqrt{x}, exponents 2^8, percentages, trigonometry, equations). Use this tool ONLY when the question explicitly involves mathematical calculations. NEVER call this tool for language, grammar, or non-math questions, and NEVER call it with dummy expressions.';
         const params = {
             type: 'object',
             properties: {
@@ -58,11 +97,14 @@
         }));
     }
 
-    function buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[] {
+    function buildTools(s: XdEffectiveSettings, apiFormat: string, questionData?: XdQuestionData): unknown[] {
         const tools: unknown[] = [];
         const I = window.xdAnswers._internal;
         const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s as unknown as XdSettings));
-        const calculator = s.calculatorEnabled !== false;
+        let calculator = s.calculatorEnabled !== false;
+        if (calculator && questionData) {
+            calculator = questionLikelyNeedsCalculator(questionData.text, questionData.optionsText);
+        }
 
         if (apiFormat === 'openai') {
             if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) tools.push(...buildOpenCodeCoreTools());
@@ -90,6 +132,7 @@
         return [];
     }
 
+    I.questionLikelyNeedsCalculator = questionLikelyNeedsCalculator;
     I.buildCalculatorTool = buildCalculatorTool;
     I.buildTools = buildTools;
     I.executeCalculator = executeCalculator;

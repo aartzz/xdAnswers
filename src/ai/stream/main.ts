@@ -40,7 +40,7 @@
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
 
-            const initialBody = buildRequestBody(s, systemPrompt, userMsg, images, true);
+            const initialBody = buildRequestBody(s, systemPrompt, userMsg, images, true, questionData);
             window.xdAnswers.lastRequestBody = initialBody;
 
             const st: { fullContent: string; fullThinking: string; lastHighlightedAnswer: string; thinkingStarted: boolean; thinkingDone: boolean; streamTimerInterval: number | null; statusCleared: boolean; toolLoopDepth: number; isHandlingToolCalls: boolean; searchCalls: XdSearchCallInfo[]; calcCalls: XdCalcCallInfo[]; pendingToolCalls: Record<number, PendingToolCall>; inInlineThinking: boolean; rawContentBuffer: string; isThinkingExpanded: boolean; isSearchExpanded: boolean; isCalcExpanded: boolean } = {
@@ -274,7 +274,7 @@
                 delete body.tools;
                 // Include tools on stream rounds within MAX_TOOL_LOOPS limit
                 if (st.toolLoopDepth < MAX_TOOL_LOOPS) {
-                    const tools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
+                    const tools = I.buildTools ? I.buildTools(s, s.apiFormat, questionData) : [];
                     if (tools.length > 0 && s.apiFormat !== 'google') {
                         body.tools = tools;
                     }

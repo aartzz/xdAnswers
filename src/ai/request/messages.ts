@@ -21,9 +21,12 @@
             systemPrompt += '\n\nУ тебе є доступ до інструмента web_search для пошуку в інтернеті. Використовуй його, коли потрібно знайти актуальну інформацію, факти, дати або деталі, яких може не бути у твоїх навчальних даних. Це особливо корисно для питань про поточні події, історичні дати, наукові факти тощо. Не викликай пошук, якщо впевнений у відповіді.';
         }
 
-        // When calculator is enabled, append tool usage instructions to system prompt
-        if (settings.calculatorEnabled !== false) {
-            systemPrompt += '\n\nУ тебе є доступ до інструмента calculator для точних математичних обчислень та розв\'язання формул/LaTeX виразів. Обов\'язково викликай calculator, коли у завданні є будь-які підрахунки, арифметика, дроби чи формули, щоб гарантувати точність розрахунків.';
+        // When calculator is enabled, append tool usage instructions only if question actually involves calculations
+        const needsCalc = I.questionLikelyNeedsCalculator
+            ? I.questionLikelyNeedsCalculator(questionData.text, questionData.optionsText)
+            : true;
+        if (settings.calculatorEnabled !== false && needsCalc) {
+            systemPrompt += '\n\nУ тебе є доступ до інструмента calculator для точних математичних обчислень та розв\'язання формул/LaTeX виразів. Викликай calculator ТІЛЬКИ коли у завданні є дійсні підрахунки чи формули. НЕ викликай його з фіктивними виразами типу "2+2".';
         }
 
         let userMsg = '';
