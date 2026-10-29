@@ -24,7 +24,8 @@
         const btn = document.createElement('div');
         window.xdAnswers._silentExitBtn = btn;
         btn.className = '_' + Math.random().toString(36).slice(2, 8);
-        btn.style.cssText = 'position:fixed;bottom:4px;right:4px;width:6px;height:6px;background:rgba(100,100,100,0.25);border-radius:50%;z-index:2147483647;cursor:pointer;transition:all 0.2s;';
+        const z = window.xdAnswers._internal.uiTokens?.zIndex || 999999;
+        btn.style.cssText = 'position:fixed;bottom:4px;right:4px;width:6px;height:6px;background:rgba(100,100,100,0.25);border-radius:50%;z-index:' + z + ';cursor:pointer;transition:all 0.2s;';
         btn.addEventListener('mouseenter', () => {
             btn.style.width = '10px';
             btn.style.height = '10px';

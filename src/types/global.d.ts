@@ -255,6 +255,36 @@ interface XdAnswersInternal {
 
     // Settings and version helpers
     ensureMaterialSymbolsFont?: () => void;
+    uiTokens?: {
+        panel: string;
+        bar: string;
+        dragBar: string;
+        title: string;
+        version: string;
+        actions: string;
+        btnSilent: string;
+        selSilent: string;
+        btnRefresh: string;
+        view: string;
+        answerView: string;
+        footer: string;
+        time: string;
+        model: string;
+        copy: string;
+        btnCopy: string;
+        icon: string;
+        spinner: string;
+        zIndex: number;
+    };
+    ui?: {
+        btnSilent?: HTMLButtonElement | null;
+        selSilent?: HTMLSelectElement | null;
+        btnRefresh?: HTMLButtonElement | null;
+        btnCopy?: HTMLButtonElement | null;
+        lblElapsed?: HTMLElement | null;
+        lblModel?: HTMLElement | null;
+        version?: HTMLElement | null;
+    };
     getActiveProvider(s: XdSettings): XdProviderConfig | null;
     getEffectiveSettings(s: XdSettings): XdEffectiveSettings;
     getEffectiveSettingsForRun(s: XdSettings, run: XdConsensusRun): XdEffectiveSettings;

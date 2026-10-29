@@ -58,7 +58,7 @@
         const mh = isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight;
 
         if (window.xdAnswers.helperContainer) {
-            window.xdAnswers.helperContainer.style.setProperty('z-index', '999999', 'important');
+            window.xdAnswers.helperContainer.style.setProperty('z-index', String(I.uiTokens?.zIndex || 999999), 'important');
             window.xdAnswers.helperContainer.style.setProperty('width', w, 'important');
             window.xdAnswers.helperContainer.style.setProperty('height', h, 'important');
             window.xdAnswers.helperContainer.style.setProperty('max-height', mh, 'important');

@@ -22,4 +22,31 @@
     window.xdAnswers._cancelStream = null;
     window.xdAnswers._originalTitle = null;
     window.xdAnswers._customAutoAnswer = null;
+
+    function genRandClass(): string {
+        return '_' + Math.random().toString(36).slice(2, 8);
+    }
+
+    window.xdAnswers._internal.uiTokens = {
+        panel: genRandClass(),
+        bar: genRandClass(),
+        dragBar: genRandClass(),
+        title: genRandClass(),
+        version: genRandClass(),
+        actions: genRandClass(),
+        btnSilent: genRandClass(),
+        selSilent: genRandClass(),
+        btnRefresh: genRandClass(),
+        view: genRandClass(),
+        answerView: genRandClass(),
+        footer: genRandClass(),
+        time: genRandClass(),
+        model: genRandClass(),
+        copy: genRandClass(),
+        btnCopy: genRandClass(),
+        icon: genRandClass(),
+        spinner: genRandClass(),
+        zIndex: Math.floor(Math.random() * (999999 - 10000 + 1)) + 10000
+    };
+    window.xdAnswers._internal.ui = {};
 })();
