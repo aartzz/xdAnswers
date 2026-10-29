@@ -49,6 +49,10 @@ export function initAospSettingsNavigation() {
         subView.style.display = 'none';
         catView.classList.remove('hidden');
         catView.style.display = 'flex';
+        catView.classList.remove('aosp-anim-in');
+        // Trigger reflow to restart CSS animation
+        void catView.offsetWidth;
+        catView.classList.add('aosp-anim-in');
 
         Object.values(sections).forEach(s => {
             if (s.el) {
