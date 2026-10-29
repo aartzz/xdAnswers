@@ -21,7 +21,7 @@
                 if (!window.xdAnswers.helperContainer) return;
                 window.xdAnswers.updateHelperBaseStyles();
                 // Update footer model name
-                const footerModel = window.xdAnswers.helperContainer.querySelector('#lbl-model, #xd-footer-model');
+                const footerModel = I.ui?.lblModel || (I.uiTokens && window.xdAnswers.helperContainer.querySelector('#' + I.uiTokens.model)) || window.xdAnswers.helperContainer.querySelector('#lbl-model, #xd-footer-model');
                 if (footerModel) footerModel.textContent = window.xdAnswers.settings.model || 'select model ↗';
                 const silentMode = window.xdAnswers.settings.silentMode || '';
                 if (silentMode !== '') {
@@ -35,8 +35,8 @@
                     }
                 }
                 // Sync inline silent mode controls
-                const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#btn-silent, #silent-mode-btn') as HTMLButtonElement | null;
-                const silentModeSelect = window.xdAnswers.helperContainer.querySelector('#sel-silent, #silent-mode-inline-select') as HTMLSelectElement | null;
+                const silentModeBtn = (I.ui?.btnSilent || (I.uiTokens && window.xdAnswers.helperContainer.querySelector('#' + I.uiTokens.btnSilent)) || window.xdAnswers.helperContainer.querySelector('#btn-silent, #silent-mode-btn')) as HTMLButtonElement | null;
+                const silentModeSelect = (I.ui?.selSilent || (I.uiTokens && window.xdAnswers.helperContainer.querySelector('#' + I.uiTokens.selSilent)) || window.xdAnswers.helperContainer.querySelector('#sel-silent, #silent-mode-inline-select')) as HTMLSelectElement | null;
                 const modeLabels: Record<string, string> = { '': 'Off', 'indicators': 'Indicators', 'ghost': 'Page title', 'stealth': 'Stealth', 'oneclick': 'One-click' };
                 if (silentModeBtn) {
                     silentModeBtn.title = 'Silent mode: ' + (modeLabels[silentMode] || 'Off');

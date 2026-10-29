@@ -88,7 +88,7 @@
             '.' + T.bar + ',.app-bar,.ollama-helper-header{display:flex !important;justify-content:space-between !important;align-items:center !important;' +
             'padding:12px 16px !important;background-color:' + headerBg + ' !important;' +
             'border-bottom:' + (isM3 ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.06)') + ' !important;border-radius:' + headerRadius + ' !important;cursor:move !important;user-select:none !important;}' +
-            '.' + T.title + ',.app-title,.ollama-header-title{font-weight:600 !important;margin-right:auto !important;font-size:14px !important;letter-spacing:0.2px !important;}' +
+            '.' + T.title + ',.app-title,.ollama-header-title{font-weight:600 !important;margin-right:auto !important;font-size:14px !important;letter-spacing:0.2px !important;cursor:move !important;user-select:none !important;}' +
             '.' + T.version + ',.app-version,.xd-version{font-weight:400 !important;font-size:10px !important;opacity:0.5 !important;margin-left:4px !important;vertical-align:middle !important;}' +
             '.' + T.actions + ',.app-actions,.ollama-header-buttons{display:flex !important;align-items:center !important;gap:6px !important;}' +
             '.' + T.actions + ' button,.app-actions button,.ollama-header-buttons button{all:revert !important;background:rgba(255,255,255,0.06) !important;border:1px solid rgba(255,255,255,0.08) !important;' +

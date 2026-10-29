@@ -10,11 +10,12 @@
     window.xdAnswers.attachHelperEventListeners = function(): void {
         const container = window.xdAnswers.helperContainer;
         if (!container) return;
-        const silentModeBtn = (container.querySelector('#btn-silent') || container.querySelector('#silent-mode-btn')) as HTMLButtonElement;
-        const silentModeSelect = (container.querySelector('#sel-silent') || container.querySelector('#silent-mode-inline-select')) as HTMLSelectElement;
-        const copyBtn = (container.querySelector('#btn-copy') || container.querySelector('#copy-answer-btn')) as HTMLButtonElement;
-        const refreshBtn = (container.querySelector('#btn-refresh') || container.querySelector('#refresh-answer-btn')) as HTMLButtonElement;
-        if (!refreshBtn) return;
+        const T = I.uiTokens;
+        const silentModeBtn = (I.ui?.btnSilent || (T && container.querySelector('#' + T.btnSilent)) || container.querySelector('#btn-silent') || container.querySelector('#silent-mode-btn')) as HTMLButtonElement;
+        const silentModeSelect = (I.ui?.selSilent || (T && container.querySelector('#' + T.selSilent)) || container.querySelector('#sel-silent') || container.querySelector('#silent-mode-inline-select')) as HTMLSelectElement;
+        const copyBtn = (I.ui?.btnCopy || (T && container.querySelector('#' + T.btnCopy)) || container.querySelector('#btn-copy') || container.querySelector('#copy-answer-btn')) as HTMLButtonElement;
+        const refreshBtn = (I.ui?.btnRefresh || (T && container.querySelector('#' + T.btnRefresh)) || container.querySelector('#btn-refresh') || container.querySelector('#refresh-answer-btn')) as HTMLButtonElement;
+        if (!refreshBtn || !silentModeBtn || !silentModeSelect) return;
 
         // Initialize silent mode button state
         const currentSilentMode = window.xdAnswers.settings.silentMode || '';

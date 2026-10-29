@@ -21,8 +21,8 @@
 
             const onDragStart = (e: MouseEvent | TouchEvent) => {
                 const target = e.target as Element | null;
-                if (target && (target.tagName === 'BUTTON' || (target.parentElement && target.parentElement.tagName === 'BUTTON'))) return;
-                if (e.type === 'touchstart') e.preventDefault();
+                if (target && (target.tagName === 'BUTTON' || (target.parentElement && target.parentElement.tagName === 'BUTTON') || target.tagName === 'SELECT')) return;
+                e.preventDefault();
                 isDragging = true;
                 if (onDragStartCallback) onDragStartCallback();
                 const coords = getCoords(e);
