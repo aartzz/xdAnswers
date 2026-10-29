@@ -4,7 +4,7 @@
 
 const MODELS_DEV_API = 'https://models.dev/api.json';
 const MODELS_CACHE_KEY = 'xdAnswers_modelsDev';
-const MODELS_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+const MODELS_CACHE_TTL = 60 * 60 * 1000; // 1h
 
 async function syncModelsDev(): Promise<void> {
     try {
@@ -56,7 +56,7 @@ async function syncModelsDev(): Promise<void> {
 // Initial sync on install
 chrome.runtime.onInstalled.addListener(() => {
     syncModelsDev();
-    chrome.alarms.create('modelsDevSync', { periodInMinutes: 24 * 60 }); // daily
+    chrome.alarms.create('modelsDevSync', { periodInMinutes: 60 }); // hourly
 });
 
 // Periodic sync
