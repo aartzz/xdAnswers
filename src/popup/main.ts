@@ -26,14 +26,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) {}
     }
 
-    // Global fallback for broken model/provider icons
+    // Global fallback for broken model/provider icons — hide gracefully without layout thrashing
     document.addEventListener('error', (e) => {
         const img = e.target;
         if (img && (img.classList.contains('provider-icon') || img.classList.contains('model-icon'))) {
-            const span = document.createElement('span');
-            span.className = 'provider-icon-fallback';
-            span.textContent = '?';
-            img.replaceWith(span);
+            img.style.display = 'none';
         }
     }, true);
 
@@ -86,14 +83,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateUI();
     attachEventListeners();
     initAospSettingsNavigation();
-    // Auto-sync models.dev cache if missing
+    // Trigger background models.dev sync silently if missing
     if (!modelsDevCache) {
-        chrome.runtime.sendMessage({ type: 'forceModelSync' }, () => {
-            setTimeout(async () => {
-                await loadModelsDevCache();
-                renderModelList();
-            }, 2000);
-        });
+        chrome.runtime.sendMessage({ type: 'forceModelSync' });
     }
     // Auto-fetch models from provider API
     if (!allModels.length) {

@@ -29,18 +29,17 @@ export const MODEL_NAME_ACRONYMS = new Set([
     'gptq', 'bnb', 'cpu', 'tpu', 'npu', 'mtp'
 ]);
 
+const modelNameCache = new Map();
+
 export function formatModelName(id) {
     if (!id) return '';
+    if (modelNameCache.has(id)) return modelNameCache.get(id);
     // Strip provider prefix ("google/...", "openai/...").
     let name = id.replace(/^[^/]+\//, '');
     // Normalise common separators to spaces, but keep dots (decimals) intact.
     name = name.replace(/[_:]+/g, ' ').replace(/-+/g, ' ').replace(/\s+/g, ' ').trim();
     // Title-case each whitespace-separated token, with a few tweaks:
-    //  - Preserve pure-numeric tokens (including decimals like "3.1").
-    //  - Uppercase well-known acronyms (gpt → GPT).
-    //  - Keep letter+digits tokens like "k2.5" / "4o" readable: capitalise
-    //    the leading letter(s), keep the rest as-is.
-    return name.split(' ').map((token) => {
+    const formatted = name.split(' ').map((token) => {
         if (!token) return token;
         const lower = token.toLowerCase();
         if (MODEL_NAME_ACRONYMS.has(lower)) return lower.toUpperCase();
@@ -48,6 +47,8 @@ export function formatModelName(id) {
         // Capitalise leading alphabetic run, preserve the rest.
         return token.replace(/^([a-z]+)/i, (m) => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
     }).join(' ');
+    modelNameCache.set(id, formatted);
+    return formatted;
 }
 
 export function getProviderIcon(ownedBy) {
