@@ -104,7 +104,7 @@ body.theme-material3 .tab-buttons {
     bottom: 14px !important;
     left: 50% !important;
     right: auto !important;
-    transform: translateX(-50%) !important;
+    transform: translate3d(-50%, 0, 0) !important;
     width: fit-content !important;
     max-width: calc(100% - 40px) !important;
     display: inline-flex !important;
@@ -215,8 +215,8 @@ body.theme-material3 .tab-content.active {
 }
 
 @keyframes m3FadeSlide {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translate3d(0, 4px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 /* ── AOSP Settings Search Bar & Categories ── */
@@ -412,22 +412,22 @@ body.theme-material3 .settings-subpage-view.hidden {
 @keyframes m3SubpageIn {
     from {
         opacity: 0;
-        transform: translateX(16px);
+        transform: translate3d(12px, 0, 0);
     }
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes m3CatFadeIn {
     from {
         opacity: 0;
-        transform: translateX(-16px);
+        transform: translate3d(-12px, 0, 0);
     }
     to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translate3d(0, 0, 0);
     }
 }
 
@@ -1709,8 +1709,7 @@ body.theme-material3 .theme-mode-btn {
     min-height: 0 !important;
     line-height: normal !important;
     cursor: pointer !important;
-    transition: background 0.25s cubic-bezier(0.2, 0, 0, 1), color 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s cubic-bezier(0.2, 0, 0, 1), transform 0.15s ease !important;
-    will-change: background, color, box-shadow !important;
+    transition: background 0.2s cubic-bezier(0.2, 0, 0, 1), color 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), transform 0.15s ease !important;
 }
 
 body.theme-material3 .theme-mode-btn::before,
@@ -1756,7 +1755,6 @@ body.theme-material3 .theme-swatch {
     padding: 0 !important;
     position: relative !important;
     transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1), border-color 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
-    will-change: transform, box-shadow !important;
 }
 
 body.theme-material3 .theme-swatch:hover {
