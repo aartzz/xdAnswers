@@ -13,6 +13,8 @@
 //     tab switches and away time);
 //   * fullscreen/visibility checks are neutralized and the fullscreen gate is
 //     hidden and removed, so the test never blocks on or flashes a modal.
+import { makeNative, definePrototypeGetter } from '../../core/disabler/stealth';
+
 (function () {
     'use strict';
 
@@ -44,19 +46,12 @@
     function installBetaFullscreenBypass(): void {
         if (!isBetaPage) return;
         try {
-            Object.defineProperty(document, 'fullscreenEnabled', {
-                get: function () { return true; },
-                configurable: true
-            });
-            Object.defineProperty(document, 'fullscreenElement', {
-                get: function () { return document.documentElement; },
-                configurable: true
-            });
-            Object.defineProperty(document, 'webkitFullscreenElement', {
-                get: function () { return document.documentElement; },
-                configurable: true
-            });
-            const noop = function () { return Promise.resolve(); };
+            definePrototypeGetter(Document.prototype, 'fullscreenEnabled', () => true, 'get fullscreenEnabled');
+            definePrototypeGetter(Document.prototype, 'fullscreenElement', () => document.documentElement, 'get fullscreenElement');
+            if ('webkitFullscreenElement' in Document.prototype) {
+                definePrototypeGetter(Document.prototype, 'webkitFullscreenElement', () => document.documentElement, 'get webkitFullscreenElement');
+            }
+            const noop = makeNative(function () { return Promise.resolve(); }, 'requestFullscreen');
             const docProto = Document.prototype as any;
             const elProto = Element.prototype as any;
             docProto.exitFullscreen = noop;
@@ -69,14 +64,12 @@
             // "you left fullscreen" alert and posting telemetry. Drop the
             // listener registration on test pages instead.
             const origAddEventListener = EventTarget.prototype.addEventListener;
-            EventTarget.prototype.addEventListener = function (type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
+            EventTarget.prototype.addEventListener = makeNative(function (this: any, type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
                 if (type === 'fullscreenchange' || type === 'webkitfullscreenchange') return;
-                // Window/document blur and pagehide are classic unfocus
-                // telemetry triggers. Keep element-level blur/focusout intact
-                // because React uses them for input state.
-                if ((this === window || this === document) && (type === 'blur' || type === 'pagehide')) return;
+                // Window/document blur, pagehide and visibilitychange are classic unfocus telemetry triggers.
+                if ((this === window || this === document) && (type === 'blur' || type === 'pagehide' || type === 'visibilitychange')) return;
                 return origAddEventListener.call(this, type, listener, options);
-            };
+            }, 'addEventListener');
         } catch (e) { /* property patch failed */ }
     }
 
@@ -95,8 +88,16 @@
 
         const dismiss = (): void => {
             document.querySelectorAll<HTMLElement>('.tb-focus').forEach(gate => {
+                if (gate.classList.contains('is-alert')) {
+                    gate.style.setProperty('display', 'none', 'important');
+                    gate.style.setProperty('pointer-events', 'none', 'important');
+                    if (gate.isConnected) gate.remove();
+                    return;
+                }
                 const button = gate.querySelector<HTMLButtonElement>('.tb-focus-box .tb-btn-go');
-                if (button) button.click();
+                if (button && !/оновити|reload/i.test(button.textContent || '')) {
+                    button.click();
+                }
                 gate.style.setProperty('display', 'none', 'important');
                 gate.style.setProperty('pointer-events', 'none', 'important');
                 // Give React one turn to commit the state change, then remove

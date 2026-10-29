@@ -1,10 +1,16 @@
 // @ts-nocheck — page-world module bundled into dist/disabler.js (see src/core/disabler/page.ts).
 // Hides tab switching and focus loss from page scripts.
+import { makeNative, definePrototypeGetter } from './stealth';
+
 export function installFocusBypass() {
-    // 1. Blur/Focus bypass — prevent sites from detecting when user switches tabs
+    // 1. Blur/Focus & Visibility bypass — prevent sites from detecting when user switches tabs
     try {
         const origAddEventListener = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function(type, listener, options) {
+        EventTarget.prototype.addEventListener = makeNative(function(type, listener, options) {
+            // Drop visibilitychange listeners in page world
+            if (type === 'visibilitychange' || type === 'webkitvisibilitychange') {
+                return;
+            }
             // Block blur/focus/visibility events that sites use for anti-cheat
             if (type === 'blur' || type === 'focus' || type === 'focusout' || type === 'focusin') {
                 // Allow the event but wrap listener to prevent detection logic
@@ -18,36 +24,14 @@ export function installFocusBypass() {
                 return origAddEventListener.call(this, type, wrapped, options);
             }
             return origAddEventListener.call(this, type, listener, options);
-        };
+        }, 'addEventListener');
     } catch (e) { /* ignore */ }
 
-    // 2. Visibility API spoofing — always report page as visible
-    try {
-        Object.defineProperty(document, 'visibilityState', {
-            get: function() { return 'visible'; },
-            configurable: true
-        });
-        Object.defineProperty(document, 'hidden', {
-            get: function() { return false; },
-            configurable: true
-        });
-    } catch (e) { /* ignore */ }
+    // 2. Visibility API spoofing — defined on Document.prototype (HTML spec), never on document instance
+    definePrototypeGetter(Document.prototype, 'visibilityState', () => 'visible', 'get visibilityState');
+    definePrototypeGetter(Document.prototype, 'hidden', () => false, 'get hidden');
 
-    // 3. Intercept visibilitychange events
-    try {
-        const origAddEventListener2 = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function(type, listener, options) {
-            if (type === 'visibilitychange' || type === 'webkitvisibilitychange') {
-                // Don't register visibilitychange listeners in page world
-                // Sites use this to detect tab switching
-                console.log('[xdAnswers Disabler] Blocked visibilitychange listener');
-                return;
-            }
-            return origAddEventListener2.call(this, type, listener, options);
-        };
-    } catch (e) { /* ignore */ }
-
-    // 4. window.onblur / window.onfocus — neutralize
+    // 3. window.onblur / window.onfocus — neutralize
     try {
         Object.defineProperty(window, 'onblur', {
             set: function() { /* ignore */ },
@@ -59,8 +43,8 @@ export function installFocusBypass() {
         });
     } catch (e) { /* ignore */ }
 
-    // 5. hasFocus() spoofing
+    // 4. hasFocus() spoofing — marked native to pass cheat detection
     try {
-        Document.prototype.hasFocus = function() { return true; };
+        Document.prototype.hasFocus = makeNative(function() { return true; }, 'hasFocus');
     } catch (e) { /* ignore */ }
 }

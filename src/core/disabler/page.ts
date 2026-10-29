@@ -7,6 +7,7 @@
 // Topic modules (focus, fullscreen, timing) sit next to this file. Provider-specific
 // patches live in src/providers/<name>/disabler.ts and are bundled into this same
 // page script (see scripts/build.js); they gate themselves on location.hostname.
+import { installStealthGuard } from './stealth';
 import { installFocusBypass } from './focus';
 import { installFullscreenBypass } from './fullscreen';
 import { installTimingGuard } from './timing';
@@ -14,6 +15,7 @@ import { installTimingGuard } from './timing';
 (function() {
     'use strict';
 
+    installStealthGuard();
     installFocusBypass();
     installFullscreenBypass();
     installTimingGuard();

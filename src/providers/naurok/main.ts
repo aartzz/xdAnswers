@@ -67,7 +67,11 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
         // immediately, then processQuestion reuses the same container.
         if (dom.isBetaTest() && /^\/(?:test-beta|test)\/play(?:\/|$)/.test(location.pathname)) {
             window.xdAnswers.addStyle?.('.tb-focus{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}');
-            document.querySelectorAll<HTMLButtonElement>('.tb-focus-box .tb-btn-go').forEach(b => b.click());
+            document.querySelectorAll<HTMLButtonElement>('.tb-focus:not(.is-alert) .tb-focus-box .tb-btn-go').forEach(b => {
+                if (!/оновити|reload/i.test(b.textContent || '')) {
+                    b.click();
+                }
+            });
         }
 
         updateHelperVisibility();
