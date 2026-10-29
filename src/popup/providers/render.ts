@@ -19,7 +19,7 @@ export function renderActiveProviderSelector() {
         const isOther = active.type === 'other';
         const hintLine = isOther ? escapeHTML(active.baseUrl) : (getApiProviderMeta(active.type)?.hint || '');
         trigger.innerHTML = `<span class="provider-trigger-value">
-            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" width="24" height="24" loading="lazy" decoding="async">
             <span class="provider-option-text">
                 <span class="provider-option-title">${escapeHTML(active.name)}</span>
                 <span class="provider-option-hint">${hintLine}</span>
@@ -41,7 +41,7 @@ export function renderActiveProviderSelector() {
         const hint = isOther ? escapeHTML(p.baseUrl) : (getApiProviderMeta(p.type)?.hint || '');
         return `<button type="button" class="provider-option${isActive}" data-provider-id="${p.id}">
             <span class="provider-option-main">
-                <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+                <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" width="24" height="24" loading="lazy" decoding="async">
                 <span class="provider-option-text">
                     <span class="provider-option-title">${escapeHTML(p.name)}</span>
                     <span class="provider-option-hint">${hint}</span>
@@ -125,7 +125,7 @@ export function renderProviderCard(p) {
 
     return `<div class="provider-card${isActive && !isSearch ? ' active' : ''}" data-id="${p.id}">
         <div class="provider-card-header">
-            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" width="24" height="24" loading="lazy" decoding="async">
             <div class="provider-card-info">
                 <span class="provider-card-name">${escapeHTML(p.name)}${activeBadge}${searchBadge}</span>
                 ${urlLine}

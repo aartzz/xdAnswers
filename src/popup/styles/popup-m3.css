@@ -209,16 +209,19 @@ body.theme-material3 .tab-content {
     overflow-y: auto !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
+    overscroll-behavior: contain !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--m3-outline-variant) transparent !important;
 }
 
 body.theme-material3 .tab-content.active {
     display: block !important;
-    animation: m3FadeSlide 0.2s var(--m3-ease);
+    animation: m3FadeSlide 0.15s var(--m3-ease);
 }
 
 @keyframes m3FadeSlide {
-    from { opacity: 0; transform: translate3d(0, 4px, 0); }
-    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 /* ── AOSP Settings Search Bar & Categories ── */
@@ -404,7 +407,7 @@ body.theme-material3 .settings-subpage-view:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
-    animation: m3SubpageIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+    animation: m3SubpageIn 0.15s var(--m3-ease) !important;
 }
 
 body.theme-material3 .settings-subpage-view.hidden {
@@ -414,27 +417,23 @@ body.theme-material3 .settings-subpage-view.hidden {
 @keyframes m3SubpageIn {
     from {
         opacity: 0;
-        transform: translate3d(12px, 0, 0);
     }
     to {
         opacity: 1;
-        transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes m3CatFadeIn {
     from {
         opacity: 0;
-        transform: translate3d(-12px, 0, 0);
     }
     to {
         opacity: 1;
-        transform: translate3d(0, 0, 0);
     }
 }
 
 body.theme-material3 .settings-categories-view.aosp-anim-in {
-    animation: m3CatFadeIn 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) !important;
+    animation: m3CatFadeIn 0.15s var(--m3-ease) !important;
 }
 
 body.theme-material3 .aosp-subpage-header {
@@ -2015,6 +2014,12 @@ body.theme-material3 .donate-button.telegram:hover {
 }
 
 /* ── Scrollbar styling ── */
+body.theme-material3,
+body.theme-material3 * {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--m3-outline-variant) transparent !important;
+}
+
 body.theme-material3 ::-webkit-scrollbar {
     width: 4px !important;
     height: 0px !important;

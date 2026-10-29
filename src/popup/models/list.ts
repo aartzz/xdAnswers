@@ -75,7 +75,7 @@ export function renderModelList() {
     }
 
     const sortedProviders = Object.keys(groups).sort();
-    const MAX_VISIBLE = 60;
+    const MAX_VISIBLE = 30;
     let count = 0;
     let html = '';
 
