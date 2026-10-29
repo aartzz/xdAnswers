@@ -3,6 +3,7 @@
 /* ── M3 Design Tokens ── */
 body.theme-material3,
 body.theme-material3.dark {
+    color-scheme: dark;
     --m3-primary: #a8c7fa;
     --m3-on-primary: #042f66;
     --m3-primary-container: #0842a0;
@@ -31,6 +32,7 @@ body.theme-material3.dark {
 }
 
 body.theme-material3.light {
+    color-scheme: light;
     --m3-primary: #3b82f6;
     --m3-on-primary: #ffffff;
     --m3-primary-container: #dbeafe;

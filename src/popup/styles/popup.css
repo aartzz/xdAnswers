@@ -6,6 +6,7 @@
 }
 
 :root {
+    color-scheme: dark light;
     --popup-bg: #1c1c1c;
     --popup-text: #e0e0e0;
     --popup-border: #cccccc;
