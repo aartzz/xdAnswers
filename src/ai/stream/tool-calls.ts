@@ -65,6 +65,7 @@
                         let args: any = {};
                         try { args = JSON.parse(tc.args); } catch {}
                         const isCalc = I.isCalculatorToolName && I.isCalculatorToolName(tc.name || '');
+                        const isSearch = tc.name === 'web_search' || tc.name === 'search';
 
                         if (isCalc) {
                             const expr = I.extractToolExpression(args);
@@ -96,7 +97,7 @@
                                 updateStreamUI();
                                 messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
-                        } else {
+                        } else if (isSearch) {
                             const query = I.extractToolQuery(args);
                             const numResults = args.num_results || args.num || 5;
 
@@ -140,6 +141,9 @@
                                 updateStreamUI();
                                 messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: (err as Error).message }) });
                             }
+                        } else {
+                            // Stub or unsupported tool from free-tier gate
+                            messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify({ error: 'Tool not supported in this client' }) });
                         }
                     }
                 } else if (s.apiFormat === 'anthropic') {

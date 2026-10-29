@@ -83,8 +83,8 @@
         return h;
     }
 
-    function buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean, questionData?: XdQuestionData): unknown {
-        const availableTools = I.buildTools ? I.buildTools(s, s.apiFormat, questionData) : [];
+    function buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown {
+        const availableTools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
         const includeTools = availableTools.length > 0 && s.apiFormat !== 'google';
 
         if (s.apiFormat === 'openai') {

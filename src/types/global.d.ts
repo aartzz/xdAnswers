@@ -314,8 +314,7 @@ interface XdAnswersInternal {
     evaluateMath(rawExpression: string): XdMathEvalResult;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
-    questionLikelyNeedsCalculator?: (text?: string, optionsText?: string) => boolean;
-    buildTools(s: XdEffectiveSettings, apiFormat: string, questionData?: XdQuestionData): unknown[];
+    buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[];
     executeCalculator(rawExpression: string): string;
     isCalculatorToolName(name: string): boolean;
 
@@ -324,7 +323,7 @@ interface XdAnswersInternal {
     buildStreamUrl(s: XdEffectiveSettings): string;
     buildNonStreamUrl(s: XdEffectiveSettings): string;
     buildHeaders(s: XdEffectiveSettings): Record<string, string>;
-    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean, questionData?: XdQuestionData): unknown;
+    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown;
     isOpenCodeFreeModel(s: XdEffectiveSettings): boolean;
 
     // Streaming and parsing

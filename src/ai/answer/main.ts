@@ -37,7 +37,7 @@
         const MAX_TOOL_LOOPS = 3;
 
         while (toolLoops <= MAX_TOOL_LOOPS) {
-            const body = buildRequestBody(s, systemPrompt, userMsg, images, false, questionData) as Record<string, unknown>;
+            const body = buildRequestBody(s, systemPrompt, userMsg, images, false) as Record<string, unknown>;
             // Override messages with the accumulated multi-turn history
             if (s.apiFormat === 'openai' || s.apiFormat === 'google' || s.apiFormat === 'anthropic') {
                 body.messages = messages;
@@ -45,7 +45,7 @@
             // buildRequestBody may have added tools on its own; strip them and re-add within MAX_TOOL_LOOPS limit
             delete body.tools;
             if (toolLoops < MAX_TOOL_LOOPS) {
-                const tools = I.buildTools ? I.buildTools(s, s.apiFormat, questionData) : [];
+                const tools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
                 if (tools.length > 0) body.tools = tools;
             }
             window.xdAnswers.lastRequestBody = body;
@@ -125,7 +125,7 @@
 
         // Fallback after max loops — just return whatever we have
         const lastParsed: any = JSON.parse((await window.xdAnswers.makeRequest({
-            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(buildRequestBody(s, systemPrompt, userMsg, images, false, questionData)), timeout: 120000
+            url: buildNonStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(buildRequestBody(s, systemPrompt, userMsg, images, false)), timeout: 120000
         })).data);
         if (s.apiFormat === 'openai') return lastParsed.choices[0].message.content;
         if (s.apiFormat === 'anthropic') { const tb = lastParsed.content?.find((b: any) => b.type === 'text'); return tb?.text || ''; }
