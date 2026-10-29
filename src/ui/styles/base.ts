@@ -59,24 +59,23 @@
             : '';
 
         return (fontUrl ? '@font-face { font-family: "Material Symbols Outlined"; src: url("' + fontUrl + '") format("woff2"); font-weight: normal; font-style: normal; font-display: block; }\n' : '') +
-            ':root {' +
+            ':host, :root {' +
             '--xd-bg:' + custom.contentColor + ';--xd-border:' + custom.borderColor + ';' +
             '--xd-text:' + custom.textColor + ';--xd-header:' + custom.headerColor + ';' +
             '--xd-glow:' + (custom.glowEffect ? '0 0 8px ' + custom.borderColor : 'none') + ';' +
             '--xd-font:Roboto,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
             '}' +
+            ':host{margin:0 !important;padding:0 !important;border:none !important;box-sizing:border-box !important;contain:layout style !important;}' +
             '.xd-icon{font-family:"Material Symbols Outlined" !important;font-weight:normal !important;font-style:normal !important;font-size:16px !important;line-height:1 !important;letter-spacing:normal !important;text-transform:none !important;display:inline-block !important;white-space:nowrap !important;word-wrap:normal !important;direction:ltr !important;-webkit-font-smoothing:antialiased !important;font-feature-settings:"liga" !important;vertical-align:middle !important;}' +
             '.ollama-helper-container{margin:0;padding:0;border:none;font-weight:normal;text-align:left;transform:none;' +
-            'position:fixed !important;z-index:2147483647 !important;display:flex !important;flex-direction:column !important;' +
+            'width:100% !important;height:100% !important;max-height:inherit !important;' +
+            'display:flex !important;flex-direction:column !important;' +
             'background-color:' + containerBg + ' !important;border:none !important;' +
             (isM3 ? 'backdrop-filter:blur(16px) !important;-webkit-backdrop-filter:blur(16px) !important;' : '') +
             'border-radius:' + borderRadius + ' !important;box-shadow:' + boxShadow + ' !important;color:var(--xd-text) !important;' +
             'font-family:var(--xd-font) !important;font-size:14px !important;line-height:1.5 !important;overflow:hidden !important;' +
             'contain:paint !important;isolation:isolate !important;background-clip:padding-box !important;' +
             'clip-path:inset(0 round ' + borderRadius + ') !important;' +
-            'width:' + (isMax ? maximizedHelperState.width : defaultHelperState.width) + ' !important;' +
-            'height:' + (isMax ? maximizedHelperState.height : defaultHelperState.height) + ' !important;' +
-            'max-height:' + (isMax ? maximizedHelperState.maxHeight : defaultHelperState.maxHeight) + ' !important;' +
             '}' +
             '.ollama-helper-container *:not(.xd-loader):not(.ollama-helper-header):not(.ollama-helper-footer),.ollama-helper-container *:before,.ollama-helper-container *:after:not(.xd-loader){' +
             'all:revert !important;appearance:none !important;-webkit-appearance:none !important;-moz-appearance:none !important;' +

@@ -47,8 +47,10 @@
                 I.clearOneClickHandlers();
                 if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
                 // Remove mini exit button
-                const miniBtn = document.getElementById('xd-silent-exit-btn');
-                if (miniBtn) miniBtn.remove();
+                if (window.xdAnswers._silentExitBtn) {
+                    window.xdAnswers._silentExitBtn.remove();
+                    window.xdAnswers._silentExitBtn = null;
+                }
                 // Save (storage.onChanged will sync UI)
                 chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
             } else {
@@ -101,8 +103,10 @@
                 document.querySelectorAll('.xd-indicator-dot').forEach(el => el.remove());
                 I.clearOneClickHandlers();
                 if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
-                const miniBtn = document.getElementById('xd-silent-exit-btn');
-                if (miniBtn) miniBtn.remove();
+                if (window.xdAnswers._silentExitBtn) {
+                    window.xdAnswers._silentExitBtn.remove();
+                    window.xdAnswers._silentExitBtn = null;
+                }
             }
             chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
         };

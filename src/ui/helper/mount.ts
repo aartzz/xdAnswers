@@ -10,11 +10,28 @@
     window.xdAnswers.createUI = function(): void {
         if (window.xdAnswers.helperContainer) return;
 
-        const container = document.createElement('div');
-        container.className = 'ollama-helper-container';
-        container.innerHTML =
+        // Host element in light DOM: randomized class, no id, empty light children.
+        // Page scripts running querySelector or innerText cannot detect or inspect it.
+        const host = document.createElement('div');
+        const randId = '_' + Math.random().toString(36).slice(2, 9);
+        host.className = randId;
+        host.style.setProperty('position', 'fixed', 'important');
+        host.style.setProperty('z-index', '2147483647', 'important');
+        host.style.setProperty('margin', '0', 'important');
+        host.style.setProperty('padding', '0', 'important');
+        host.style.setProperty('border', 'none', 'important');
+        host.style.setProperty('box-sizing', 'border-box', 'important');
+        host.style.setProperty('display', 'flex', 'important');
+
+        // Closed Shadow Root: completely impenetrable by page-world scripts
+        const shadow = host.attachShadow({ mode: 'closed' });
+        window.xdAnswers.shadowRoot = shadow;
+
+        const innerCard = document.createElement('div');
+        innerCard.className = 'ollama-helper-container';
+        innerCard.innerHTML =
             '<div class="ollama-helper-header" id="ollama-helper-drag-header">' +
-            '<span class="ollama-header-title">xdAnswers <small class="xd-version"></small></span>' +
+            '<span class="ollama-header-title">Assistant <small class="xd-version"></small></span>' +
             '<div class="ollama-header-buttons">' +
             '<button id="silent-mode-btn" title="Silent mode: Off"><span class="xd-icon">close</span></button>' +
             '<select id="silent-mode-inline-select" title="Silent mode">' +
@@ -33,19 +50,28 @@
             '<button class="xd-footer-copy" id="copy-answer-btn" title="Copy answer"><span class="xd-icon">content_copy</span></button>' +
             '</div>';
 
-        window.xdAnswers.helperContainer = container;
-        window.xdAnswers.answerContentDiv = container.querySelector<HTMLElement>('#ollama-answer-content');
-        window.xdAnswers.dragHeader = container.querySelector<HTMLElement>('#ollama-helper-drag-header');
-        // Set display:flex inline (removed from CSS to allow silent mode display:none to work)
-        container.style.setProperty('display', 'flex', 'important');
+        shadow.appendChild(innerCard);
+
+        // Delegate querySelector calls on the host wrapper to the shadow root so internal modules work seamlessly
+        host.querySelector = function<E extends Element = Element>(selectors: string): E | null {
+            return shadow.querySelector<E>(selectors);
+        };
+        host.querySelectorAll = function<E extends Element = Element>(selectors: string): NodeListOf<E> {
+            return shadow.querySelectorAll<E>(selectors);
+        };
+
+        window.xdAnswers.helperContainer = host;
+        window.xdAnswers.answerContentDiv = shadow.querySelector<HTMLElement>('#ollama-answer-content');
+        window.xdAnswers.dragHeader = shadow.querySelector<HTMLElement>('#ollama-helper-drag-header');
 
         window.xdAnswers.attachHelperEventListeners();
         window.xdAnswers.updateHelperBaseStyles();
+
         // Set current model name in footer
-        const footerModelEl = container.querySelector('#xd-footer-model');
+        const footerModelEl = shadow.querySelector('#xd-footer-model');
         if (footerModelEl) footerModelEl.innerHTML = (window.xdAnswers.settings.model || 'select model') + ' <span class="xd-icon" style="font-size:12px !important;vertical-align:baseline;">north_east</span>';
         // Set version string in header
-        const versionEl = container.querySelector('.xd-version');
+        const versionEl = shadow.querySelector('.xd-version');
         if (versionEl) versionEl.textContent = I.getVersionString();
     };
 

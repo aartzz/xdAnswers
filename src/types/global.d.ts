@@ -374,6 +374,8 @@ interface XdAnswers {
     settings: XdSettings;
     isProcessingAI: boolean;
     helperContainer: HTMLElement | null;
+    shadowRoot?: ShadowRoot | null;
+    _silentExitBtn?: HTMLElement | null;
     answerContentDiv: HTMLElement | null;
     dragHeader: HTMLElement | null;
     isHelperWindowMaximized: boolean;

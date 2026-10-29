@@ -79,9 +79,9 @@ import { makeNative, definePrototypeGetter } from '../../core/disabler/stealth';
         // Hide the fullscreen gate from the first paint. The started test still
         // needs the gate's button clicked, so keep the node in the DOM briefly
         // and click it programmatically below.
-        if (!document.getElementById('xd-naurok-focus-style')) {
+        if (!document.querySelector('style[data-tb-mode="focus"]')) {
             const style = document.createElement('style');
-            style.id = 'xd-naurok-focus-style';
+            style.setAttribute('data-tb-mode', 'focus');
             style.textContent = '.tb-focus{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}';
             (document.head || document.documentElement).appendChild(style);
         }

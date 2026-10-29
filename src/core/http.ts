@@ -144,8 +144,12 @@
     };
 
     window.xdAnswers.addStyle = function(css: string): void {
-        let el = document.getElementById('xdAnswers-styles');
-        if (!el) { el = document.createElement('style'); el.id = 'xdAnswers-styles'; document.head.appendChild(el); }
+        let el = document.querySelector<HTMLStyleElement>('style[data-app-style]');
+        if (!el) {
+            el = document.createElement('style');
+            el.setAttribute('data-app-style', 'true');
+            (document.head || document.documentElement).appendChild(el);
+        }
         if (el.textContent !== css) el.textContent = css;
     };
 

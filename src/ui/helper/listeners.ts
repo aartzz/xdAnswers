@@ -21,7 +21,7 @@
                 if (!window.xdAnswers.helperContainer) return;
                 window.xdAnswers.updateHelperBaseStyles();
                 // Update footer model name
-                const footerModel = document.getElementById('xd-footer-model');
+                const footerModel = window.xdAnswers.helperContainer.querySelector('#xd-footer-model');
                 if (footerModel) footerModel.textContent = window.xdAnswers.settings.model || 'select model ↗';
                 const silentMode = window.xdAnswers.settings.silentMode || '';
                 if (silentMode !== '') {
@@ -29,8 +29,10 @@
                     I.addSilentExitButton();
                 } else {
                     window.xdAnswers.helperContainer.style.setProperty('display', 'flex', 'important');
-                    const miniBtn = document.getElementById('xd-silent-exit-btn');
-                    if (miniBtn) miniBtn.remove();
+                    if (window.xdAnswers._silentExitBtn) {
+                        window.xdAnswers._silentExitBtn.remove();
+                        window.xdAnswers._silentExitBtn = null;
+                    }
                 }
                 // Sync inline silent mode controls
                 const silentModeBtn = window.xdAnswers.helperContainer.querySelector('#silent-mode-btn') as HTMLButtonElement | null;

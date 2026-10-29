@@ -20,11 +20,11 @@
 
     // Mini exit-silent-mode button (barely visible, bottom-right corner)
     function addSilentExitButton(): void {
-        if (document.getElementById('xd-silent-exit-btn')) return;
+        if (window.xdAnswers._silentExitBtn && document.contains(window.xdAnswers._silentExitBtn)) return;
         const btn = document.createElement('div');
-        btn.id = 'xd-silent-exit-btn';
+        window.xdAnswers._silentExitBtn = btn;
+        btn.className = '_' + Math.random().toString(36).slice(2, 8);
         btn.style.cssText = 'position:fixed;bottom:4px;right:4px;width:6px;height:6px;background:rgba(100,100,100,0.25);border-radius:50%;z-index:2147483647;cursor:pointer;transition:all 0.2s;';
-        btn.title = 'xdAnswers: exit silent mode';
         btn.addEventListener('mouseenter', () => {
             btn.style.width = '10px';
             btn.style.height = '10px';
@@ -41,6 +41,7 @@
             window.xdAnswers._internal.clearOneClickHandlers();
             if (window.xdAnswers._originalTitle) document.title = window.xdAnswers._originalTitle;
             btn.remove();
+            window.xdAnswers._silentExitBtn = null;
             // Save (storage.onChanged will sync UI)
             chrome.storage.local.set({ xdAnswers_settings: JSON.stringify(window.xdAnswers.settings) });
             // Show helper
@@ -52,7 +53,7 @@
                 if (silentModeSelect) { silentModeSelect.value = ''; silentModeSelect.style.display = 'none'; }
             }
         });
-        document.body.appendChild(btn);
+        (document.body || document.documentElement).appendChild(btn);
     }
 
     function applySilentMode(answerText: string, parsed: XdParsedResponse): void {
