@@ -4,7 +4,7 @@ import { escapeHTML } from '../core/utils';
 import { fetchModels, renderModelList } from '../models';
 import { setAllModels, settings, uiElements } from '../core/state';
 import { t } from '../core/i18n';
-import { getActiveProvider, getApiProviderMeta } from './data';
+import { getActiveProvider, getApiProviderMeta, MCP_PROVIDERS } from './data';
 import { showProviderForm } from './form';
 
 
@@ -70,35 +70,16 @@ export function renderProvidersTab() {
     const container = uiElements.providersContainer;
     if (!container) return;
 
-    const standard = settings.providers.filter(p => p.type !== 'other' && p.kind !== 'search');
-    const search = settings.providers.filter(p => p.kind === 'search');
-    const custom = settings.providers.filter(p => p.type === 'other' && p.kind !== 'search');
+    const providers = settings.providers || [];
 
     let html = '<div class="providers-section">';
     html += `<div class="providers-section-header">${t('providersHeader')}</div>`;
-    if (standard.length) {
-        html += standard.map(p => renderProviderCard(p)).join('');
+    if (providers.length) {
+        html += providers.map(p => renderProviderCard(p)).join('');
     } else {
         html += `<div class="provider-empty-hint">${t('noProviders')}</div>`;
     }
-    html += `<button type="button" class="add-provider-btn" data-section="standard">${t('addProvider')}</button>`;
-    html += '</div>';
-
-    // Web Search providers section (always show with add button)
-    html += '<div class="providers-section">';
-    html += `<div class="providers-section-header">🔍 ${t('webSearchLabel')}</div>`;
-    if (search.length) {
-        html += search.map(p => renderProviderCard(p)).join('');
-    }
-    html += `<button type="button" class="add-provider-btn" data-section="search">${t('addProvider')}</button>`;
-    html += '</div>';
-
-    html += '<div class="providers-section">';
-    html += `<div class="providers-section-header">${t('otherHeader')} <span class="providers-section-hint">${t('otherHint')}</span></div>`;
-    if (custom.length) {
-        html += custom.map(p => renderProviderCard(p)).join('');
-    }
-    html += `<button type="button" class="add-provider-btn" data-section="other">${t('addCustomProvider')}</button>`;
+    html += `<button type="button" class="add-provider-btn" data-section="provider">${t('addProvider')}</button>`;
     html += '</div>';
 
     container.innerHTML = html;
@@ -107,6 +88,11 @@ export function renderProvidersTab() {
 
 export function getProviderLogo(p) {
     if (p.type === 'other') return 'openai';
+    if (p.type === 'mcp') {
+        const url = String(p.baseUrl || '').replace(/\/+$/, '').toLowerCase();
+        const preset = MCP_PROVIDERS.find(m => m.url.replace(/\/+$/, '').toLowerCase() === url);
+        return preset ? preset.logo : 'mcp';
+    }
     const meta = getApiProviderMeta(p.type);
     return meta ? meta.logo : 'openai';
 }
@@ -114,13 +100,13 @@ export function getProviderLogo(p) {
 export function renderProviderCard(p) {
     const logo = getProviderLogo(p);
     const isActive = p.id === settings.activeProviderId;
-    const activeBadge = isActive ? '<span class="provider-active-badge">active</span>' : '';
-    const searchBadge = p.kind === 'search' ? '<span class="provider-search-badge">🔍 SEARCH</span>' : '';
+    const isSearch = p.kind === 'search';
+    const activeBadge = isActive && !isSearch ? '<span class="provider-active-badge">active</span>' : '';
+    const searchBadge = isSearch ? '<span class="provider-search-badge">🔍 ' + (p.type === 'mcp' ? 'MCP' : 'SEARCH') + '</span>' : '';
     const keyPreview = p.apiKey ? '••••' + p.apiKey.slice(-4) : '—';
     const isOther = p.type === 'other';
-    const urlLine = isOther ? `<span class="provider-card-url">${escapeHTML(p.baseUrl)}</span>` : '';
+    const urlLine = (isOther || p.type === 'mcp') ? `<span class="provider-card-url">${escapeHTML(p.baseUrl || '')}</span>` : '';
 
-    const isSearch = p.kind === 'search';
     const activateBtn = isSearch ? '' : '<button type="button" class="provider-card-btn provider-activate-btn" data-id="' + p.id + '" title="Set active">✓</button>';
 
     return `<div class="provider-card${isActive && !isSearch ? ' active' : ''}" data-id="${p.id}">
@@ -174,9 +160,7 @@ export function attachProviderCardListeners(container) {
 
     container.querySelectorAll('.add-provider-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            const isOther = btn.dataset.section === 'other';
-            const isSearch = btn.dataset.section === 'search';
-            showProviderForm(null, isOther, isSearch);
+            showProviderForm(null);
         });
     });
 }

@@ -17,14 +17,15 @@ export const API_PROVIDERS = [
     { id: 'ollama-cloud', name: 'Ollama Cloud', hint: 'Ollama Cloud — API key required', logo: 'ollama-cloud' },
     { id: 'nvidia', name: 'NVIDIA NIM', hint: 'NVIDIA NIM — API key required', logo: 'nvidia' },
     // Web Search providers (kind: 'search' — not LLM, used for tool-calling)
-    { id: 'langsearch', name: 'LangSearch', hint: 'Web Search — Free API', logo: 'openai', kind: 'search' },
-    { id: 'serper', name: 'Serper.dev', hint: 'Web Search — 2,500 free/month', logo: 'openai', kind: 'search' },
-    { id: 'perplexity', name: 'Perplexity', hint: 'Web Search — pplx- API key', logo: 'openai', kind: 'search' },
-    { id: 'exa', name: 'Exa', hint: 'Web Search — free neural search or API key', logo: 'openai', kind: 'search' },
-    { id: 'tavily', name: 'Tavily', hint: 'Web Search — tvly- API key', logo: 'openai', kind: 'search' },
-    { id: 'linkup', name: 'Linkup', hint: 'Web Search — fast/standard/deep', logo: 'openai', kind: 'search' },
-    { id: 'searchapi', name: 'SearchAPI', hint: 'Web Search — Google/Bing/Yahoo', logo: 'openai', kind: 'search' },
-    { id: 'searxng', name: 'SearXNG', hint: 'Web Search — Open-source, no API key', logo: 'openai', kind: 'search' }
+    { id: 'mcp', name: 'MCP (remote)', hint: 'Web Search — remote MCP server (Streamable HTTP)', logo: 'mcp', kind: 'search' },
+    { id: 'langsearch', name: 'LangSearch', hint: 'Search API — Free', logo: 'openai', kind: 'search' },
+    { id: 'serper', name: 'Serper.dev', hint: 'Search API — 2,500 free/month', logo: 'openai', kind: 'search' },
+    { id: 'perplexity', name: 'Perplexity', hint: 'Search API — pplx- API key', logo: 'openai', kind: 'search' },
+    { id: 'exa', name: 'Exa', hint: 'Search API — free neural search or API key', logo: 'openai', kind: 'search' },
+    { id: 'tavily', name: 'Tavily', hint: 'Search API — tvly- API key', logo: 'openai', kind: 'search' },
+    { id: 'linkup', name: 'Linkup', hint: 'Search API — fast/standard/deep', logo: 'openai', kind: 'search' },
+    { id: 'searchapi', name: 'SearchAPI', hint: 'Search API — Google/Bing/Yahoo', logo: 'openai', kind: 'search' },
+    { id: 'searxng', name: 'SearXNG', hint: 'Search API — Open-source, no API key', logo: 'openai', kind: 'search' }
 ];
 
 export const PROVIDER_ICON_MAP = {
@@ -42,6 +43,13 @@ export const PROVIDER_ICON_MAP = {
     'cerebras': 'cerebras', 'together': 'together-ai',
     'fireworks': 'fireworks-ai'
 };
+
+export const MCP_PROVIDERS = [
+    { id: 'exa', name: 'Exa MCP', hint: 'Free keyless web search', logo: 'exa', url: 'https://mcp.exa.ai/mcp' },
+    { id: 'tavily', name: 'Tavily MCP', hint: 'Keyless mode or API key', logo: 'tavily', url: 'https://mcp.tavily.com/mcp/' },
+    { id: 'parallel', name: 'Parallel MCP', hint: 'Free keyless web search', logo: 'parallel', url: 'https://mcp.parallel.ai/mcp' },
+    { id: 'tinyfish', name: 'TinyFish MCP', hint: 'Requires a token/API key', logo: 'tinyfish', url: 'https://agent.tinyfish.ai/mcp' }
+];
 
 export function getApiProviderMeta(id) {
     return API_PROVIDERS.find(p => p.id === id) || API_PROVIDERS[0];

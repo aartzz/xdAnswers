@@ -23,27 +23,35 @@
                 apiKey: ''
             },
             {
-                id: 'exa-default',
+                id: 'mcp-exa',
                 kind: 'search',
-                type: 'exa',
-                name: 'Exa',
-                baseUrl: 'https://api.exa.ai',
+                type: 'mcp',
+                name: 'Exa MCP',
+                baseUrl: 'https://mcp.exa.ai/mcp',
                 apiKey: ''
             },
             {
-                id: 'searxng-mdosch',
+                id: 'mcp-tavily',
                 kind: 'search',
-                type: 'searxng',
-                name: 'SearXNG (mdosch)',
-                baseUrl: 'https://search.mdosch.de',
+                type: 'mcp',
+                name: 'Tavily MCP',
+                baseUrl: 'https://mcp.tavily.com/mcp/',
                 apiKey: ''
             },
             {
-                id: 'searxng-perennial',
+                id: 'mcp-parallel',
                 kind: 'search',
-                type: 'searxng',
-                name: 'SearXNG (perennialte.ch)',
-                baseUrl: 'https://searx.perennialte.ch',
+                type: 'mcp',
+                name: 'Parallel MCP',
+                baseUrl: 'https://mcp.parallel.ai/mcp',
+                apiKey: ''
+            },
+            {
+                id: 'mcp-tinyfish',
+                kind: 'search',
+                type: 'mcp',
+                name: 'TinyFish MCP',
+                baseUrl: 'https://agent.tinyfish.ai/mcp',
                 apiKey: ''
             }
         ],

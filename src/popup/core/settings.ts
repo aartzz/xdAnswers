@@ -47,18 +47,16 @@ export async function loadSettings() {
                 consensus: { ...loaded.consensus, ...(parsed.consensus || {}) }
             };
 
-            // Очистити закриті Unturf Qwen / Vision провайдери
+            // Очистити закриті Unturf Qwen / Vision провайдери та старі
+            // непрацюючі дефолтні web-search провайдери.
             if (Array.isArray(loaded.providers)) {
-                loaded.providers = loaded.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
-                // Додати Exa якщо відсутній серед search-провайдерів
-                if (!loaded.providers.some(pr => pr.type === 'exa')) {
-                    loaded.providers.push({
-                        id: 'exa-default',
-                        kind: 'search',
-                        type: 'exa',
-                        name: 'Exa',
-                        baseUrl: 'https://api.exa.ai',
-                        apiKey: ''
+                const legacySearchDefaults = ['exa-default', 'searxng-mdosch', 'searxng-perennial'];
+                loaded.providers = loaded.providers.filter(pr =>
+                    pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl' && legacySearchDefaults.indexOf(pr.id) === -1
+                );
+                if (!loaded.providers.some(pr => pr.type === 'mcp')) {
+                    window.xdAnswers._internal.DEFAULT_SETTINGS.providers.filter(pr => pr.type === 'mcp').forEach(pr => {
+                        loaded.providers.push(JSON.parse(JSON.stringify(pr)));
                     });
                 }
             }

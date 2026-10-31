@@ -10,7 +10,9 @@
     function getEligibleProviders(s: XdSettings): XdProviderConfig[] {
         if (!s.providers) return [];
         return s.providers.filter(function(p) {
-            return p.kind === 'search' && (p.apiKey || p.type === 'searxng' || p.type === 'exa');
+            // TinyFish's hosted MCP requires a token; do not retry it on every search without one.
+            if (p.type === 'mcp' && /tinyfish/i.test(p.baseUrl || '') && !p.apiKey) return false;
+            return p.kind === 'search' && (p.type === 'mcp' || p.apiKey || p.type === 'searxng' || p.type === 'exa');
         });
     }
 
@@ -25,7 +27,7 @@
             type: 'object',
             properties: {
                 query: { type: 'string', description: 'The search query to look up on the web' },
-                source: { type: 'string', description: 'Optional: which search provider to use (SearXNG, Serper, LangSearch, etc.). Leave empty to auto-select.' }
+                source: { type: 'string', description: 'Optional: which search provider to use (MCP server name). Leave empty to auto-select.' }
             },
             required: ['query'],
             additionalProperties: false

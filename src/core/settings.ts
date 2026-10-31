@@ -93,18 +93,17 @@
 
                 s = { ...s, ...p, providers: p.providers || [], customization: { ...s.customization, ...(p.customization || {}) } };
 
-                // Очистити закриті Unturf Qwen / Vision провайдери
+                // Очистити закриті Unturf Qwen / Vision провайдери та старі
+                // непрацюючі дефолтні web-search провайдери.
                 if (Array.isArray(s.providers)) {
-                    s.providers = s.providers.filter(pr => pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl');
-                    // Додати Exa якщо відсутній серед search-провайдерів
-                    if (!s.providers.some(pr => pr.type === 'exa')) {
-                        s.providers.push({
-                            id: 'exa-default',
-                            kind: 'search',
-                            type: 'exa',
-                            name: 'Exa',
-                            baseUrl: 'https://api.exa.ai',
-                            apiKey: ''
+                    const legacySearchDefaults = ['exa-default', 'searxng-mdosch', 'searxng-perennial'];
+                    s.providers = s.providers.filter(pr =>
+                        pr.type !== 'unturf-qwen' && pr.type !== 'unturf-vl' && legacySearchDefaults.indexOf(pr.id) === -1
+                    );
+                    // Додати нові MCP web-search провайдери, якщо їх ще немає.
+                    if (!s.providers.some(pr => pr.type === 'mcp')) {
+                        DEFAULT_SETTINGS.providers.filter(pr => pr.type === 'mcp').forEach(pr => {
+                            s.providers.push(JSON.parse(JSON.stringify(pr)));
                         });
                     }
                 }

@@ -48,6 +48,7 @@ answer: <скопіюй точний текст вибраного варіан�
         'opencode-go': 'https://opencode.ai/zen/go/v1',
         'ollama-cloud': 'https://ollama.com/v1',
         nvidia: 'https://integrate.api.nvidia.com/v1',
+        mcp: '',
         langsearch: 'https://api.langsearch.com/v1',
         serper: 'https://google.serper.dev',
         perplexity: 'https://api.perplexity.ai',

@@ -3,71 +3,103 @@ import { autoSave } from '../core/settings';
 import { escapeHTML, generateId } from '../core/utils';
 import { settings, uiElements } from '../core/state';
 import { t } from '../core/i18n';
-import { API_PROVIDERS, getApiProviderMeta } from './data';
+import { API_PROVIDERS, MCP_PROVIDERS } from './data';
 import { renderActiveProviderSelector, renderProvidersTab } from './render';
 
 
-export function showProviderForm(existing, isOther, isSearch) {
+function normaliseUrl(url) {
+    return String(url || '').trim().replace(/\/+$/, '').toLowerCase();
+}
+
+function providerOptionsFor(mode, protocol) {
+    if (mode === 'llm') {
+        return API_PROVIDERS.filter(p => p.kind !== 'search').map(p => ({
+            value: p.id, name: p.name, hint: p.hint, logo: p.logo, url: ''
+        }));
+    }
+    if (protocol === 'mcp') {
+        return MCP_PROVIDERS.map(p => ({
+            value: p.id, name: p.name, hint: p.hint, logo: p.logo, url: p.url
+        }));
+    }
+    return API_PROVIDERS.filter(p => p.kind === 'search' && p.id !== 'mcp').map(p => ({
+        value: p.id, name: p.name, hint: p.hint, logo: p.logo, url: ''
+    }));
+}
+
+function customOption(mode, protocol) {
+    if (mode === 'llm') {
+        return { value: 'custom', name: t('providerCustomName'), hint: t('providerCustomHint'), logo: 'openai', url: '' };
+    }
+    return { value: 'custom', name: t('providerCustomMcpName'), hint: t('providerCustomMcpHint'), logo: 'mcp', url: '' };
+}
+
+function initialProviderValue(existing, mode, protocol, options) {
+    if (!existing) return options[0]?.value || 'custom';
+    if (mode === 'llm') {
+        if (existing.type === 'other') return 'custom';
+        return options.some(o => o.value === existing.type) ? existing.type : 'custom';
+    }
+    if (protocol === 'mcp') {
+        const existingUrl = normaliseUrl(existing.baseUrl);
+        const preset = options.find(o => o.url && normaliseUrl(o.url) === existingUrl);
+        return preset ? preset.value : 'custom';
+    }
+    return options.some(o => o.value === existing.type) ? existing.type : (options[0]?.value || '');
+}
+
+export function showProviderForm(existing) {
     const container = uiElements.providersContainer;
     if (!container) return;
 
     const isEdit = !!existing;
-    const initialType = existing?.type || (isSearch ? 'langsearch' : (isOther ? 'other' : 'openai'));
-    const isOtherType = initialType === 'other';
-    const defaultUrl = existing?.baseUrl || (isOtherType ? '' : (window.xdAnswers._internal.DEFAULT_BASE_URLS[initialType] || ''));
-    const urlDisplay = (isOtherType || initialType === 'searxng') ? '' : ' style="display:none"';
-
-    // For search providers, only show search-type providers in the dropdown
-    const providerOptions = isSearch
-        ? API_PROVIDERS.filter(p => p.kind === 'search')
-        : (isOther
-            ? []
-            : API_PROVIDERS.filter(p => p.kind !== 'search'));
-
-    const providerListHtml = isOther
-        ? `<div class="pf-type-selected">
-                <img class="provider-icon large" src="https://models.dev/logos/openai.svg" alt="" loading="lazy">
-                <span class="provider-option-text"><span class="provider-option-title">Custom (OpenAI-compatible)</span></span>
-            </div>`
-        : (() => {
-            const sel = API_PROVIDERS.find(p => p.id === initialType) || API_PROVIDERS[0];
-            return `<button type="button" class="pf-type-trigger" id="pf-type-trigger">
-                <span class="provider-trigger-value">
-                    <img class="provider-icon large" src="https://models.dev/logos/${sel.logo}.svg" alt="" loading="lazy">
-                    <span class="provider-option-text">
-                        <span class="provider-option-title">${escapeHTML(sel.name)}</span>
-                        <span class="provider-option-hint">${escapeHTML(sel.hint)}</span>
-                    </span>
-                </span><span class="provider-caret">▾</span>
-            </button>
-            <div class="pf-type-dropdown hidden" id="pf-type-dropdown">
-                ${providerOptions.map(p => `<button type="button" class="pf-type-option${p.id === initialType ? ' active' : ''}" data-type="${p.id}">
-                    <img class="provider-icon large" src="https://models.dev/logos/${p.logo}.svg" alt="" loading="lazy">
-                    <span class="provider-option-text">
-                        <span class="provider-option-title">${escapeHTML(p.name)}</span>
-                        <span class="provider-option-hint">${escapeHTML(p.hint)}</span>
-                    </span>
-                </button>`).join('')}
-            </div>`;
-        })();
+    const isSearch = existing?.kind === 'search';
+    let mode = isSearch ? 'search' : 'llm';
+    let protocol = isSearch && existing?.type === 'mcp' ? 'mcp' : 'api';
+    let options = providerOptionsFor(mode, protocol);
+    const withCustom = function(list) {
+        return protocol === 'mcp' || mode === 'llm' ? list.concat([customOption(mode, protocol)]) : list;
+    };
+    let selected = initialProviderValue(existing, mode, protocol, withCustom(options));
+    let customUrl = existing && (existing.type === 'other' || existing.type === 'searxng' || (protocol === 'mcp' && selected === 'custom')) ? (existing.baseUrl || '') : '';
 
     const formHtml = `<div class="provider-form">
         <div class="form-group">
-            <label>${t('providerTypeLabel')}</label>
-            <div class="pf-type-wrapper">${providerListHtml}</div>
-            <input type="hidden" id="pf-type" value="${initialType}">
+            <label>${t('providerModeLabel')}</label>
+            <div class="pf-segmented" id="pf-mode">
+                <button type="button" class="pf-segment${mode === 'llm' ? ' active' : ''}" data-mode="llm">${t('providerModeLlm')}</button>
+                <button type="button" class="pf-segment${mode === 'search' ? ' active' : ''}" data-mode="search">${t('providerModeSearch')}</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>${t('providerProtocolLabel')}</label>
+            <div class="pf-segmented" id="pf-protocol">
+                <button type="button" class="pf-segment${protocol === 'api' ? ' active' : ''}" data-protocol="api">${t('providerProtocolApi')}</button>
+                <button type="button" class="pf-segment${protocol === 'mcp' ? ' active' : ''}" data-protocol="mcp">${t('providerProtocolMcp')}</button>
+            </div>
+            <p class="field-hint" id="pf-protocol-hint"></p>
+        </div>
+        <div class="form-group">
+            <label>${t('providerProviderLabel')}</label>
+            <div class="pf-type-wrapper">
+                <button type="button" class="pf-type-trigger" id="pf-type-trigger"></button>
+                <div class="pf-type-dropdown hidden" id="pf-type-dropdown"></div>
+            </div>
+            <input type="hidden" id="pf-type" value="">
+            <p class="field-hint" id="pf-provider-hint"></p>
         </div>
         <div class="form-group">
             <label>${t('providerNameLabel')}</label>
-            <input type="text" id="pf-name" value="${escapeHTML(existing?.name || '')}" placeholder="${isOtherType ? t('providerNamePlaceholder') : getApiProviderMeta(initialType)?.name || 'Provider'}">
+            <input type="text" id="pf-name" value="${escapeHTML(existing?.name || '')}" placeholder="">
         </div>
-        <div class="form-group pf-url-group"${urlDisplay}>
+        <div class="form-group pf-url-group">
             <label>${t('providerBaseUrlLabel')}</label>
-            <input type="text" id="pf-url" value="${escapeHTML(defaultUrl)}" placeholder="https://api.example.com/v1">
+            <input type="text" id="pf-url" value="${escapeHTML(existing?.baseUrl || '')}" placeholder="https://api.example.com/v1">
         </div>
         <div class="form-group">
             <label>${t('providerApiKeyLabel')}</label>
             <input type="password" id="pf-key" value="${escapeHTML(existing?.apiKey || '')}" placeholder="${t('providerApiKeyPlaceholder')}">
+            <p class="field-hint" id="pf-key-hint"></p>
         </div>
         <div class="provider-form-actions">
             <button type="button" id="pf-save" class="pf-btn pf-save-btn">${isEdit ? t('saveProvider') : t('addProviderType')}</button>
@@ -82,80 +114,209 @@ export function showProviderForm(existing, isOther, isSearch) {
     document.querySelector('.provider-form-overlay')?.remove();
     document.body.appendChild(formWrapper);
 
+    const pfType = formWrapper.querySelector('#pf-type');
+    const pfUrl = formWrapper.querySelector('#pf-url');
+    const pfUrlGroup = formWrapper.querySelector('.pf-url-group');
+    const pfName = formWrapper.querySelector('#pf-name');
+    const pfKeyHint = formWrapper.querySelector('#pf-key-hint');
+    const pfProviderHint = formWrapper.querySelector('#pf-provider-hint');
+    const pfProtocolHint = formWrapper.querySelector('#pf-protocol-hint');
+    const pfTypeTrigger = formWrapper.querySelector('#pf-type-trigger');
+    const pfTypeDropdown = formWrapper.querySelector('#pf-type-dropdown');
+
+    function allOptions() {
+        return withCustom(providerOptionsFor(mode, protocol));
+    }
+
+    function currentOption() {
+        const list = allOptions();
+        return list.find(o => o.value === selected) || list[0];
+    }
+
+    function renderTrigger() {
+        const opt = currentOption();
+        const logo = opt?.logo || 'openai';
+        pfTypeTrigger.innerHTML = `<span class="provider-trigger-value">
+            <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
+            <span class="provider-option-text">
+                <span class="provider-option-title">${escapeHTML(opt?.name || 'Provider')}</span>
+                <span class="provider-option-hint">${escapeHTML(opt?.hint || '')}</span>
+            </span>
+        </span><span class="provider-caret">▾</span>`;
+    }
+
+    function renderDropdown() {
+        const list = allOptions();
+        pfTypeDropdown.innerHTML = list.map(opt => `<button type="button" class="pf-type-option${opt.value === selected ? ' active' : ''}" data-value="${escapeHTML(opt.value)}">
+            <img class="provider-icon large" src="https://models.dev/logos/${opt.logo || 'openai'}.svg" alt="" loading="lazy">
+            <span class="provider-option-text">
+                <span class="provider-option-title">${escapeHTML(opt.name)}</span>
+                <span class="provider-option-hint">${escapeHTML(opt.hint || '')}</span>
+            </span>
+        </button>`).join('');
+        pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                selected = btn.dataset.value;
+                pfType.value = selected;
+                pfTypeDropdown.classList.add('hidden');
+                renderTrigger();
+                renderDropdown();
+                updateFields();
+            });
+        });
+    }
+
+    function updateFields() {
+        const opt = currentOption();
+        const isCustom = opt?.value === 'custom';
+        const isMcp = mode === 'search' && protocol === 'mcp';
+        const showUrl = isCustom || (mode === 'search' && protocol === 'api' && opt?.value === 'searxng');
+        pfUrlGroup.style.display = showUrl ? '' : 'none';
+        pfUrl.value = isCustom
+            ? customUrl
+            : (opt?.value === 'searxng' ? (customUrl || window.xdAnswers._internal.DEFAULT_BASE_URLS.searxng || '') : (opt?.url || (opt?.value ? (window.xdAnswers._internal.DEFAULT_BASE_URLS[opt.value] || '') : '')));
+        pfUrl.placeholder = isMcp ? 'https://mcp.example.com/mcp' : 'https://api.example.com/v1';
+        const urlLabel = formWrapper.querySelector('.pf-url-group label');
+        if (urlLabel) urlLabel.textContent = isMcp ? t('providerMcpUrlLabel') : t('providerBaseUrlLabel');
+        pfName.placeholder = opt?.name || t('providerNamePlaceholder');
+
+        const mcpBtn = formWrapper.querySelector('.pf-segment[data-protocol="mcp"]');
+        if (mcpBtn) {
+            mcpBtn.disabled = mode === 'llm';
+            mcpBtn.classList.toggle('disabled', mode === 'llm');
+        }
+        pfProtocolHint.textContent = mode === 'llm' ? t('providerProtocolLlmHint') : '';
+        pfProviderHint.textContent = isMcp ? t('providerMcpHint') : '';
+        pfKeyHint.textContent = isMcp ? t('providerMcpKeyHint') : '';
+        const keyLabel = formWrapper.querySelector('#pf-key')?.closest('.form-group')?.querySelector('label');
+        if (keyLabel) keyLabel.textContent = isMcp ? t('providerMcpKeyLabel') : t('providerApiKeyLabel');
+    }
+
+    function rebuildOptions(preferred) {
+        options = providerOptionsFor(mode, protocol);
+        const list = withCustom(options);
+        if (preferred && list.some(o => o.value === preferred)) selected = preferred;
+        else selected = list[0]?.value || 'custom';
+        pfType.value = selected;
+        renderTrigger();
+        renderDropdown();
+        updateFields();
+    }
+
+    function updateModeButtons() {
+        formWrapper.querySelectorAll('#pf-mode .pf-segment').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+        formWrapper.querySelectorAll('#pf-protocol .pf-segment').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.protocol === protocol);
+        });
+    }
+
+    // Initial render
+    pfType.value = selected;
+    renderTrigger();
+    renderDropdown();
+    updateFields();
+    updateModeButtons();
+
+    formWrapper.querySelectorAll('#pf-mode .pf-segment').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const nextMode = btn.dataset.mode;
+            if (nextMode === mode) return;
+            mode = nextMode;
+            protocol = mode === 'llm' ? 'api' : 'mcp';
+            customUrl = '';
+            updateModeButtons();
+            rebuildOptions();
+        });
+    });
+
+    formWrapper.querySelectorAll('#pf-protocol .pf-segment').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.disabled) return;
+            const nextProtocol = btn.dataset.protocol;
+            if (nextProtocol === protocol) return;
+            protocol = nextProtocol;
+            customUrl = '';
+            updateModeButtons();
+            rebuildOptions();
+        });
+    });
+
+    pfTypeTrigger.addEventListener('click', () => {
+        pfTypeDropdown.classList.toggle('hidden');
+    });
+
+    pfUrl.addEventListener('input', () => {
+        const opt = currentOption();
+        if (opt?.value === 'custom' || opt?.value === 'searxng') customUrl = pfUrl.value;
+    });
+
+    document.addEventListener('click', function closeTypeDropdown(e) {
+        if (!formWrapper.contains(e.target)) {
+            pfTypeDropdown.classList.add('hidden');
+        }
+        if (!document.contains(formWrapper)) {
+            document.removeEventListener('click', closeTypeDropdown);
+        }
+    });
+
     // Close on backdrop click (outside the form card)
     formWrapper.addEventListener('click', (e) => {
         if (e.target === formWrapper) formWrapper.remove();
     });
-
-    const pfType = formWrapper.querySelector('#pf-type');
-    const pfUrl = formWrapper.querySelector('#pf-url');
-    const pfTypeTrigger = formWrapper.querySelector('#pf-type-trigger');
-    const pfTypeDropdown = formWrapper.querySelector('#pf-type-dropdown');
-
-    if (pfTypeTrigger && pfTypeDropdown) {
-        pfTypeTrigger.addEventListener('click', () => {
-            pfTypeDropdown.classList.toggle('hidden');
-        });
-
-        pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const newType = btn.dataset.type;
-                const meta = getApiProviderMeta(newType);
-                pfType.value = newType;
-                const logo = meta?.logo || 'openai';
-                pfTypeTrigger.innerHTML = `<span class="provider-trigger-value">
-                    <img class="provider-icon large" src="https://models.dev/logos/${logo}.svg" alt="" loading="lazy">
-                    <span class="provider-option-text">
-                        <span class="provider-option-title">${escapeHTML(meta?.name || newType)}</span>
-                        <span class="provider-option-hint">${escapeHTML(meta?.hint || '')}</span>
-                    </span>
-                </span><span class="provider-caret">▾</span>`;
-                pfTypeDropdown.querySelectorAll('.pf-type-option').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                pfTypeDropdown.classList.add('hidden');
-                pfUrl.value = window.xdAnswers._internal.DEFAULT_BASE_URLS[newType] || '';
-                var urlGroup = formWrapper.querySelector('.pf-url-group');
-                if (urlGroup) urlGroup.style.display = (newType === 'searxng' || newType === 'other') ? '' : 'none';
-                var nameInput = formWrapper.querySelector('#pf-name');
-                if (!nameInput.value.trim()) nameInput.placeholder = meta?.name || 'Provider';
-            });
-        });
-
-        document.addEventListener('click', function closeTypeDropdown(e) {
-            if (!formWrapper.contains(e.target)) {
-                pfTypeDropdown.classList.add('hidden');
-            }
-            if (!document.contains(formWrapper)) {
-                document.removeEventListener('click', closeTypeDropdown);
-            }
-        });
-    }
 
     formWrapper.querySelector('#pf-cancel').addEventListener('click', () => {
         formWrapper.remove();
     });
 
     formWrapper.querySelector('#pf-save').addEventListener('click', async () => {
-        const selectedType = isOther ? 'other' : pfType.value;
-        const name = formWrapper.querySelector('#pf-name').value.trim();
+        const selectedValue = pfType.value;
+        const opt = allOptions().find(o => o.value === selectedValue) || currentOption();
+        const name = pfName.value.trim();
         const key = formWrapper.querySelector('#pf-key').value.trim();
 
-        const isOtherSave = selectedType === 'other';
-        const meta = getApiProviderMeta(selectedType);
-        const finalName = name || (isOtherSave ? t('providerCustomName') : (meta?.name || selectedType));
-        const finalUrl = isOtherSave
-            ? (pfUrl.value.trim() || 'https://api.openai.com/v1')
-            : (window.xdAnswers._internal.DEFAULT_BASE_URLS[selectedType] || '');
+        let selectedType;
+        let finalUrl;
+        let isSearchSave = false;
+
+        if (mode === 'llm') {
+            selectedType = opt?.value === 'custom' ? 'other' : (opt?.value || 'openai');
+            finalUrl = selectedType === 'other'
+                ? (pfUrl.value.trim() || 'https://api.openai.com/v1')
+                : (window.xdAnswers._internal.DEFAULT_BASE_URLS[selectedType] || '');
+        } else {
+            isSearchSave = true;
+            if (protocol === 'mcp') {
+                selectedType = 'mcp';
+                finalUrl = opt?.value === 'custom' ? pfUrl.value.trim() : (opt?.url || '');
+                if (!finalUrl) {
+                    alert(t('providerUrlRequired'));
+                    return;
+                }
+            } else {
+                selectedType = opt?.value || 'langsearch';
+                finalUrl = selectedType === 'searxng'
+                    ? (pfUrl.value.trim() || window.xdAnswers._internal.DEFAULT_BASE_URLS.searxng || '')
+                    : (window.xdAnswers._internal.DEFAULT_BASE_URLS[selectedType] || '');
+            }
+        }
+
+        const finalName = name || (opt?.value === 'custom' ? (opt?.name || t('providerCustomName')) : (opt?.name || selectedType));
 
         if (isEdit) {
             existing.type = selectedType;
             existing.name = finalName;
             existing.baseUrl = finalUrl;
             existing.apiKey = key;
-            // Update kind based on new type
-            const editMeta = getApiProviderMeta(selectedType);
-            if (editMeta?.kind === 'search') existing.kind = 'search';
+            if (isSearchSave) existing.kind = 'search';
             else delete existing.kind;
+            if (isSearchSave && settings.activeProviderId === existing.id) {
+                const next = settings.providers.find(p => p.id !== existing.id && p.kind !== 'search');
+                settings.activeProviderId = next?.id || '';
+            } else if (!isSearchSave && !settings.activeProviderId) {
+                settings.activeProviderId = existing.id;
+            }
         } else {
             const newProvider = {
                 id: generateId(),
@@ -164,15 +325,12 @@ export function showProviderForm(existing, isOther, isSearch) {
                 baseUrl: finalUrl,
                 apiKey: key
             };
-            // Tag search providers
-            const meta = getApiProviderMeta(selectedType);
-            if (meta?.kind === 'search') newProvider.kind = 'search';
+            if (isSearchSave) newProvider.kind = 'search';
             settings.providers.push(newProvider);
-            if (!settings.activeProviderId) {
+            if (!isSearchSave && !settings.activeProviderId) {
                 settings.activeProviderId = newProvider.id;
             }
-            // Auto-enable web search when first search provider is added with an API key
-            if (meta?.kind === 'search' && key && !settings.webSearchEnabled) {
+            if (isSearchSave && !settings.webSearchEnabled) {
                 settings.webSearchEnabled = true;
                 if (uiElements.webSearchToggle) uiElements.webSearchToggle.checked = true;
             }

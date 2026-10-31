@@ -1467,6 +1467,36 @@ body.theme-material3 .consensus-answeronly-toggle {
 }
 
 /* ── Provider Form (Add/Edit Dialog) ── */
+body.theme-material3 .pf-segmented {
+    background: var(--m3-surface-low) !important;
+    border: 1px solid var(--m3-outline-variant) !important;
+    border-radius: var(--m3-r-full) !important;
+    padding: 3px !important;
+}
+
+body.theme-material3 .pf-segment {
+    border-radius: var(--m3-r-full) !important;
+    color: var(--m3-on-surface-variant) !important;
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+}
+
+body.theme-material3 .pf-segment:hover:not(:disabled) {
+    background: var(--m3-surface-high) !important;
+    color: var(--m3-on-surface) !important;
+}
+
+body.theme-material3 .pf-segment.active {
+    background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+    font-weight: 600 !important;
+}
+
+body.theme-material3 .pf-segment:disabled {
+    color: var(--m3-on-surface-variant) !important;
+    opacity: 0.35 !important;
+}
+
 body.theme-material3 .pf-type-wrapper {
     position: relative !important;
 }

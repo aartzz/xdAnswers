@@ -1544,6 +1544,49 @@ input.invalid {
     position: relative;
 }
 
+/* Type / Protocol segmented controls */
+.pf-segmented {
+    display: flex;
+    gap: 4px;
+    padding: 3px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.pf-segment {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--popup-text);
+    font: inherit;
+    font-size: 12px;
+    opacity: 0.65;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.pf-segment:hover:not(:disabled) {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pf-segment.active {
+    background: rgba(99, 102, 241, 0.25);
+    color: var(--popup-border);
+    opacity: 1;
+    font-weight: 600;
+}
+
+.pf-segment:disabled,
+.pf-segment.disabled {
+    opacity: 0.28;
+    cursor: not-allowed;
+}
+
 .pf-type-selected {
     display: flex;
     align-items: center;
