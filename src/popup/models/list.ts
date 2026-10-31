@@ -4,7 +4,7 @@ import { allModels, modelsDevCache, settings } from '../core/state';
 import { autoSave } from '../core/settings';
 import { escapeHTML } from '../core/utils';
 import { t } from '../core/i18n';
-import { formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from './meta';
+import { formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon, POLLINATIONS_MODELS } from './meta';
 
 
 export function renderModelList() {
@@ -17,6 +17,10 @@ export function renderModelList() {
 
     // Merge API models + models.dev cache models
     let mergedModels = [...allModels];
+    const activeProvider = getActiveProvider(settings);
+    if (!mergedModels.length && activeProvider?.type === 'pollinations') {
+        mergedModels = POLLINATIONS_MODELS.map(m => ({ ...m }));
+    }
 
     // If allModels is empty, build list from models.dev cache for current provider
     if (!mergedModels.length && modelsDevCache) {

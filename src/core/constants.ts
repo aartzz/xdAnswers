@@ -46,6 +46,7 @@ answer: <скопіюй точний текст вибраного варіан�
         'unturf-hermes': 'https://hermes.ai.unturf.com/v1',
         'opencode-zen': 'https://opencode.ai/zen/v1',
         'opencode-go': 'https://opencode.ai/zen/go/v1',
+        pollinations: 'https://text.pollinations.ai/v1',
         'ollama-cloud': 'https://ollama.com/v1',
         nvidia: 'https://integrate.api.nvidia.com/v1',
         mcp: '',
@@ -64,7 +65,8 @@ answer: <скопіюй точний текст вибраного варіан�
         deepseek: 'openai', groq: 'openai', openrouter: 'openai',
         cerebras: 'openai', together: 'openai', fireworks: 'openai', mistral: 'openai',
         'unturf-hermes': 'openai',
-        'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai'
+        'opencode-zen': 'openai', 'opencode-go': 'openai', 'ollama-cloud': 'openai', nvidia: 'openai',
+        pollinations: 'openai'
     };
 
     window.xdAnswers._internal.DEFAULT_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT;

@@ -113,6 +113,9 @@
                     s.providers = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.providers));
                     s.activeProviderId = DEFAULT_SETTINGS.activeProviderId;
                 }
+                if (I.applyProviderDefaultMigrations) {
+                    s = I.applyProviderDefaultMigrations(s);
+                }
 
                 const activePr = s.providers.find(p => p.id === s.activeProviderId);
                 if (!activePr || activePr.kind === 'search') {

@@ -2,7 +2,7 @@
 // @ts-nocheck — popup UI module. Consensus runs UI and per-run model selectors.
 import { autoSave } from '../core/settings';
 import { escapeHTML } from '../core/utils';
-import { fetchModelsForProvider, formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon } from '../models';
+import { fetchModelsForProvider, formatContextLength, formatModelName, getModelDevInfo, getModelFamilyIcon, getProviderIcon, POLLINATIONS_MODELS } from '../models';
 import { modelsDevCache, providerModelsCache, settings, uiElements } from '../core/state';
 import { t } from '../core/i18n';
 
@@ -45,6 +45,9 @@ export function renderConsensusModelList(runIdx) {
     // Use cached API models first, fallback to modelsDevCache
     const cachedModels = providerModelsCache[run.providerId];
     let providerModels = cachedModels ? [...cachedModels] : [];
+    if (!providerModels.length && provider?.type === 'pollinations') {
+        providerModels = POLLINATIONS_MODELS.map(m => ({ ...m }));
+    }
 
     if (!providerModels.length && devProvId && modelsDevCache) {
         for (const [key, info] of Object.entries(modelsDevCache)) {

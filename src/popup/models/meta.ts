@@ -6,6 +6,22 @@ import { t } from '../core/i18n';
 
 export const NON_CHAT_TYPES = new Set(['embedding', 'rerank', 'audio', 'image', 'video', 'tts', 'stt', 'speech']);
 
+// Pollinations has no machine-readable /v1/models list, so keep its keyless
+// catalog here. Unknown ids can still be typed manually in the model field.
+export const POLLINATIONS_MODELS = [
+    {
+        id: 'openai-fast',
+        title: 'GPT-OSS 20B',
+        description: 'Pollinations keyless reasoning model',
+        ownedBy: 'pollinations',
+        root: 'openai-fast',
+        contextLength: 131072,
+        maxOutputTokens: 32768,
+        capabilities: { reasoning: true, tool_calling: true },
+        features: ['reasoning', 'tools']
+    }
+];
+
 export async function loadModelsDevCache() {
     try {
         const data = await chrome.storage.local.get('xdAnswers_modelsDev');

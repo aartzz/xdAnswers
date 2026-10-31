@@ -66,6 +66,9 @@ export async function loadSettings() {
                 loaded.providers = JSON.parse(JSON.stringify(window.xdAnswers._internal.DEFAULT_SETTINGS.providers));
                 loaded.activeProviderId = window.xdAnswers._internal.DEFAULT_SETTINGS.activeProviderId;
             }
+            if (window.xdAnswers._internal.applyProviderDefaultMigrations) {
+                loaded = window.xdAnswers._internal.applyProviderDefaultMigrations(loaded);
+            }
 
             const activePr = loaded.providers.find(p => p.id === loaded.activeProviderId);
             if (!activePr || activePr.kind === 'search') {

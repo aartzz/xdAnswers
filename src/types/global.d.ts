@@ -245,6 +245,7 @@ interface XdMathEvalResult {
 interface XdAnswersInternal {
     // Constants and defaults
     DEFAULT_SETTINGS: XdSettings;
+    applyProviderDefaultMigrations?: (s: XdSettings) => XdSettings;
     defaultHelperState: XdHelperState;
     maximizedHelperState: XdHelperState;
     DEFAULT_SYSTEM_PROMPT: string;

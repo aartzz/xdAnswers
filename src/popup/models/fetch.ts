@@ -2,7 +2,7 @@
 import { getActiveProvider } from '../providers';
 import { allModels, providerModelsCache, setAllModels, settings, uiElements } from '../core/state';
 import { makeRequest } from '../core/utils';
-import { NON_CHAT_TYPES } from './meta';
+import { NON_CHAT_TYPES, POLLINATIONS_MODELS } from './meta';
 import { renderModelList } from './list';
 
 
@@ -95,6 +95,10 @@ export function processModels(rawModels, format) {
 }
 
 export async function fetchModelsForProvider(provider) {
+    // Pollinations answers /v1/models with prose, not JSON. Use its known catalog.
+    if (provider.type === 'pollinations') {
+        return POLLINATIONS_MODELS.map(m => ({ ...m, capabilities: { ...m.capabilities } }));
+    }
     const format = window.xdAnswers._internal.API_FORMAT_MAP[provider.type] || (provider.type === 'other' ? 'openai' : provider.type);
     const base = provider.baseUrl.replace(/\/+$/, '');
     const key = provider.apiKey;

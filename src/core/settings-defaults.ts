@@ -16,10 +16,10 @@
                 apiKey: ''
             },
             {
-                id: 'opencode-zen-default',
-                type: 'opencode-zen',
-                name: 'OpenCode Zen',
-                baseUrl: 'https://opencode.ai/zen/v1',
+                id: 'pollinations-default',
+                type: 'pollinations',
+                name: 'Pollinations',
+                baseUrl: 'https://text.pollinations.ai/v1',
                 apiKey: ''
             },
             {
@@ -55,8 +55,8 @@
                 apiKey: ''
             }
         ],
-        activeProviderId: 'opencode-zen-default',
-        model: 'big-pickle',
+        activeProviderId: 'pollinations-default',
+        model: 'openai-fast',
         promptPrefix: I.DEFAULT_SYSTEM_PROMPT,
         language: 'uk',
         autoAnswer: false,
@@ -96,7 +96,33 @@
         top: '15vh', left: '15vw', bottom: 'auto', right: 'auto'
     };
 
+    // Pollinations is the keyless default. Existing installs that still point at
+    // the OpenCode Zen free tier are moved over once, so the extension keeps
+    // working without an API key. Paid Zen installs are left alone.
+    function applyProviderDefaultMigrations(s: XdSettings): XdSettings {
+        if (!s || !Array.isArray(s.providers)) return s;
+        const defaultPollinations = DEFAULT_SETTINGS.providers.find(p => p.type === 'pollinations');
+        if (defaultPollinations && !s.providers.some(p => p.type === 'pollinations')) {
+            s.providers.push(JSON.parse(JSON.stringify(defaultPollinations)));
+        }
+        const active = s.providers.find(p => p.id === s.activeProviderId);
+        if (active && active.type === 'pollinations') {
+            s._pollinationsDefaultApplied = true;
+        }
+        const freeZen = active && active.type === 'opencode-zen' && !active.apiKey;
+        if (freeZen && !s._pollinationsDefaultApplied) {
+            const pollinations = s.providers.find(p => p.type === 'pollinations');
+            if (pollinations) {
+                s.activeProviderId = pollinations.id;
+                s.model = 'openai-fast';
+                s._pollinationsDefaultApplied = true;
+            }
+        }
+        return s;
+    }
+
     window.xdAnswers._internal.DEFAULT_SETTINGS = DEFAULT_SETTINGS;
     window.xdAnswers._internal.defaultHelperState = defaultHelperState;
     window.xdAnswers._internal.maximizedHelperState = maximizedHelperState;
+    window.xdAnswers._internal.applyProviderDefaultMigrations = applyProviderDefaultMigrations;
 })();
