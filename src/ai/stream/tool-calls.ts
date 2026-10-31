@@ -10,13 +10,19 @@
     type ToolStreamState = { fullContent: string; fullThinking: string; lastHighlightedAnswer: string; thinkingStarted: boolean; thinkingDone: boolean; streamTimerInterval: number | null; statusCleared: boolean; toolLoopDepth: number; isHandlingToolCalls: boolean; searchCalls: XdSearchCallInfo[]; calcCalls: XdCalcCallInfo[]; pendingToolCalls: Record<number, { index: number; id?: string; name?: string; args: string; _parsedInput?: any }>; inInlineThinking: boolean; rawContentBuffer: string; isThinkingExpanded: boolean; isSearchExpanded: boolean; isCalcExpanded: boolean };
 
     I.createToolCalls = function(ctx: Record<string, any>): () => Promise<void> {
-        const { I, MAX_TOOL_LOOPS, executeSearch, finishStream, messages, s, startStreamRound, updateStreamUI } = ctx;
+        const { I, MAX_TOOL_LOOPS, executeSearch, finishStream, messages, s, startStreamRound, updateStreamUI, isStale } = ctx;
         const st = ctx.st as ToolStreamState;
 
             // Execute pending tool calls and continue streaming
             async function handleToolCalls() {
                 if (st.isHandlingToolCalls) return;
                 st.isHandlingToolCalls = true;
+
+                if (isStale && isStale()) {
+                    st.isHandlingToolCalls = false;
+                    finishStream();
+                    return;
+                }
 
                 const toolCalls = Object.values(st.pendingToolCalls);
                 if (toolCalls.length === 0) {

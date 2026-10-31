@@ -20,6 +20,7 @@
     window.xdAnswers.onRefresh = null;
     window.xdAnswers.lastParsedResponse = null;
     window.xdAnswers._cancelStream = null;
+    window.xdAnswers._processGeneration = 0;
     window.xdAnswers._originalTitle = null;
     window.xdAnswers._customAutoAnswer = null;
 

@@ -40,7 +40,7 @@
             images.forEach(img => userContent.push({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } }));
             messages.push({ role: 'user', content: images.length > 0 ? userContent : userMsg });
 
-            const initialBody = buildRequestBody(s, systemPrompt, userMsg, images, true);
+            const initialBody = buildRequestBody(s, systemPrompt, userMsg, images, true, questionData);
             window.xdAnswers.lastRequestBody = initialBody;
 
             const st: { fullContent: string; fullThinking: string; lastHighlightedAnswer: string; thinkingStarted: boolean; thinkingDone: boolean; streamTimerInterval: number | null; statusCleared: boolean; toolLoopDepth: number; isHandlingToolCalls: boolean; searchCalls: XdSearchCallInfo[]; calcCalls: XdCalcCallInfo[]; pendingToolCalls: Record<number, PendingToolCall>; inInlineThinking: boolean; rawContentBuffer: string; isThinkingExpanded: boolean; isSearchExpanded: boolean; isCalcExpanded: boolean } = {
@@ -65,6 +65,13 @@
             const startTime = outerStartTime || Date.now();
             const contentDiv = (overrides && overrides.contentDiv) || window.xdAnswers.answerContentDiv;
             const MAX_TOOL_LOOPS = 3;
+            const generation = window.xdAnswers._processGeneration;
+            const isStale = () => window.xdAnswers._processGeneration !== generation;
+            const abortError = () => {
+                const err = new Error('Request cancelled');
+                err.name = 'AbortError';
+                return err;
+            };
 
             // Search indicator state
             // Calculator indicator state
@@ -237,9 +244,14 @@
                 });
             }
 
-            const handleToolCalls = I.createToolCalls({ I, MAX_TOOL_LOOPS, executeSearch, finishStream, messages, s, st, startStreamRound, updateStreamUI });
+            const handleToolCalls = I.createToolCalls({ I, MAX_TOOL_LOOPS, executeSearch, finishStream, messages, s, st, startStreamRound, updateStreamUI, isStale });
 
             function finishStream() {
+                if (isStale()) {
+                    stopStreamTimer();
+                    reject(abortError());
+                    return;
+                }
                 stopStreamTimer();
                 // If stream ended while still in inline thinking buffer, inspect if it contains transition or is entirely thinking
                 if (st.rawContentBuffer) {
@@ -272,6 +284,10 @@
             }
 
             function startStreamRound(currentMessages: Array<Record<string, unknown>>) {
+                if (isStale()) {
+                    reject(abortError());
+                    return;
+                }
                 // Build the request body from the current message history
                 const body = Object.assign({}, initialBody) as Record<string, unknown>;
                 body.messages = currentMessages;
@@ -279,7 +295,7 @@
                 delete body.tools;
                 // Include tools on stream rounds within MAX_TOOL_LOOPS limit
                 if (st.toolLoopDepth < MAX_TOOL_LOOPS) {
-                    const tools = I.buildTools ? I.buildTools(s, s.apiFormat) : [];
+                    const tools = I.buildTools ? I.buildTools(s, s.apiFormat, questionData) : [];
                     if (tools.length > 0 && s.apiFormat !== 'google') {
                         body.tools = tools;
                     }
@@ -289,6 +305,7 @@
                 const cancel = window.xdAnswers.streamRequest(
                     { url: buildStreamUrl(s), method: 'POST', headers: buildHeaders(s), data: JSON.stringify(body) },
                     (chunk) => {
+                        if (isStale()) return;
                         const events = parseSSEChunks(chunk as string, s.apiFormat);
                         for (const ev of events) {
                             if (ev.thinking) {
@@ -349,7 +366,11 @@
                     },
                     (error, details) => {
                         stopStreamTimer();
-                        reject(new Error(error + (details ? '\n' + details : '')));
+                        if (error instanceof Error) {
+                            reject(error);
+                        } else {
+                            reject(new Error(String(error) + (details ? '\n' + details : '')));
+                        }
                     }
                 );
 

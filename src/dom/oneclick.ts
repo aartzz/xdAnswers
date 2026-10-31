@@ -117,6 +117,7 @@
             }
             // Default: re-run the provider's refresh flow.
             if (typeof window.xdAnswers.onRefresh === 'function') {
+                window.xdAnswers.cancelProcessing();
                 window.xdAnswers.onRefresh();
             }
         } catch (err) {

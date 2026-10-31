@@ -7,8 +7,9 @@
 
     const I = window.xdAnswers._internal;
 
-    I.runConsensusProcess = async function(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string): Promise<void> {
+    I.runConsensusProcess = async function(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<void> {
         const consensusSettings = window.xdAnswers.settings.consensus;
+        const isCurrent = () => generation === undefined || window.xdAnswers._processGeneration === generation;
         // Main model always first, then extra runs
         const mainRun: XdConsensusRun = { id: '__main__', providerId: window.xdAnswers.settings.activeProviderId || '', model: window.xdAnswers.settings.model || '', showAnswerOnly: window.xdAnswers.settings.showAnswerOnly || false, isMainModel: true };
         const runs: XdConsensusRun[] = [mainRun, ...consensusSettings.runs];
@@ -65,7 +66,7 @@
             }).then(streamResult => {
                 // Stream completed — update tab button, parse final content
                 const parsed = I.parseAIResponse(streamResult.content);
-                if (!isSilent && answerContentDiv) {
+                if (isCurrent() && !isSilent && answerContentDiv) {
                     const tabButton = answerContentDiv.querySelector('.xd-consensus-tab[data-tab="' + index + '"]');
                     if (tabButton) {
                         const answerLabel = parsed.answer ? I.escapeHTML(String(parsed.answer)) + ' ' : '';
@@ -76,7 +77,7 @@
                 return { status: 'fulfilled' as const, value: streamResult.content, run: run };
             }).catch(error => {
                 const reason = error instanceof Error ? error : new Error(String((error as any) && (error as any).message ? (error as any).message : error || 'Unknown'));
-                if (!isSilent && answerContentDiv) {
+                if (isCurrent() && !isSilent && answerContentDiv) {
                     const tabContent = answerContentDiv.querySelector('.xd-tab-content[data-tab="' + index + '"]');
                     const tabButton = answerContentDiv.querySelector('.xd-consensus-tab[data-tab="' + index + '"]');
                     if (tabContent) tabContent.innerHTML = I.formatError(reason.message || 'Unknown');
@@ -90,6 +91,7 @@
         });
 
         const runResults = await Promise.all(runPromises);
+        if (!isCurrent()) return;
         const consensusResult = I.computeConsensus(runResults);
 
         consensusFinalized = true;
@@ -134,13 +136,16 @@
         }
 
         if (consensusResult.majorityAnswer) {
+            if (!isCurrent()) return;
             if (!isSilent) {
                 I.highlightCorrectAnswer(consensusResult.majorityAnswer);
             }
             I.autoSelectAnswer(consensusResult.majorityAnswer, silentMode === 'oneclick');
         }
 
-        window.xdAnswers.isProcessingAI = false;
-        window.xdAnswers._oneClickContainer = null;
+        if (isCurrent()) {
+            window.xdAnswers.isProcessingAI = false;
+            window.xdAnswers._oneClickContainer = null;
+        }
     };
 })();

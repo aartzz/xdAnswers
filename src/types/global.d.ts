@@ -314,7 +314,7 @@ interface XdAnswersInternal {
     evaluateMath(rawExpression: string): XdMathEvalResult;
     latexToMath(latex: string): string;
     buildCalculatorTool(apiFormat: string): unknown[];
-    buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[];
+    buildTools(s: XdEffectiveSettings, apiFormat: string, questionData?: XdQuestionData): unknown[];
     executeCalculator(rawExpression: string): string;
     isCalculatorToolName(name: string): boolean;
 
@@ -323,7 +323,7 @@ interface XdAnswersInternal {
     buildStreamUrl(s: XdEffectiveSettings): string;
     buildNonStreamUrl(s: XdEffectiveSettings): string;
     buildHeaders(s: XdEffectiveSettings): Record<string, string>;
-    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean): unknown;
+    buildRequestBody(s: XdEffectiveSettings, systemPrompt: string, userMsg: string, images: Array<string | null>, stream: boolean, questionData?: XdQuestionData): unknown;
     isOpenCodeFreeModel(s: XdEffectiveSettings): boolean;
 
     // Streaming and parsing
@@ -357,7 +357,7 @@ interface XdAnswersInternal {
     getProcessElapsed(startTime: number): string;
     startWaitingStatus(startTime: number): void;
     buildConsensusTabs(answerContentDiv: HTMLElement, runs: XdConsensusRun[], setActiveTab: (tabIndex: number, shouldUpdateFooter: boolean) => void): void;
-    runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string): Promise<void>;
+    runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<void>;
     renderSingleResult(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void;
     executeAnswerTool(name: string, args: Record<string, any>): Promise<string>;
     answerGoogleFunctionCalls(s: XdEffectiveSettings, body: Record<string, unknown>, parts: any[]): Promise<string>;
@@ -419,7 +419,8 @@ interface XdAnswers {
     lastRequestBody: unknown | null;
     lastParsedResponse: XdParsedResponse | null;
     onRefresh: (() => void) | null;
-    _cancelStream: (() => void) | null;
+    _cancelStream: ((abort?: boolean) => void) | null;
+    _processGeneration: number;
     _originalTitle: string | null;
     _customAutoAnswer: ((answerText: string, parsed: XdParsedResponse) => void) | null;
     _oneClickUserTriggered: boolean;
@@ -447,7 +448,7 @@ interface XdAnswers {
         onChunk: (chunk: unknown) => void,
         onDone: (result?: unknown) => void,
         onError: (error: unknown, details?: unknown) => void
-    ): () => void;
+    ): (abort?: boolean) => void;
     addStyle(css: string): void;
     imageToBase64(url: string): Promise<string | null>;
 
@@ -458,6 +459,7 @@ interface XdAnswers {
     getAnswer(questionData: XdQuestionData, effectiveSettingsOverride?: XdEffectiveSettings, showAnswerOnlyOverride?: boolean): Promise<string>;
     streamAnswer(questionData: XdQuestionData, outerStartTime?: number, overrides?: XdStreamAnswerOverrides): Promise<XdStreamAnswerResult>;
     processQuestion(questionData: XdQuestionData): Promise<void>;
+    cancelProcessing(): void;
 
     createUI(): void;
     attachHelperEventListeners(): void;

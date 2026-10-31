@@ -31,6 +31,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
         let lastStateHash = "";
         let currentSolvingText = "";
         let isSolvingNaurok = false;
+        let solveEpoch = 0;
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
         function updateHelperVisibility(): void {
@@ -77,6 +78,10 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
         updateHelperVisibility();
 
         window.xdAnswers.onRefresh = () => {
+            // Invalidate the previous solve (including its pending image loads and
+            // delayed start) so it cannot finish after the refreshed question starts.
+            solveEpoch++;
+            isSolvingNaurok = false;
             lastStateHash = "";
             currentSolvingText = "";
             // Skip debounce for user-initiated refresh — question is already rendered
@@ -185,7 +190,9 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                 }
 
                 // Normal: auto-process after delay (skip for user-initiated refresh or test-beta)
+                const epochAtStart = solveEpoch;
                 const processFn = () => {
+                    if (epochAtStart !== solveEpoch) return;
                     if (isBeta) {
                         const fresh = dom.getBetaQuestionState();
                         if (fresh && fresh.questionKey && fresh.questionKey !== state.questionKey) {
@@ -209,6 +216,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                     const imgPromises = state.validImages.map(src => window.xdAnswers.imageToBase64(src));
 
                     Promise.all(imgPromises).then(images => {
+                        if (epochAtStart !== solveEpoch) return;
                         // The stage may have moved on while images were loading.
                         // Never send a stale answer into the next question.
                         if (isBeta) {
@@ -234,10 +242,10 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                         }
 
                         window.xdAnswers.processQuestion(questionData).finally(() => {
-                            isSolvingNaurok = false;
+                            if (epochAtStart === solveEpoch) isSolvingNaurok = false;
                         });
                     }).catch(() => {
-                        isSolvingNaurok = false;
+                        if (epochAtStart === solveEpoch) isSolvingNaurok = false;
                     });
                 };
 

@@ -135,10 +135,15 @@
 
         connect();
 
-        return () => {
+        return (abort?: boolean) => {
             if (!finished) {
                 finished = true;
                 try { if (port) port.disconnect(); } catch(e) {}
+                if (abort) {
+                    const err = new Error('Request cancelled');
+                    err.name = 'AbortError';
+                    onError(err);
+                }
             }
         };
     };

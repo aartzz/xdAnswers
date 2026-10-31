@@ -9,7 +9,7 @@
     const I = window.xdAnswers._internal;
 
     function buildCalculatorTool(apiFormat: string): unknown[] {
-        const desc = 'Calculate and evaluate mathematical expressions, arithmetic, algebraic formulas, or LaTeX math (e.g. fractions \\frac{a}{b}, square roots \\sqrt{x}, exponents 2^8, percentages, trigonometry, equations 2x + 5 = 15).';
+        const desc = 'Evaluate a non-trivial arithmetic, algebraic, or LaTeX expression. Use ONLY when the question explicitly requires a numeric computation. Never call it for simple arithmetic (e.g. 1+1), for questions that need no calculation, or to test that the tool works.';
         const params = {
             type: 'object',
             properties: {
@@ -58,11 +58,25 @@
         }));
     }
 
-    function buildTools(s: XdEffectiveSettings, apiFormat: string): unknown[] {
+    // The tool schema is sent with every request, so only expose the calculator
+    // when the question actually looks numerical. Otherwise models tend to call
+    // it "just in case" (e.g. 1+1 on a biology test), costing an extra round trip.
+    function questionNeedsCalculator(questionData?: XdQuestionData): boolean {
+        if (!questionData) return true;
+        // Use the question text only: numeric answer options alone (dates, counts,
+        // percentages) do not mean the model needs to compute anything.
+        const text = (questionData.text || '').toLowerCase();
+        if (!text.trim()) return true;
+        if (/\\frac|\\sqrt|\\times|\\div|\\cdot|\\pi|\\left|\\right/.test(text)) return true;
+        if (/\d\s*[+\-*/×÷^%=<>√]|[+\-*/×÷^%=<>√]\s*\d/.test(text)) return true;
+        return /(обчисл|розраху|порахуй|підраху|знайди значення|спростіть вираз|спрости вираз|розв['’]?яж|рівнянн|відсот|процент|ймовірніст|пропорці|площ|об['’]?єм|швидкіст|прискоренн|добуток|частк|логарифм|синус|косинус|тангенс|похідн|інтеграл|молярн|концентрац|густин|стехіометр|середнє арифметичне|сум[аи]|різниц)/i.test(text);
+    }
+
+    function buildTools(s: XdEffectiveSettings, apiFormat: string, questionData?: XdQuestionData): unknown[] {
         const tools: unknown[] = [];
         const I = window.xdAnswers._internal;
         const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s as unknown as XdSettings));
-        const calculator = s.calculatorEnabled !== false;
+        const calculator = s.calculatorEnabled !== false && questionNeedsCalculator(questionData);
 
         if (apiFormat === 'openai') {
             if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) tools.push(...buildOpenCodeCoreTools());

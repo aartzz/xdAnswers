@@ -126,16 +126,7 @@
 
         refreshBtn.onclick = () => {
             if (window.xdAnswers.onRefresh) {
-                if (window.xdAnswers.isProcessingAI) {
-                    if (window.xdAnswers._cancelStream) {
-                        try { window.xdAnswers._cancelStream(); } catch (e) {}
-                    }
-                    if (window.xdAnswers._statusInterval) {
-                        clearInterval(window.xdAnswers._statusInterval);
-                        window.xdAnswers._statusInterval = null;
-                    }
-                    window.xdAnswers.isProcessingAI = false;
-                }
+                window.xdAnswers.cancelProcessing();
                 if (window.xdAnswers.answerContentDiv) {
                     window.xdAnswers.answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
                 }
