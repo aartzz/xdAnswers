@@ -112,6 +112,7 @@ npx web-ext run -t chromium
 | Gimkit | [gimkit.com](https://gimkit.com) | ❔️ | ✅ | ⚠️ | ✅ |
 | Wayground | [wayground.com](https://wayground.com) | ❔️ | ✅ | ⚠️ | ✅ |
 | Мрія | [school.mriia.gov.ua](https://school.mriia.gov.ua) | ❔️ | ✅ | ⚠️ | ✅ |
+| SchoolOS INTEGRITY | [schoolos-test.vercel.app](https://schoolos-test.vercel.app) | ❔️ | ✅ | ✅ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |

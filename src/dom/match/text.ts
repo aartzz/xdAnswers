@@ -9,7 +9,7 @@
 
     function normalizeText(t: string | null | undefined): string {
         return (t || '').replace(/\s+/g, ' ').trim().toLowerCase()
-            .replace(/[\u00A0\u200B\u200C\u200D\uFEFF]/g, '')  // zero-width / nbsp
+            .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\u2060]/g, '')  // zero-width / nbsp
             .replace(/(\d),(\d)/g, '$1.$2')                    // decimal comma → dot (1,5 → 1.5)
             .replace(/(\d)\.(\d)/g, '$1_DOT_$2')               // protect decimal dots temporarily
             .replace(/[.,;:!?()\-–—]/g, '')                     // strip remaining punctuation

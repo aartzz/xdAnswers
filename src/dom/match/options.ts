@@ -33,6 +33,8 @@
             '.tb-answers .tb-answer',
             '.v-block-answers-cross-block .numb-item',
             '.justkids-answer-text',
+            // SchoolOS INTEGRITY multi/single-choice options.
+            '.opt-txt',
             // vseosvita premium formats: true/false buttons and order-words tokens
             'button.item-true-false',
             '.word-queue-test_question_sentence-item',

@@ -40,7 +40,7 @@
             if (elements.length > 0) {
                 for (const el of elements) {
                     // Try multiple click target strategies
-                    const clickTarget = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
+                    const clickTarget = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, .opt, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
 
                     // Strategy 1: Direct click
                     clickTarget.click();

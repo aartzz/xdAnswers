@@ -53,7 +53,7 @@
             // Don't re-trigger when autoSelectAnswer clicks an option inside this container
             if (window.xdAnswers._autoSelecting) return;
             // Don't trigger when user clicks an answer option — let the site handle it
-            if ((e.target as Element).closest('.question-option-inner, .test-option, .question-option-inner-content')) return;
+            if ((e.target as Element).closest('.question-option-inner, .test-option, .question-option-inner-content, .opt')) return;
             // Set flag so processQuestion guard passes
             window.xdAnswers._oneClickUserTriggered = true;
             // Scope autoSelectAnswer to this container only
