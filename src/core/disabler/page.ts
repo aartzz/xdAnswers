@@ -11,6 +11,7 @@ import { installStealthGuard } from './stealth';
 import { installFocusBypass } from './focus';
 import { installFullscreenBypass } from './fullscreen';
 import { installTimingGuard } from './timing';
+import { installDetectionBypass } from './detect';
 
 (function() {
     'use strict';
@@ -19,6 +20,7 @@ import { installTimingGuard } from './timing';
     installFocusBypass();
     installFullscreenBypass();
     installTimingGuard();
+    installDetectionBypass();
 
-    console.log('[xdAnswers Disabler] Global anti-detect active (blur/focus/visibility/fullscreen bypass)');
+    console.log('[xdAnswers Disabler] Global anti-detect active (blur/focus/visibility/fullscreen/PiP/quota bypass)');
 })();

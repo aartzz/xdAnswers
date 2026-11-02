@@ -18,4 +18,31 @@ export function installTimingGuard() {
             return lastNow;
         }, 'now');
     } catch (e) { /* ignore */ }
+
+    // ── requestAnimationFrame pause detector ────────────────────────────
+    // Exams compare consecutive RAF timestamps and flag long gaps as a
+    // system shade, overlay or debugger pause. Feed callbacks a monotonic
+    // timeline that never jumps more than one frame interval.
+    try {
+        const w = window as any;
+        if (!w.__xdAnswersRafGuard) {
+            w.__xdAnswersRafGuard = true;
+            const origRaf = window.requestAnimationFrame.bind(window);
+            let lastRealTs = 0;
+            let logicalTs = 0;
+
+            window.requestAnimationFrame = makeNative(function(callback: FrameRequestCallback): number {
+                return origRaf(function(realTs: number) {
+                    if (!lastRealTs) {
+                        lastRealTs = realTs;
+                        logicalTs = realTs;
+                    }
+                    const delta = Math.max(0, realTs - lastRealTs);
+                    lastRealTs = Math.max(lastRealTs, realTs);
+                    logicalTs += Math.min(delta, 100);
+                    callback(logicalTs);
+                });
+            }, 'requestAnimationFrame');
+        }
+    } catch (e) { /* ignore */ }
 }
