@@ -113,6 +113,7 @@ npx web-ext run -t chromium
 | Wayground | [wayground.com](https://wayground.com) | ❔️ | ✅ | ⚠️ | ✅ |
 | Мрія | [school.mriia.gov.ua](https://school.mriia.gov.ua) | ❔️ | ✅ | ⚠️ | ✅ |
 | SchoolOS INTEGRITY | [schoolos-test.vercel.app](https://schoolos-test.vercel.app) | ❔️ | ✅ | ✅ | ✅ |
+| Testix | [testix.com.ua](https://testix.com.ua) | ❔️ | ✅ | ✅ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |
