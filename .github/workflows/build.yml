@@ -24,6 +24,8 @@ jobs:
         run: npm install
 
       - name: Build extensions for Firefox and Chrome
+        env:
+          CHROME_EXTENSION_KEY: ${{ secrets.CHROME_EXTENSION_KEY }}
         run: |
           npm run build:firefox
           npm run build:chrome
@@ -31,15 +33,15 @@ jobs:
       - name: Locate build artifacts
         id: artifacts
         run: |
-          firefox_path=$(find build -name "*firefox*.xpi" -o -name "*.xpi" | head -n 1)
-          chrome_path=$(find build -name "*chrome*.zip" -o -name "*.zip" | head -n 1)
+          firefox_path=$(find build -maxdepth 1 -type f -name "*.xpi" | head -n 1)
+          chrome_path=$(find build -maxdepth 1 -type f -name "*.crx" | head -n 1)
 
           if [ -z "$firefox_path" ]; then
             echo "::error::Firefox .xpi artifact not found in build/ directory."
             exit 1
           fi
           if [ -z "$chrome_path" ]; then
-            echo "::error::Chrome .zip artifact not found in build/ directory."
+            echo "::error::Chrome .crx artifact not found in build/ directory."
             exit 1
           fi
 

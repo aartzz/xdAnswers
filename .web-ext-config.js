@@ -1,29 +1,25 @@
 // .web-ext-config.js
 //
-// Один конфіг на обидва браузери. Target обирається через TARGET env var:
-//   TARGET=firefox web-ext build --config .web-ext-config.js
-//   TARGET=chrome  web-ext build --config .web-ext-config.js
+// Firefox packaging only. Chrome is packaged as a signed .crx by
+// scripts/pack-chrome.js, because web-ext can only produce a .zip.
 //
-// Різниця між таргетами:
-//   - filename: .xpi для Firefox (інакше браузер трактує файл як простий zip),
-//               .zip для Chrome (Chrome Web Store і "Load unpacked" очікують zip).
-//   - ignoreFiles: обидва таргети ділять спільний базовий список "сміття",
-//                  яке ніколи не має потрапити в архів розширення.
+//   TARGET=firefox web-ext build --config .web-ext-config.js
 
 const { getBuildVersion } = require('./scripts/version-helper');
 
 const target = (process.env.TARGET || 'firefox').toLowerCase();
 const version = getBuildVersion();
 
-if (target !== 'firefox' && target !== 'chrome') {
+if (target !== 'firefox') {
   throw new Error(
-    `.web-ext-config.js: unknown TARGET="${process.env.TARGET}". Use "firefox" or "chrome".`
+    `.web-ext-config.js: TARGET="${process.env.TARGET}" is not supported. ` +
+    'Use npm run build:chrome for the Chrome .crx build.'
   );
 }
 
 // Файли, які ніколи не мають потрапити в архів розширення.
 // Зайві JSON (типу manifest.common.json або package.json) псують встановлення
-// у Firefox ("appears to be corrupt") і просто роздувають архів для Chrome.
+// у Firefox ("appears to be corrupt").
 const commonIgnore = [
   'node_modules',
   'node_modules/**',
@@ -50,27 +46,18 @@ const commonIgnore = [
   'images/README/**',
   '*.zip',
   '*.xpi',
+  '*.crx',
+  '*.pem',
   '.env.example',
   '.env',
 ];
-
-const byTarget = {
-  firefox: {
-    filename: `xdAnswers-firefox-${version}.xpi`,
-    ignoreFiles: commonIgnore,
-  },
-  chrome: {
-    filename: `xdAnswers-chrome-${version}.zip`,
-    ignoreFiles: commonIgnore,
-  },
-};
 
 module.exports = {
   sourceDir: './dist',
   artifactsDir: './build',
   build: {
     overwriteDest: true,
-    filename: byTarget[target].filename,
+    filename: `xdAnswers-firefox-${version}.xpi`,
   },
-  ignoreFiles: byTarget[target].ignoreFiles,
+  ignoreFiles: commonIgnore,
 };

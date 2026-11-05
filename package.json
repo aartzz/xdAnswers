@@ -5,7 +5,7 @@
   "description": "A script that helps in tests by providing AI-powered answers.",
   "scripts": {
     "build:firefox": "node scripts/build.js firefox && cross-env TARGET=firefox web-ext build --config .web-ext-config.js",
-    "build:chrome": "node scripts/build.js chrome && cross-env TARGET=chrome web-ext build --config .web-ext-config.js",
+    "build:chrome": "node scripts/build.js chrome && node scripts/pack-chrome.js",
     "sign:firefox": "node scripts/sign-firefox.js",
     "typecheck": "tsc --noEmit",
     "dev": "node scripts/build.js chrome",

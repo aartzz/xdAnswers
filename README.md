@@ -32,10 +32,12 @@
 
 #### PC (Chromium-based browsers)
 
-1. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
-2. Розпакуйте
-3. Відкрийте `chrome://extensions`, увімкніть **Режим розробника** (справа вгорі)
-4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
+1. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.crx`
+2. Відкрийте `chrome://extensions`, увімкніть **Режим розробника** (справа вгорі)
+3. Перетягніть `.crx` у вікно `chrome://extensions` → підтвердіть встановлення
+
+> [!NOTE]
+> Chrome може блокувати встановлення `.crx` поза Chrome Web Store. У такому разі використовуйте Chromium або корпоративну політику встановлення розширень.
 
 #### PC (Gecko-based browsers)
 
@@ -47,9 +49,9 @@
 #### Android (Kiwi Browser)
 
 1. Встановіть [Kiwi Browser](https://github.com/kiwibrowser/src.next/releases/tag/14310011181) з GitHub
-2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.zip`
+2. Перейдіть до [Releases](https://github.com/aartzz/xdAnswers/releases), завантажте останній `xdAnswers-chrome-*.crx`
 3. Відкрийте `kiwi://extensions`, увімкніть **Режим розробника**
-4. Натисніть **Завантажити розпаковане розширення**, оберіть розпаковану папку
+4. Встановіть завантажений `.crx`
 
 ### Збірка з вихідного коду
 
@@ -67,7 +69,7 @@ npm install
 # Firefox — готовий .xpi (не підписаний)
 npm run build:firefox
 
-# Chrome/Brave/Edge/Vivaldi — готовий .zip
+# Chrome/Brave/Edge/Vivaldi — готовий .crx
 npm run build:chrome
 ```
 
@@ -77,7 +79,10 @@ npm run build:chrome
 Готові артефакти лежать у папці `./build`. Далі встановлюйте їх так само, як і реліз-файли (див. розділи вище).
 
 > [!TIP]
-> Скрипти `build:firefox` / `build:chrome` крос-платформні (працюють на Windows, macOS, Linux) — вони автоматично генерують правильний `manifest.json` для вибраного браузера, пакують розширення через `web-ext` і прибирають тимчасові файли.
+> Скрипти `build:firefox` / `build:chrome` крос-платформні (працюють на Windows, macOS, Linux). Firefox пакується через `web-ext`, Chrome — через `Chrome/Chromium --pack-extension`. Для Chrome-збірки потрібен встановлений Chrome або Chromium; шлях до нього можна задати через `CHROME_BIN`.
+
+> [!IMPORTANT]
+> Для стабільного ID Chrome-розширення задайте `CHROME_EXTENSION_KEY` — PEM-вміст ключа або шлях до `.pem`-файлу. Без ключа локальна збірка створить `build/chrome-extension.pem`, а CI згенерує новий ключ на кожен запуск.
 
 Для ітеративної розробки зручно використовувати режим `web-ext run`, який запускає тимчасовий профіль браузера з уже завантаженим розширенням і автоматично перезавантажує його при змінах у файлах:
 
