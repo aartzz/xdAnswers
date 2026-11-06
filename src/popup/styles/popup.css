@@ -186,7 +186,15 @@ body.theme-legacy .m3-home-status-label {
     line-height: 1.2;
 }
 
-body.theme-legacy .m3-home-hero.status-error .m3-home-status-label {
+body.theme-legacy .m3-home-version-label {
+    color: var(--popup-text);
+    font-size: 11px;
+    line-height: 1.2;
+    opacity: 0.55;
+}
+
+body.theme-legacy .m3-home-hero.status-error .m3-home-status-label,
+body.theme-legacy .m3-home-hero.status-error .m3-home-version-label {
     color: #f87171;
 }
 

@@ -14,6 +14,21 @@ import '../core/settings-defaults';
 import '../ui/i18n';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Build stamp is shown only in the Home status hero.
+    const heroVersionEl = document.querySelector('.xd-popup-version-home');
+    if (heroVersionEl) {
+        try {
+            let version = (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) || (window.xdAnswers && window.xdAnswers._buildVersion);
+            if (!version) {
+                const manifest = chrome.runtime.getManifest();
+                version = (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
+            }
+            heroVersionEl.textContent = version || '';
+        } catch {
+            heroVersionEl.textContent = '';
+        }
+    }
+
     // Home tab: populate environment info
     const browserInfoEl = document.getElementById('home-browser-info');
     const osInfoEl = document.getElementById('home-os-info');

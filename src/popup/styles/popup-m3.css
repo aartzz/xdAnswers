@@ -301,7 +301,15 @@ body.theme-material3 .m3-home-status-label {
     line-height: 1.2 !important;
 }
 
-body.theme-material3 .m3-home-hero.status-error .m3-home-status-label {
+body.theme-material3 .m3-home-version-label {
+    font-size: 13px !important;
+    color: var(--m3-on-primary) !important;
+    opacity: 0.85 !important;
+    line-height: 1 !important;
+}
+
+body.theme-material3 .m3-home-hero.status-error .m3-home-status-label,
+body.theme-material3 .m3-home-hero.status-error .m3-home-version-label {
     color: var(--m3-on-error) !important;
 }
 
@@ -310,7 +318,8 @@ body.theme-material3 .m3-home-hero.status-error .m3-home-status-emoji {
 }
 
 body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-emoji,
-body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-label {
+body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-label,
+body.theme-material3 .m3-home-hero.status-inactive .m3-home-version-label {
     color: var(--m3-on-secondary) !important;
 }
 
