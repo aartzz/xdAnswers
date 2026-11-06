@@ -16,7 +16,7 @@
 
 body {
     width: 420px;
-    height: 520px;
+    height: 580px;
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--popup-bg);
     color: var(--popup-text);
@@ -27,6 +27,341 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+/* M3 page content shell — layout bridge for m3 theme */
+.m3-page-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hidden in m3 mode; legacy mode shows the same shell with legacy colours. */
+.m3-nav-bar {
+    display: none;
+    flex-shrink: 0;
+}
+
+.m3-top-bar {
+    display: none;
+    flex-shrink: 0;
+}
+
+/* Legacy shell — the redesigned markup reuses the M3 top bar and bottom nav.
+   Keep them visible so switching to Legacy does not remove the app header or
+   navigation entirely. */
+body.theme-legacy .m3-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 16px 12px;
+    background: var(--popup-bg);
+    color: var(--popup-border);
+    box-sizing: border-box;
+}
+
+body.theme-legacy .m3-top-bar-title {
+    color: var(--popup-border);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+body.theme-legacy .m3-nav-bar {
+    display: flex;
+    flex-shrink: 0;
+    background: var(--popup-bg);
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    box-sizing: border-box;
+}
+
+body.theme-legacy .m3-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px 4px;
+    border: none;
+    background: none;
+    color: var(--popup-text);
+    opacity: 0.55;
+    cursor: pointer;
+    font-family: inherit;
+    transition: opacity 0.15s, color 0.15s;
+}
+
+body.theme-legacy .m3-nav-item.active {
+    color: var(--popup-border);
+    opacity: 1;
+}
+
+body.theme-legacy .m3-nav-item:hover {
+    opacity: 0.85;
+}
+
+body.theme-legacy .m3-nav-indicator {
+    display: none;
+}
+
+body.theme-legacy .m3-nav-icon {
+    font-family: 'Material Symbols Outlined';
+    font-size: 20px;
+    font-style: normal;
+    line-height: 1;
+}
+
+body.theme-legacy .m3-nav-label {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Legacy home tab — the home screen is built from M3-named blocks, so give
+   those blocks a legacy card treatment when the M3 stylesheet is disabled. */
+body.theme-legacy .material-icon {
+    font-family: 'Material Symbols Outlined';
+    font-style: normal;
+    line-height: 1;
+}
+
+/* Home cards must keep their natural height inside the flex tab; otherwise
+   they shrink and clip rows when the content is taller than the popup. */
+body.theme-legacy .m3-home-hero,
+body.theme-legacy .m3-home-stats-row,
+body.theme-legacy .m3-card,
+body.theme-legacy .m3-home-donate-link {
+    flex-shrink: 0;
+}
+
+body.theme-legacy .m3-home-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 80px;
+    margin-bottom: 12px;
+    padding: 16px;
+    background: var(--header-bg);
+    border: 1px solid rgba(128, 128, 128, 0.25);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+body.theme-legacy .m3-home-hero.status-error {
+    border-color: #f87171;
+}
+
+body.theme-legacy .m3-home-hero-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+body.theme-legacy .m3-home-status-emoji {
+    flex-shrink: 0;
+    color: var(--popup-border);
+    font-size: 32px;
+}
+
+body.theme-legacy .m3-home-hero-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+body.theme-legacy .m3-home-status-label {
+    color: var(--popup-text);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+body.theme-legacy .m3-home-version-label {
+    color: var(--popup-text);
+    font-size: 11px;
+    line-height: 1.2;
+    opacity: 0.55;
+}
+
+body.theme-legacy .m3-home-hero.status-error .m3-home-status-label,
+body.theme-legacy .m3-home-hero.status-error .m3-home-version-label {
+    color: #f87171;
+}
+
+body.theme-legacy .m3-home-stats-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+body.theme-legacy .m3-home-stat-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 12px;
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+body.theme-legacy .m3-home-stat-icon {
+    color: var(--popup-border);
+    font-size: 18px;
+}
+
+body.theme-legacy .m3-home-stat-value {
+    color: var(--popup-text);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+body.theme-legacy .m3-home-stat-label {
+    color: var(--popup-text);
+    font-size: 10px;
+    line-height: 1.2;
+    opacity: 0.55;
+}
+
+body.theme-legacy .m3-card {
+    display: block;
+    margin-bottom: 12px;
+    padding: 14px;
+    background: rgba(128, 128, 128, 0.1);
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    border-radius: 10px;
+    box-sizing: border-box;
+    color: var(--popup-text);
+    text-decoration: none;
+}
+
+body.theme-legacy .m3-home-info-card {
+    padding: 0;
+    overflow: hidden;
+}
+
+body.theme-legacy .m3-home-info-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+}
+
+body.theme-legacy .m3-home-info-icon {
+    flex-shrink: 0;
+    width: 20px;
+    color: var(--popup-border);
+    font-size: 18px;
+    text-align: center;
+}
+
+body.theme-legacy .m3-home-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+body.theme-legacy .m3-home-info-title {
+    color: var(--popup-text);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+    opacity: 0.55;
+    text-transform: uppercase;
+}
+
+body.theme-legacy .m3-home-info-value {
+    overflow: hidden;
+    color: var(--popup-text);
+    font-size: 13px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+body.theme-legacy .m3-home-info-divider {
+    height: 1px;
+    margin: 0 14px;
+    background: rgba(128, 128, 128, 0.2);
+}
+
+body.theme-legacy .m3-home-github-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+}
+
+body.theme-legacy .m3-home-github-card:hover {
+    background: rgba(128, 128, 128, 0.16);
+}
+
+body.theme-legacy .m3-home-github-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+body.theme-legacy .m3-home-github-title {
+    color: var(--popup-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+body.theme-legacy .m3-home-github-sub {
+    color: var(--popup-text);
+    font-size: 11px;
+    line-height: 1.3;
+    opacity: 0.55;
+}
+
+body.theme-legacy .m3-home-github-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    color: var(--popup-text);
+    opacity: 0.8;
+}
+
+body.theme-legacy .m3-home-donate-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: var(--popup-border);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+body.theme-legacy .m3-home-donate-link:hover {
+    background: rgba(128, 128, 128, 0.12);
+}
+
+body.theme-legacy .m3-home-donate-link .material-icon {
+    font-size: 16px;
 }
 
 h3 {
@@ -2080,3 +2415,20 @@ input.invalid {
     border-color: var(--popup-border);
 }
 
+
+/* ── Full-page mode ──
+   The toolbar popup renders at exactly 420×580. When popup.html is opened in
+   a regular tab instead, the viewport is larger; fill the window and centre
+   the content at a comfortable width. */
+@media (min-width: 421px), (min-height: 581px) {
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+    }
+
+    .tab-content {
+        padding-left: max(16px, calc((100% - 840px) / 2));
+        padding-right: max(16px, calc((100% - 840px) / 2));
+    }
+}
