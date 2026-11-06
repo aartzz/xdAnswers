@@ -18,7 +18,7 @@
 //   4. copies static assets (images, lib, popup html/css) into dist
 //   5. writes dist/manifest.json with browser-specific keys
 //
-// debug   → git-hash version
+// debug   → git+<hash> version, with -dirty when tracked files are modified
 // release → manifest version
 
 const fs = require('fs');

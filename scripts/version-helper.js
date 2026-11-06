@@ -1,5 +1,6 @@
 // scripts/version-helper.js
-// Resolves extension build version from Git: tag if commit is tagged, short hash if untagged.
+// Resolves extension build version from Git: tag if commit is tagged, git+short-hash if untagged.
+// Untagged builds with tracked changes get a -dirty suffix.
 const { execSync } = require('child_process');
 const path = require('path');
 
@@ -13,7 +14,14 @@ function getBuildVersion() {
 
     try {
         const hash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-        if (hash) return hash;
+        if (hash) {
+            let dirty = '';
+            try {
+                const changes = execSync('git status --porcelain --untracked-files=no', { encoding: 'utf-8' }).trim();
+                if (changes) dirty = '-dirty';
+            } catch (e) {}
+            return `git+${hash}${dirty}`;
+        }
     } catch (e) {}
 
     try {
