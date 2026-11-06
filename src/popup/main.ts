@@ -7,6 +7,7 @@ import { initAospSettingsNavigation } from './core/navigation';
 import { loadSettings } from './core/settings';
 import { populateUI } from './core/ui';
 import { renderConsensusRuns } from './consensus';
+import { getStats, normalizeStats, STATS_KEY } from '../core/stats';
 
 import '../core/constants';
 import '../core/settings-defaults';
@@ -34,6 +35,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const homeVersionEl2 = document.querySelector('.xd-popup-version-home2');
 
     if (homeVersionEl2) homeVersionEl2.textContent = detectedVersion;
+
+    // Home tab: lifetime counters kept in chrome.storage.local.
+    const bypassedCountEl = document.getElementById('home-bypassed-count');
+    const answeredCountEl = document.getElementById('home-answered-count');
+    const renderHomeStats = (stats: { bypassed: number; answered: number }): void => {
+        if (bypassedCountEl) bypassedCountEl.textContent = String(stats.bypassed);
+        if (answeredCountEl) answeredCountEl.textContent = String(stats.answered);
+    };
+    getStats(renderHomeStats);
+    try {
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area !== 'local' || !changes[STATS_KEY]) return;
+            renderHomeStats(normalizeStats(changes[STATS_KEY].newValue));
+        });
+    } catch { /* storage events unavailable */ }
 
     if (browserInfoEl) {
         try {

@@ -1,3 +1,5 @@
+import { incrementStat } from '../stats';
+
 (function() {
     'use strict';
 
@@ -41,6 +43,7 @@
     function runIfEnabled(): void {
         shouldApplyDisabler(function(enabled) {
             if (!enabled) return;
+            if (window === window.top) incrementStat('bypassed');
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', injectDisablerIntoPage);
             } else {

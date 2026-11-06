@@ -1,5 +1,7 @@
 // src/ai/process/consensus.ts
 // Consensus run: streams every configured model, computes agreement, and updates the tab UI.
+import { incrementStat } from '../../core/stats';
+
 (function() {
     'use strict';
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
@@ -137,6 +139,7 @@
 
         if (consensusResult.majorityAnswer) {
             if (!isCurrent()) return;
+            incrementStat('answered');
             if (!isSilent) {
                 I.highlightCorrectAnswer(consensusResult.majorityAnswer);
             }

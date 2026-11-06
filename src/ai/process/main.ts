@@ -1,5 +1,7 @@
 // src/ai/process/main.ts
 // Main question processing pipeline. Runs consensus or a single streamed answer and applies the result.
+import { incrementStat } from '../../core/stats';
+
 (function() {
     'use strict';
     window.xdAnswers = window.xdAnswers || ({} as XdAnswers);
@@ -71,6 +73,7 @@
             const elapsed = I.getProcessElapsed(startTime);
             const parsed = I.parseAIResponse(result.content);
             window.xdAnswers.lastParsedResponse = parsed;
+            if (parsed.answer) incrementStat('answered');
 
             if (isSilent) {
                 I.applySilentMode(parsed.answer || parsed.explanation || 'Parse error', parsed);
