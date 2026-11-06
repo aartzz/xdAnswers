@@ -156,7 +156,13 @@ function transformPopupHtml(html) {
 }
 
 async function copyStaticAssets() {
-    fs.cpSync(path.join(ROOT, 'images'), path.join(DIST, 'images'), { recursive: true });
+    const imagesDir = path.join(ROOT, 'images');
+    const screenshotsDir = path.join(imagesDir, 'README');
+    fs.cpSync(imagesDir, path.join(DIST, 'images'), {
+        recursive: true,
+        // Documentation screenshots live next to the icons but are not runtime assets.
+        filter: (source) => source !== screenshotsDir && !source.startsWith(screenshotsDir + path.sep)
+    });
     fs.cpSync(path.join(ROOT, 'lib'), path.join(DIST, 'lib'), { recursive: true });
     fs.cpSync(path.join(ROOT, 'src', 'rules'), path.join(DIST, 'rules'), { recursive: true });
     for (const css of ['popup.css', 'popup-m3.css']) {
