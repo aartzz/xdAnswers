@@ -13,17 +13,53 @@ import '../core/settings-defaults';
 import '../ui/i18n';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Populate version string in popup header
-    const versionEl = document.querySelector('.xd-popup-version');
-    if (versionEl) {
+    // Populate version string in popup header + home tab
+    const versionEls = document.querySelectorAll('.xd-popup-version, .xd-popup-version-home, .xd-popup-version-home2');
+    let detectedVersion = '';
+    try {
+        let v = (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) || (window.xdAnswers && window.xdAnswers._buildVersion);
+        if (!v) {
+            const manifest = chrome.runtime.getManifest();
+            v = (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
+        }
+        detectedVersion = v || '';
+        versionEls.forEach(el => { el.textContent = detectedVersion; });
+    } catch (e) {
+        versionEls.forEach(el => { el.textContent = ''; });
+    }
+
+    // Home tab: populate environment info
+    const browserInfoEl = document.getElementById('home-browser-info');
+    const osInfoEl = document.getElementById('home-os-info');
+    const homeVersionEl2 = document.querySelector('.xd-popup-version-home2');
+
+    if (homeVersionEl2) homeVersionEl2.textContent = detectedVersion;
+
+    if (browserInfoEl) {
         try {
-            let v = (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) || (window.xdAnswers && window.xdAnswers._buildVersion);
-            if (!v) {
-                const manifest = chrome.runtime.getManifest();
-                v = (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
+            const ua = navigator.userAgent;
+            let browser = 'Unknown';
+            const match = ua.match(/(Firefox|Chrome|Edg|Safari|OPR)[\/ ]([\d.]+)/);
+            if (match) {
+                const name = match[1] === 'OPR' ? 'Opera' : match[1] === 'Edg' ? 'Edge' : match[1];
+                browser = `${name} ${match[2]}`;
             }
-            versionEl.textContent = v;
-        } catch (e) {}
+            browserInfoEl.textContent = browser;
+        } catch { browserInfoEl.textContent = 'Unknown'; }
+    }
+
+    if (osInfoEl) {
+        try {
+            const pf = navigator.platform || '';
+            const ua = navigator.userAgent;
+            let os = pf;
+            if (ua.includes('Win')) os = 'Windows';
+            else if (ua.includes('Mac')) os = 'macOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            else if (ua.includes('Android')) os = 'Android';
+            else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+            osInfoEl.textContent = os || 'Unknown';
+        } catch { osInfoEl.textContent = 'Unknown'; }
     }
 
     // Global fallback for broken model/provider icons — hide gracefully without layout thrashing
@@ -83,6 +119,109 @@ document.addEventListener('DOMContentLoaded', async () => {
     populateUI();
     attachEventListeners();
     initAospSettingsNavigation();
+
+    // Home tab: dynamic status based on active tab URL
+    const SUPPORTED_HOSTS: RegExp[] = [
+        /^(.*\.)?vseosvita\.ua$/,
+        /^kahoot\.it$/,
+        /^classtime\.com$/,
+        /^justclass\.com\.ua$/,
+        /^justclass\.me$/,
+        /^miyklas\.com\.ua$/,
+        /^lcloud\.in\.ua$/,
+        /^(.*\.)?naurok\.com\.ua$/,
+        /^(.*\.)?naurok\.ua$/,
+        /^quizlet\.com$/,
+        /^(.*\.)?testportal\.pl$/,
+        /^(.*\.)?testportal\.net$/,
+        /^(.*\.)?szkolawchmurze\.org$/,
+        /^(.*\.)?blooket\.com$/,
+        /^(.*\.)?gimkit\.com$/,
+        /^(.*\.)?wayground\.com$/,
+        /^(.*\.)?mriia\.gov\.ua$/,
+        /^(.*\.)?wordwall\.net$/,
+        /^schoolos-test\.vercel\.app$/,
+        /^schoolos\.vercel\.app$/,
+        /^schoolosua\.github\.io$/,
+        /^docs\.google\.com$/,
+        /^forms\.office\.com$/,
+    ];
+
+    function isSupportedHost(hostname: string): boolean {
+        return SUPPORTED_HOSTS.some(re => re.test(hostname));
+    }
+
+    const statusCard = document.getElementById('home-status-card');
+    const statusEmoji = document.getElementById('home-status-emoji');
+    const statusLabel = document.getElementById('home-status-label');
+
+    function applyStatus(type: 'active' | 'inactive' | 'error' | 'settings'): void {
+        if (!statusCard || !statusEmoji || !statusLabel) return;
+        statusCard.classList.remove('status-error', 'status-inactive');
+        const tFn = (window.xdAnswers?._internal?.TRANSLATIONS as any)?.[settings?.language || 'uk'];
+        if (type === 'active') {
+            statusEmoji.textContent = 'sentiment_satisfied';
+            statusLabel.textContent = tFn?.homeStatusActive || 'Активний';
+        } else if (type === 'inactive') {
+            statusCard.classList.add('status-inactive');
+            statusEmoji.textContent = 'sentiment_dissatisfied';
+            statusLabel.textContent = tFn?.homeStatusInactive || 'Не підтримується';
+        } else if (type === 'settings') {
+            statusEmoji.textContent = 'settings';
+            statusLabel.textContent = tFn?.navSettings || 'Налаштування';
+        } else {
+            statusCard.classList.add('status-error');
+            statusEmoji.textContent = 'error';
+            statusLabel.textContent = tFn?.homeStatusError || 'Помилка';
+        }
+    }
+
+    try {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            try {
+                const tab = tabs && tabs[0];
+                if (!tab || !tab.url) {
+                    applyStatus('error');
+                    return;
+                }
+                let extensionBase = '';
+                try { extensionBase = chrome.runtime.getURL(''); } catch { /* silent */ }
+                if (extensionBase && tab.url.startsWith(extensionBase)) {
+                    applyStatus('settings');
+                    return;
+                }
+                let hostname = '';
+                try {
+                    hostname = new URL(tab.url).hostname;
+                } catch {
+                    applyStatus('error');
+                    return;
+                }
+                if (isSupportedHost(hostname)) {
+                    applyStatus('active');
+                } else {
+                    applyStatus('inactive');
+                }
+            } catch {
+                applyStatus('error');
+            }
+        });
+    } catch {
+        applyStatus('error');
+    }
+
+    // Home tab: show active provider name
+    const homeProviderInfoEl = document.getElementById('home-provider-info');
+    if (homeProviderInfoEl && settings) {
+        try {
+            const activeProv = (settings.providers || []).find((p: any) => p.id === settings.activeProviderId);
+            if (activeProv) {
+                homeProviderInfoEl.textContent = activeProv.name || activeProv.type || 'Unknown';
+            } else {
+                homeProviderInfoEl.textContent = 'Not configured';
+            }
+        } catch { /* silent */ }
+    }
     // Trigger background models.dev sync silently if missing
     if (!modelsDevCache) {
         chrome.runtime.sendMessage({ type: 'forceModelSync' });

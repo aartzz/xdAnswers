@@ -82,18 +82,38 @@ export function applyThemeToPopup() {
             document.body.style.setProperty('--m3-primary-container', isDarkPrimary ? primaryColor : 'rgba(' + hexToRgb(primaryColor) + ', 0.35)');
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
+            document.body.style.setProperty('--m3-on-primary-container', '#ffffff');
+
+            // Secondary roles drive the active nav pill and other highlighted
+            // controls, so they must follow the accent instead of staying purple.
+            const secondaryContainer = blendHex('#2B2930', primaryColor, 0.35);
+            const onSecondaryContainer = blendHex('#ffffff', primaryColor, 0.25);
+            const secondary = blendHex('#332d41', primaryColor, 0.3);
+            root.style.setProperty('--m3-secondary', secondary);
+            document.body.style.setProperty('--m3-secondary', secondary);
+            root.style.setProperty('--m3-on-secondary', onSecondaryContainer);
+            document.body.style.setProperty('--m3-on-secondary', onSecondaryContainer);
+            root.style.setProperty('--m3-secondary-container', secondaryContainer);
+            document.body.style.setProperty('--m3-secondary-container', secondaryContainer);
+            root.style.setProperty('--m3-on-secondary-container', onSecondaryContainer);
+            document.body.style.setProperty('--m3-on-secondary-container', onSecondaryContainer);
 
             // Tint M3 dark surfaces with the accent palette color for Material You tonal surface effect
             const surfaceBase = blendHex('#121316', primaryColor, 0.05);
+            const surfaceLow = blendHex('#1D1B20', primaryColor, 0.09);
             const surfaceMid = blendHex('#1e1f23', primaryColor, 0.08);
             const surfaceHigh = blendHex('#282a2e', primaryColor, 0.11);
             const surfaceHighest = blendHex('#333539', primaryColor, 0.14);
 
             root.style.setProperty('--surface', surfaceBase);
             document.body.style.setProperty('--m3-surface', surfaceBase);
+            root.style.setProperty('--surface-container-low', surfaceLow);
+            document.body.style.setProperty('--m3-surface-low', surfaceLow);
             root.style.setProperty('--surface-container', surfaceMid);
             document.body.style.setProperty('--m3-surface-mid', surfaceMid);
+            root.style.setProperty('--surface-container-high', surfaceHigh);
             document.body.style.setProperty('--m3-surface-high', surfaceHigh);
+            root.style.setProperty('--surface-container-highest', surfaceHighest);
             document.body.style.setProperty('--m3-surface-highest', surfaceHighest);
             root.style.setProperty('--on-surface', '#e2e2e6');
             document.body.style.setProperty('--m3-on-surface', '#e2e2e6');
@@ -103,18 +123,36 @@ export function applyThemeToPopup() {
             document.body.style.setProperty('--m3-primary-container', primaryColor);
             root.style.setProperty('--on-primary-container', '#ffffff');
             root.style.setProperty('--m3-on-primary-container', '#ffffff');
+            document.body.style.setProperty('--m3-on-primary-container', '#ffffff');
+
+            const secondaryContainer = blendHex('#ffffff', primaryColor, 0.18);
+            const onSecondaryContainer = blendHex('#000000', primaryColor, 0.72);
+            const secondary = blendHex('#E8DEF8', primaryColor, 0.25);
+            root.style.setProperty('--m3-secondary', secondary);
+            document.body.style.setProperty('--m3-secondary', secondary);
+            root.style.setProperty('--m3-on-secondary', onSecondaryContainer);
+            document.body.style.setProperty('--m3-on-secondary', onSecondaryContainer);
+            root.style.setProperty('--m3-secondary-container', secondaryContainer);
+            document.body.style.setProperty('--m3-secondary-container', secondaryContainer);
+            root.style.setProperty('--m3-on-secondary-container', onSecondaryContainer);
+            document.body.style.setProperty('--m3-on-secondary-container', onSecondaryContainer);
 
             // Tint M3 light surfaces with the accent palette color
             const surfaceBase = blendHex('#f8fafc', primaryColor, 0.04);
+            const surfaceLow = blendHex('#F7F2FA', primaryColor, 0.06);
             const surfaceMid = blendHex('#f1f5f9', primaryColor, 0.08);
             const surfaceHigh = blendHex('#e2e8f0', primaryColor, 0.12);
             const surfaceHighest = blendHex('#cbd5e1', primaryColor, 0.15);
 
             root.style.setProperty('--surface', surfaceBase);
             document.body.style.setProperty('--m3-surface', surfaceBase);
+            root.style.setProperty('--surface-container-low', surfaceLow);
+            document.body.style.setProperty('--m3-surface-low', surfaceLow);
             root.style.setProperty('--surface-container', surfaceMid);
             document.body.style.setProperty('--m3-surface-mid', surfaceMid);
+            root.style.setProperty('--surface-container-high', surfaceHigh);
             document.body.style.setProperty('--m3-surface-high', surfaceHigh);
+            root.style.setProperty('--surface-container-highest', surfaceHighest);
             document.body.style.setProperty('--m3-surface-highest', surfaceHighest);
             root.style.setProperty('--on-surface', '#0f172a');
             document.body.style.setProperty('--m3-on-surface', '#0f172a');

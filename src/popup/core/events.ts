@@ -14,10 +14,24 @@ import { settings, uiElements } from './state';
 export function attachEventListeners() {
     const el = uiElements;
 
+    // Legacy tab-buttons (non-m3)
     document.querySelectorAll('.tab-button').forEach(b => b.addEventListener('click', () => {
         document.querySelectorAll('.tab-button, .tab-content').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         document.getElementById(b.dataset.tab).classList.add('active');
+    }));
+
+    // M3 bottom nav bar
+    document.querySelectorAll('.m3-nav-item').forEach(item => item.addEventListener('click', () => {
+        document.querySelectorAll('.m3-nav-item').forEach(x => {
+            x.classList.remove('active');
+            x.removeAttribute('aria-current');
+        });
+        document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+        item.classList.add('active');
+        item.setAttribute('aria-current', 'page');
+        const tabId = (item as HTMLElement).dataset.tab;
+        if (tabId) document.getElementById(tabId)?.classList.add('active');
     }));
 
     el.activeProviderTrigger.onclick = () => {

@@ -63,15 +63,15 @@ export function applyLanguage() {
     if (langLabel) langLabel.textContent = t('languageLabel');
     const langSelect = document.getElementById('language-select');
     if (langSelect) langSelect.value = lang;
-    document.querySelector('#auto-answer-toggle + span').textContent = t('autoAnswer');
+    document.querySelector('#auto-answer-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('autoAnswer');
     document.querySelector('#auto-answer-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('autoAnswerHint');
     const cooldownLabel = document.querySelector('label[for="auto-answer-cooldown"]');
     if (cooldownLabel) cooldownLabel.textContent = t('cooldownLabel');
-    document.querySelector('#highlight-correct-toggle + span').textContent = t('highlightCorrect');
+    document.querySelector('#highlight-correct-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('highlightCorrect');
     document.querySelector('#highlight-correct-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('highlightCorrectHint');
-    document.querySelector('#show-answer-only-toggle + span').textContent = t('showAnswerOnly');
+    document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('showAnswerOnly');
     document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('showAnswerOnlyHint');
-    document.querySelector('#silent-mode-toggle + span').textContent = t('silentMode');
+    document.querySelector('#silent-mode-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('silentMode');
     const silentModeLabel = document.querySelector('label[for="silent-mode-select"]');
     if (silentModeLabel) silentModeLabel.textContent = t('silentModeLabel');
 
@@ -91,27 +91,27 @@ export function applyLanguage() {
     if (posLabel) posLabel.textContent = t('defaultPositionLabel');
     const posHint = document.querySelector('#position-grid')?.closest('.form-group')?.querySelector('.field-hint');
     if (posHint) posHint.textContent = t('defaultPositionHint');
-    const rememberDragSpan = document.querySelector('#remember-drag-toggle + span');
+    const rememberDragSpan = document.querySelector('#remember-drag-toggle').closest('.toggle-group').querySelector('.toggle-label');
     if (rememberDragSpan) rememberDragSpan.textContent = t('rememberDrag');
     const rememberDragHint = document.querySelector('#remember-drag-toggle')?.closest('.toggle-group')?.querySelector('.field-hint');
     if (rememberDragHint) rememberDragHint.textContent = t('rememberDragHint');
 
     // Web search toggle
-    const webSearchSpan = document.querySelector('#web-search-toggle + span');
-    if (webSearchSpan) webSearchSpan.textContent = t('webSearchLabel');
+    const webSearchLabel = document.querySelector('#web-search-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (webSearchLabel) webSearchLabel.textContent = t('webSearchLabel');
     const webSearchHintEl = document.getElementById('web-search-hint');
     if (webSearchHintEl) webSearchHintEl.textContent = t('webSearchHint');
-    const calcSpan = document.querySelector('#calculator-toggle + span');
-    if (calcSpan) calcSpan.textContent = t('calculatorLabel');
+    const calcLabel = document.querySelector('#calculator-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (calcLabel) calcLabel.textContent = t('calculatorLabel');
     const calcHintEl = document.getElementById('calculator-hint');
     if (calcHintEl) calcHintEl.textContent = t('calculatorHint');
-    const disablerSpan = document.querySelector('#disabler-toggle + span');
-    if (disablerSpan) disablerSpan.textContent = t('disablerLabel');
+    const disablerLabel = document.querySelector('#disabler-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (disablerLabel) disablerLabel.textContent = t('disablerLabel');
     const disablerHintEl = document.getElementById('disabler-hint');
     if (disablerHintEl) disablerHintEl.textContent = t('disablerHint');
     const addConsensusBtn = document.getElementById('add-consensus-run-btn');
     if (addConsensusBtn) addConsensusBtn.textContent = t('consensusAddRun');
-    document.querySelector('#consensus-toggle + span').textContent = t('consensusLabel');
+    document.querySelector('#consensus-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('consensusLabel');
     // Hotkey
     const hotkeyLabel = document.getElementById('hotkey-label');
     if (hotkeyLabel) hotkeyLabel.textContent = t('hotkeyLabel');
@@ -166,7 +166,7 @@ export function applyLanguage() {
     if (cancelBtn) cancelBtn.textContent = t('cancelBtn');
     const saveBtn = document.getElementById('theme-editor-save');
     if (saveBtn) saveBtn.textContent = t('saveThemeBtn');
-    document.querySelector('#glow-effect-toggle + span').textContent = t('glowEffect');
+    document.querySelector('#glow-effect-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('glowEffect');
     document.querySelector('#glow-effect-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('glowEffectHint');
 
     // Donate tab
@@ -174,4 +174,37 @@ export function applyLanguage() {
     if (donateText) donateText.textContent = t('donateText');
     const donateBtnSpan = document.querySelector('.donate-button span');
     if (donateBtnSpan) donateBtnSpan.textContent = t('donateBtn');
+
+    // M3 nav bar labels
+    const navItems = document.querySelectorAll('.m3-nav-item');
+    const navKeys = ['navHome', 'navAI', 'navProviders', 'navSettings'];
+    navItems.forEach((item, i) => {
+        const labelEl = item.querySelector('.m3-nav-label');
+        if (labelEl && navKeys[i]) labelEl.textContent = t(navKeys[i]);
+    });
+
+    // Home tab labels
+    const homeBrowserTitle = document.querySelector('.m3-home-info-row:nth-child(1) .m3-home-info-title');
+    if (homeBrowserTitle) homeBrowserTitle.textContent = t('homeBrowser');
+    const homePlatformTitle = document.querySelector('.m3-home-info-row:nth-child(3) .m3-home-info-title');
+    if (homePlatformTitle) homePlatformTitle.textContent = t('homePlatform');
+    const homeExtensionTitle = document.querySelector('.m3-home-info-row:nth-child(5) .m3-home-info-title');
+    if (homeExtensionTitle) homeExtensionTitle.textContent = t('homeExtension');
+    const homeProviderTitle = document.querySelector('.m3-home-info-row:nth-child(7) .m3-home-info-title');
+    if (homeProviderTitle) homeProviderTitle.textContent = t('homeAIProvider');
+
+    const homeStatBypassedLabel = document.querySelector('#home-bypassed-count ~ .m3-home-stat-label');
+    if (homeStatBypassedLabel) homeStatBypassedLabel.textContent = t('statBypassed');
+    const homeStatAnsweredLabel = document.querySelector('#home-answered-count ~ .m3-home-stat-label');
+    if (homeStatAnsweredLabel) homeStatAnsweredLabel.textContent = t('statAnswered');
+
+    const homeGithubTitle = document.querySelector('.m3-home-github-title');
+    if (homeGithubTitle) homeGithubTitle.textContent = t('homeFoundBug');
+    const homeGithubSub = document.querySelector('.m3-home-github-sub');
+    if (homeGithubSub) homeGithubSub.textContent = t('homeFoundBugSub');
+    const homeDonateLink = document.querySelector('.m3-home-donate-link');
+    if (homeDonateLink) {
+        const textNode = Array.from(homeDonateLink.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
+        if (textNode) textNode.textContent = ' ' + t('homeSupportDev');
+    }
 }
