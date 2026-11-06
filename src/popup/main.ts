@@ -14,27 +14,9 @@ import '../core/settings-defaults';
 import '../ui/i18n';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Populate version string in popup header + home tab
-    const versionEls = document.querySelectorAll('.xd-popup-version, .xd-popup-version-home, .xd-popup-version-home2');
-    let detectedVersion = '';
-    try {
-        let v = (typeof __XD_VERSION__ !== 'undefined' && __XD_VERSION__) || (window.xdAnswers && window.xdAnswers._buildVersion);
-        if (!v) {
-            const manifest = chrome.runtime.getManifest();
-            v = (manifest as any).version_name || (manifest.version ? 'v' + manifest.version : '');
-        }
-        detectedVersion = v || '';
-        versionEls.forEach(el => { el.textContent = detectedVersion; });
-    } catch (e) {
-        versionEls.forEach(el => { el.textContent = ''; });
-    }
-
     // Home tab: populate environment info
     const browserInfoEl = document.getElementById('home-browser-info');
     const osInfoEl = document.getElementById('home-os-info');
-    const homeVersionEl2 = document.querySelector('.xd-popup-version-home2');
-
-    if (homeVersionEl2) homeVersionEl2.textContent = detectedVersion;
 
     // Home tab: lifetime counters kept in chrome.storage.local.
     const bypassedCountEl = document.getElementById('home-bypassed-count');

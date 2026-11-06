@@ -156,7 +156,6 @@
         homeStatusError: 'Помилка',
         homeBrowser: 'Браузер',
         homePlatform: 'Платформа',
-        homeExtension: 'Розширення',
         homeAIProvider: 'AI провайдер',
         homeFoundBug: 'Знайшли баг?',
         homeFoundBugSub: 'Створіть issue на GitHub — виправимо',

@@ -156,7 +156,6 @@
         homeStatusError: 'Error',
         homeBrowser: 'Browser',
         homePlatform: 'Platform',
-        homeExtension: 'Extension',
         homeAIProvider: 'AI Provider',
         homeFoundBug: 'Found a bug?',
         homeFoundBugSub: 'Create an issue on GitHub and we\'ll fix it',

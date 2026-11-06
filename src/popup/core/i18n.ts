@@ -184,13 +184,11 @@ export function applyLanguage() {
     });
 
     // Home tab labels
-    const homeBrowserTitle = document.querySelector('.m3-home-info-row:nth-child(1) .m3-home-info-title');
+    const homeBrowserTitle = document.getElementById('home-browser-title');
     if (homeBrowserTitle) homeBrowserTitle.textContent = t('homeBrowser');
-    const homePlatformTitle = document.querySelector('.m3-home-info-row:nth-child(3) .m3-home-info-title');
+    const homePlatformTitle = document.getElementById('home-platform-title');
     if (homePlatformTitle) homePlatformTitle.textContent = t('homePlatform');
-    const homeExtensionTitle = document.querySelector('.m3-home-info-row:nth-child(5) .m3-home-info-title');
-    if (homeExtensionTitle) homeExtensionTitle.textContent = t('homeExtension');
-    const homeProviderTitle = document.querySelector('.m3-home-info-row:nth-child(7) .m3-home-info-title');
+    const homeProviderTitle = document.getElementById('home-provider-title');
     if (homeProviderTitle) homeProviderTitle.textContent = t('homeAIProvider');
 
     const homeStatBypassedLabel = document.querySelector('#home-bypassed-count ~ .m3-home-stat-label');

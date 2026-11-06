@@ -104,18 +104,6 @@ body.theme-material3 .m3-top-bar-title {
     gap: 10px !important;
 }
 
-body.theme-material3 .xd-popup-version {
-    font-size: 11px !important;
-    font-weight: 500 !important;
-    padding: 2px 10px !important;
-    background: var(--m3-primary-container) !important;
-    color: var(--m3-on-primary-container) !important;
-    border-radius: var(--m3-r-full) !important;
-    vertical-align: middle !important;
-    flex-shrink: 0 !important;
-    display: inline-block !important;
-}
-
 /* Legacy header hidden when m3 active */
 body.theme-material3 .header {
     display: none !important;
@@ -164,8 +152,9 @@ body.theme-material3 .m3-nav-item {
 body.theme-material3 .m3-nav-indicator {
     position: absolute !important;
     top: -4px !important;
-    left: 4px !important;
-    right: 4px !important;
+    left: calc(50% - 32px) !important;
+    right: auto !important;
+    width: 64px !important;
     transform: scaleX(0) !important;
     height: 32px !important;
     background: var(--m3-secondary-container) !important;
@@ -312,15 +301,7 @@ body.theme-material3 .m3-home-status-label {
     line-height: 1.2 !important;
 }
 
-body.theme-material3 .m3-home-version-label {
-    font-size: 13px !important;
-    color: var(--m3-on-primary) !important;
-    opacity: 0.85 !important;
-    line-height: 1 !important;
-}
-
-body.theme-material3 .m3-home-hero.status-error .m3-home-status-label,
-body.theme-material3 .m3-home-hero.status-error .m3-home-version-label {
+body.theme-material3 .m3-home-hero.status-error .m3-home-status-label {
     color: var(--m3-on-error) !important;
 }
 
@@ -329,8 +310,7 @@ body.theme-material3 .m3-home-hero.status-error .m3-home-status-emoji {
 }
 
 body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-emoji,
-body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-label,
-body.theme-material3 .m3-home-hero.status-inactive .m3-home-version-label {
+body.theme-material3 .m3-home-hero.status-inactive .m3-home-status-label {
     color: var(--m3-on-secondary) !important;
 }
 

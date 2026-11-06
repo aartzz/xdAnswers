@@ -186,15 +186,7 @@ body.theme-legacy .m3-home-status-label {
     line-height: 1.2;
 }
 
-body.theme-legacy .m3-home-version-label {
-    color: var(--popup-text);
-    font-size: 11px;
-    line-height: 1.2;
-    opacity: 0.55;
-}
-
-body.theme-legacy .m3-home-hero.status-error .m3-home-status-label,
-body.theme-legacy .m3-home-hero.status-error .m3-home-version-label {
+body.theme-legacy .m3-home-hero.status-error .m3-home-status-label {
     color: #f87171;
 }
 
@@ -1224,14 +1216,6 @@ textarea {
     flex-shrink: 0;
     background-color: var(--popup-bg);
     z-index: 10;
-}
-
-.xd-popup-version {
-    font-weight: 400;
-    font-size: 10px;
-    opacity: 0.5;
-    margin-left: 4px;
-    vertical-align: middle;
 }
 
 .fetch-models-btn {
