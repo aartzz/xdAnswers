@@ -163,7 +163,15 @@ async function copyStaticAssets() {
         // Documentation screenshots live next to the icons but are not runtime assets.
         filter: (source) => source !== screenshotsDir && !source.startsWith(screenshotsDir + path.sep)
     });
-    fs.cpSync(path.join(ROOT, 'lib'), path.join(DIST, 'lib'), { recursive: true });
+
+    // Beer CSS is an npm dependency; only its Material Symbols font is shipped.
+    const symbolFont = path.join(ROOT, 'node_modules', 'beercss', 'dist', 'cdn', 'material-symbols-outlined.woff2');
+    if (!fs.existsSync(symbolFont)) {
+        throw new Error('Material Symbols font not found. Run "npm install" first.');
+    }
+    fs.mkdirSync(path.join(DIST, 'lib'), { recursive: true });
+    fs.copyFileSync(symbolFont, path.join(DIST, 'lib', 'material-symbols-outlined.woff2'));
+
     fs.cpSync(path.join(ROOT, 'src', 'rules'), path.join(DIST, 'rules'), { recursive: true });
     for (const css of ['popup.css', 'popup-m3.css']) {
         fs.copyFileSync(path.join(ROOT, 'src', 'popup', 'styles', css), path.join(DIST, css));

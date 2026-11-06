@@ -62,7 +62,7 @@
             : 'inset 0 0 0 1px var(--xd-border),var(--xd-glow),0 4px 24px rgba(0,0,0,0.4)';
 
         const fontUrl = typeof chrome !== 'undefined' && chrome.runtime?.getURL 
-            ? chrome.runtime.getURL('lib/beercss/material-symbols-outlined.woff2') 
+            ? chrome.runtime.getURL('lib/material-symbols-outlined.woff2') 
             : '';
 
         return (fontUrl ? '@font-face { font-family: "Material Symbols Outlined"; src: url("' + fontUrl + '") format("woff2"); font-weight: normal; font-style: normal; font-display: block; }\n' : '') +

@@ -28,7 +28,7 @@
       "resources": [
         "src/core/disabler/page.ts",
         "src/providers/naurok/round/reorder-page.ts",
-        "lib/beercss/material-symbols-outlined.woff2"
+        "lib/material-symbols-outlined.woff2"
       ],
       "matches": [
         "<all_urls>"

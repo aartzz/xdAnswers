@@ -9,7 +9,7 @@
 
     function ensureMaterialSymbolsFont(): void {
         const fontUrl = typeof chrome !== 'undefined' && chrome.runtime?.getURL 
-            ? chrome.runtime.getURL('lib/beercss/material-symbols-outlined.woff2') 
+            ? chrome.runtime.getURL('lib/material-symbols-outlined.woff2') 
             : '';
         if (!fontUrl) return;
 
