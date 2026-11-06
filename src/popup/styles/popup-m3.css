@@ -502,6 +502,11 @@ body.theme-material3 .m3-home-donate-link {
 
 body.theme-material3 .m3-home-donate-link:hover {
     background: var(--m3-primary-container) !important;
+    color: var(--m3-on-primary-container) !important;
+}
+
+body.theme-material3 .m3-home-donate-link:hover .material-icon {
+    color: var(--m3-on-primary-container) !important;
 }
 
 body.theme-material3 .m3-home-donate-link .material-icon {

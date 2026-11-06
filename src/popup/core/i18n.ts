@@ -200,9 +200,6 @@ export function applyLanguage() {
     if (homeGithubTitle) homeGithubTitle.textContent = t('homeFoundBug');
     const homeGithubSub = document.querySelector('.m3-home-github-sub');
     if (homeGithubSub) homeGithubSub.textContent = t('homeFoundBugSub');
-    const homeDonateLink = document.querySelector('.m3-home-donate-link');
-    if (homeDonateLink) {
-        const textNode = Array.from(homeDonateLink.childNodes).find(n => n.nodeType === Node.TEXT_NODE);
-        if (textNode) textNode.textContent = ' ' + t('homeSupportDev');
-    }
+    const homeDonateText = document.querySelector('.m3-home-donate-text');
+    if (homeDonateText) homeDonateText.textContent = t('homeSupportDev');
 }
