@@ -7,6 +7,146 @@
 
     const I = window.xdAnswers._internal;
 
+    // Google Forms dropdowns (role="listbox" with role="option" items) keep a
+    // closed "display" copy of the options and an opened menu copy. A click on
+    // an option while the menu is closed only expands the listbox, so the
+    // option has to be clicked again inside the opened menu.
+    function closestDropdownOption(el: Element): Element | null {
+        const option = el.getAttribute('role') === 'option' ? el : el.closest('[role="option"]');
+        if (!option) return null;
+        return option.closest('[role="listbox"][aria-expanded]') ? option : null;
+    }
+
+    function isDropdownExpanded(listbox: Element): boolean {
+        return listbox.getAttribute('aria-expanded') === 'true';
+    }
+
+    function hasBox(el: Element): boolean {
+        const rects = el.getClientRects();
+        for (let i = 0; i < rects.length; i++) {
+            if (rects[i].width > 0 && rects[i].height > 0) return true;
+        }
+        return false;
+    }
+
+    function optionText(el: Element): string {
+        return I.normalizeText((el as HTMLElement).innerText || el.textContent || '');
+    }
+
+    function waitFor<T>(fn: () => T | null, timeout = 1000, interval = 40): Promise<T | null> {
+        const end = Date.now() + timeout;
+        return new Promise<T | null>(resolve => {
+            const check = (): void => {
+                try {
+                    const value = fn();
+                    if (value) { resolve(value); return; }
+                } catch (e) {}
+                if (Date.now() >= end) { resolve(null); return; }
+                setTimeout(check, interval);
+            };
+            check();
+        });
+    }
+
+    function findOptionByText(options: Element[], normText: string, fuzzy: boolean): Element | null {
+        let best: Element | null = null;
+        let bestScore = 0;
+        for (const opt of options) {
+            const normEl = optionText(opt);
+            if (!normEl) continue;
+            if (normEl === normText) return opt;
+            if (!fuzzy) continue;
+            const score = I.textSimilarity(normEl, normText);
+            if (score > bestScore) { bestScore = score; best = opt; }
+        }
+        return bestScore > 0.6 ? best : null;
+    }
+
+    // Material selects build the opened menu from clones of the closed display
+    // options and reshuffle their attributes, so prefer nodes that did not
+    // exist before the menu opened.
+    function findRenderedOption(root: Element, before: Set<Element>, normText: string): Element | null {
+        let best: Element | null = null;
+        for (const el of Array.from(root.querySelectorAll('*'))) {
+            if (before.has(el)) continue;
+            if (el.closest('[aria-hidden="true"]')) continue;
+            if (!hasBox(el)) continue;
+            if (optionText(el) !== normText) continue;
+            // Deepest match: a click on the label bubbles to the option row.
+            if (Array.from(el.children).some(child => optionText(child) === normText)) continue;
+            best = el;
+        }
+        return best;
+    }
+
+    function findDropdownOption(listbox: Element, text: string, before: Set<Element>): Element | null {
+        const normText = I.normalizeText(text);
+        if (!normText) return null;
+        const rendered = findRenderedOption(listbox, before, normText);
+        if (rendered) return rendered;
+        const scoped = Array.from(listbox.querySelectorAll('[role="option"]')).filter(hasBox);
+        const found = findOptionByText(scoped, normText, true);
+        if (found) return found;
+        // Some select widgets portal the open menu outside the listbox.
+        const global = Array.from(document.querySelectorAll('[role="option"]')).filter(opt => {
+            if (!hasBox(opt)) return false;
+            const owner = opt.closest('[role="listbox"]');
+            return !owner || owner === listbox || owner.getAttribute('aria-expanded') === 'true';
+        });
+        return findOptionByText(global, normText, false);
+    }
+
+    async function openDropdown(listbox: Element): Promise<boolean> {
+        const selected = listbox.querySelector('[role="option"][aria-selected="true"]');
+        const opener = (selected as HTMLElement | null)
+            || (listbox.querySelector('[role="option"]') as HTMLElement | null)
+            || (listbox as HTMLElement);
+        opener.click();
+        return !!(await waitFor(() => isDropdownExpanded(listbox) ? listbox : null, 1200));
+    }
+
+    async function selectDropdownOption(el: Element): Promise<boolean> {
+        const listbox = el.closest('[role="listbox"]');
+        if (!listbox) return false;
+        const text = ((el as HTMLElement).innerText || el.textContent || '').trim();
+        const normText = I.normalizeText(text);
+        if (!normText) return false;
+
+        const selected = listbox.querySelector('[role="option"][aria-selected="true"]');
+        if (selected && optionText(selected) === normText) return true;
+
+        let before = new Set<Element>();
+        if (!isDropdownExpanded(listbox)) {
+            before = new Set(listbox.querySelectorAll('*'));
+            if (!await openDropdown(listbox)) return false;
+        }
+
+        let option = await waitFor(() => findDropdownOption(listbox, text, before), 1200);
+        if (!option) return false;
+
+        const fire = (target: Element): void => {
+            for (const type of ['mousedown', 'mouseup', 'click']) {
+                target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+            }
+        };
+        fire(option);
+
+        const isSelected = (): boolean => Array.from(listbox.querySelectorAll('[aria-selected="true"]'))
+            .some(opt => optionText(opt) === normText && !opt.closest('[aria-hidden="true"]'));
+        if (await waitFor(() => isSelected() ? listbox : null, 800)) return true;
+
+        // Menu may have re-rendered the option; re-query and retry once.
+        if (isSelected()) return true;
+        if (!isDropdownExpanded(listbox)) {
+            before = new Set(listbox.querySelectorAll('*'));
+            if (!await openDropdown(listbox)) return false;
+        }
+        option = await waitFor(() => findDropdownOption(listbox, text, before), 600);
+        if (!option) return false;
+        fire(option);
+        return !!(await waitFor(() => isSelected() ? listbox : null, 600));
+    }
+
     function autoSelectAnswer(answerText: string, force?: boolean): void {
         if (!force && !window.xdAnswers.settings.autoAnswer) return;
 
@@ -33,12 +173,21 @@
             : allOptionElements;
         const elements = I.matchAnswerToOptions(answerText, optionElements);
 
-        setTimeout(() => {
+        setTimeout(async () => {
             // Flag to prevent oneclick handler from re-triggering on programmatic clicks
             window.xdAnswers._autoSelecting = true;
 
             if (elements.length > 0) {
                 for (const el of elements) {
+                    const dropdownOption = closestDropdownOption(el);
+                    if (dropdownOption) {
+                        try {
+                            await selectDropdownOption(dropdownOption);
+                        } catch (e) {
+                            console.warn('xdAnswers dropdown select failed:', e);
+                        }
+                        continue;
+                    }
                     // Try multiple click target strategies
                     const clickTarget = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, .opt, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
 
