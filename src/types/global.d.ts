@@ -234,6 +234,8 @@ interface XdStreamRequestOptions {
     method?: string;
     headers?: Record<string, string>;
     data?: unknown;
+    /** Milliseconds without a chunk before the stream is retried or failed. */
+    timeout?: number;
     [key: string]: unknown;
 }
 

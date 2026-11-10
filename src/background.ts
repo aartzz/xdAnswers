@@ -200,6 +200,10 @@ chrome.runtime.onConnect.addListener((port) => {
     });
 
     port.onMessage.addListener(async (msg: any) => {
+        if (msg.type === 'ping') {
+            try { port.postMessage({ type: 'pong' }); } catch { /* tab closed */ }
+            return;
+        }
         if (msg.type !== 'fetch_stream') return;
         const { url, method, headers, data } = msg.payload;
 

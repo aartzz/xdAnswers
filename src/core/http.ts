@@ -77,73 +77,142 @@
         onDone: (result?: unknown) => void,
         onError: (error: unknown, details?: unknown) => void
     ): () => void {
-        let port: chrome.runtime.Port | undefined;
+        const idleTimeoutMs = Number(options.timeout) > 0 ? Number(options.timeout) : 45000;
+        const maxRetries = 1;
         let finished = false;
-        const retryCount = options._retryCount || 0;
-        const maxRetries = 3;
+        let receivedChunk = false;
+        let retryCount = 0;
+        let closeActive: (() => void) | null = null;
+        let idleTimer: ReturnType<typeof setTimeout> | null = null;
+        let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
-        function connect() {
+        function clearTimers(): void {
+            if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+            if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+            if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+        }
+
+        function closePort(): void {
+            const close = closeActive;
+            closeActive = null;
+            if (close) close();
+        }
+
+        function transient(error: unknown, details?: unknown): boolean {
+            const text = (String(error || '') + ' ' + String(details || '')).trim().toLowerCase();
+            if (!text) return true;
+            if (/api error:/.test(text)) {
+                return /api error:\s*(?:408|429|500|502|503|504)/.test(text);
+            }
+            if (/cancelled|canceled/.test(text)) return false;
+            return /timeout|timed out|connection lost|disconnected|network|fetch error|stalled|receiving end|background stream/.test(text);
+        }
+
+        function fail(error: unknown, details?: unknown): void {
+            if (finished) return;
+            finished = true;
+            clearTimers();
+            closePort();
+            onError(error, details);
+        }
+
+        function complete(): void {
+            if (finished) return;
+            finished = true;
+            clearTimers();
+            closePort();
+            onDone();
+        }
+
+        function retry(error: unknown, details?: unknown): void {
+            if (finished) return;
+            if (receivedChunk || retryCount >= maxRetries || !transient(error, details)) {
+                fail(error, details);
+                return;
+            }
+            retryCount++;
+            clearTimers();
+            closePort();
+            retryTimer = setTimeout(() => {
+                retryTimer = null;
+                connect();
+            }, 400 * retryCount);
+        }
+
+        function armIdle(): void {
+            if (idleTimer) clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                idleTimer = null;
+                if (finished) return;
+                retry('Timeout', 'No stream data for ' + idleTimeoutMs + 'ms');
+            }, idleTimeoutMs);
+        }
+
+        function connect(): void {
+            if (finished) return;
+            let port: chrome.runtime.Port;
             try {
                 port = chrome.runtime.connect({ name: 'xdAnswers-stream' });
-            } catch (e) {
-                if (retryCount < maxRetries) {
-                    setTimeout(() => {
-                        window.xdAnswers.streamRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }), onChunk, onDone, onError);
-                    }, 300 * (retryCount + 1));
-                    return null;
-                }
-                onError('Extension disconnected', 'Extension context invalidated. Please refresh the page.');
-                return null;
+            } catch {
+                retry('Extension disconnected', 'Extension context invalidated. Please refresh the page.');
+                return;
             }
 
+            let closed = false;
+            closeActive = () => {
+                if (closed) return;
+                closed = true;
+                try { port.disconnect(); } catch { /* already disconnected */ }
+            };
+
             port.onMessage.addListener((msg) => {
-                if (finished) return;
-                if (msg.type === 'chunk') onChunk(msg.data);
-                else if (msg.type === 'done') {
-                    finished = true;
-                    onDone();
-                    try { port?.disconnect(); } catch(e) {}
-                }
-                else if (msg.type === 'error') {
-                    finished = true;
-                    onError(msg.error, msg.details);
-                    try { port?.disconnect(); } catch(e) {}
+                if (finished || closed) return;
+                if (msg.type === 'chunk') {
+                    receivedChunk = true;
+                    armIdle();
+                    onChunk(msg.data);
+                } else if (msg.type === 'done') {
+                    complete();
+                } else if (msg.type === 'error') {
+                    retry(msg.error, msg.details);
                 }
             });
 
             port.onDisconnect.addListener(() => {
-                if (!finished) {
-                    finished = true;
-                    const lastErr = chrome.runtime.lastError?.message || '';
-                    if (lastErr.includes('Receiving end does not exist') || lastErr.includes('Could not establish connection')) {
-                        if (retryCount < maxRetries) {
-                            setTimeout(() => {
-                                window.xdAnswers.streamRequest(Object.assign({}, options, { _retryCount: retryCount + 1 }), onChunk, onDone, onError);
-                            }, 300 * (retryCount + 1));
-                            return;
-                        }
-                        onError('Extension disconnected', 'Extension context was invalidated or reloaded. Please refresh the page.');
-                    } else {
-                        onError('Connection lost', lastErr || 'Background stream disconnected unexpectedly');
-                    }
-                }
+                if (finished || closed) return;
+                closed = true;
+                const lastErr = chrome.runtime.lastError?.message || '';
+                retry('Connection lost', lastErr || 'Background stream disconnected unexpectedly');
             });
 
-            port.postMessage({ type: 'fetch_stream', payload: options });
-            return port;
+            // Long model pauses can outlive the extension background worker's
+            // idle timer. A port message every 20s keeps the worker alive.
+            keepAliveTimer = setInterval(() => {
+                if (finished || closed) return;
+                try { port.postMessage({ type: 'ping' }); } catch { /* disconnected */ }
+            }, 20000);
+            armIdle();
+
+            try {
+                port.postMessage({ type: 'fetch_stream', payload: options });
+            } catch {
+                retry('Connection lost', 'Could not send the stream request');
+            }
         }
 
         connect();
 
         return (abort?: boolean) => {
-            if (!finished) {
+            if (finished) return;
+            if (abort) {
+                const err = new Error('Request cancelled');
+                err.name = 'AbortError';
+                fail(err);
+            } else {
                 finished = true;
-                try { if (port) port.disconnect(); } catch(e) {}
-                if (abort) {
-                    const err = new Error('Request cancelled');
-                    err.name = 'AbortError';
-                    onError(err);
-                }
+                clearTimers();
+                closePort();
             }
         };
     };
