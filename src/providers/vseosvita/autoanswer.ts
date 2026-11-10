@@ -384,6 +384,42 @@ export interface VseosvitaApplyApi {
         }
     }
 
+    // ── date / time inputs ─────────────────────────────────────────
+    function applyDateTime(meta: VseosvitaMeta, answerText: string): void {
+        const text = normalize(answerText);
+        const iso = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+        const dmy = text.match(/(\d{1,2})[./-](\d{1,2})[./-](\d{4})/);
+        const time = text.match(/\b(\d{1,2}):(\d{2})\b/);
+
+        let isoDate = '';
+        let displayDate = '';
+        if (iso) {
+            isoDate = `${iso[1]}-${iso[2]}-${iso[3]}`;
+            displayDate = `${iso[3]}.${iso[2]}.${iso[1]}`;
+        } else if (dmy) {
+            const day = String(Number(dmy[1])).padStart(2, '0');
+            const month = String(Number(dmy[2])).padStart(2, '0');
+            isoDate = `${dmy[3]}-${month}-${day}`;
+            displayDate = `${day}.${month}.${dmy[3]}`;
+        }
+        const displayTime = time ? `${String(Number(time[1])).padStart(2, '0')}:${time[2]}` : '';
+
+        const dateInput = meta.dateElement as HTMLInputElement | null;
+        if (dateInput && (isoDate || displayDate)) {
+            if (dateInput.type === 'date' || dateInput.type === 'datetime-local') {
+                setNativeValue(dateInput, displayTime && dateInput.type === 'datetime-local' ? `${isoDate}T${displayTime}` : isoDate);
+            } else {
+                setNativeValue(dateInput, displayDate);
+            }
+        }
+
+        (meta.timeElements as Element[] || []).forEach(el => {
+            if (!displayTime) return;
+            if ((el as HTMLInputElement).type === 'time') setNativeValue(el as HTMLInputElement, displayTime);
+            else setNativeValue(el as HTMLInputElement, displayTime);
+        });
+    }
+
     // ── matching: cross-pair columns ────────────────────────────────
     function crossItems(meta: VseosvitaMeta): { left: any[]; right: any[] } {
         const wrapper = meta.vrQuest?.querySelector('.v-block-answers-cross-wrapper')
@@ -617,6 +653,7 @@ export interface VseosvitaApplyApi {
                             else await applyCrossPairs(meta, answerText);
                             break;
                         case 'range':            applyRange(meta, answerText); break;
+                        case 'date_time':        applyDateTime(meta, answerText); break;
                         case 'image_area':
                         case 'image_puzzle':
                         case 'fill_word':        applyFillWordNoop(); break;
@@ -644,6 +681,7 @@ export interface VseosvitaApplyApi {
         'match_pairs',
         'free_response',
         'range',
+        'date_time',
         'image_area',
         'image_puzzle',
         'fill_word'

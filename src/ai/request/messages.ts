@@ -45,6 +45,8 @@
                 + 'Використовуй точні тексти елементів зі списку нижче.\n\n';
         } else if (questionData.questionType === 'range') {
             userMsg += 'Це завдання з вибором числа на шкалі. У полі answer вкажи ОДНЕ число без одиниць вимірювання та без пояснень.\n\n';
+        } else if (questionData.questionType === 'date_time') {
+            userMsg += 'Це завдання з датою та/або часом. У полі answer вкажи дату у форматі DD.MM.YYYY та час у форматі HH:MM, якщо час потрібен.\n\n';
         } else if (questionData.questionType === 'fill_word') {
             userMsg += 'Це завдання-філворд або кросворд. У полі answer вкажи потрібні слова через крапку з комою.\n\n';
         } else if (questionData.questionType === 'fill_blank') {
