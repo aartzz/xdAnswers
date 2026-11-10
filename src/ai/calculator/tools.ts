@@ -73,6 +73,7 @@
     }
 
     function buildTools(s: XdEffectiveSettings, apiFormat: string, questionData?: XdQuestionData): unknown[] {
+        if (questionData?.disableTools) return [];
         const tools: unknown[] = [];
         const I = window.xdAnswers._internal;
         const webSearch = s.webSearchEnabled && !!(I.getActiveSearchProvider && I.getActiveSearchProvider(s as unknown as XdSettings));

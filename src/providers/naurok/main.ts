@@ -15,14 +15,68 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
     const naurokModules = modules.naurok || (modules.naurok = {});
     const dom = naurokModules.dom as NaurokDomApi;
 
-    initMessageListener(dom);
+    let naurokSettingsReady = false;
+    let pendingBetaBatch = false;
+    let betaBatchTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function scheduleBetaBatch(delay = 900): void {
+        if (naurokSettingsReady && window.xdAnswers.settings.batchEnabled) {
+            window.xdAnswers._internal.markBatchPending?.();
+        }
+        if (betaBatchTimer) clearTimeout(betaBatchTimer);
+        betaBatchTimer = setTimeout(async () => {
+            betaBatchTimer = null;
+            if (!naurokSettingsReady || !dom.isBetaTest()) return;
+            if (!window.xdAnswers.settings.batchEnabled) return;
+            if (window.xdAnswers.settings.answerCacheEnabled === false) return;
+            if (!window.xdAnswers.prefetchQuestions) return;
+
+            try {
+                const includeImages = window.xdAnswers.settings.batchIncludeImages === true;
+                let topic = getNaurokTopic();
+                if (!topic) {
+                    try { topic = await fetchNaurokTopic(dom); } catch { /* topic is optional */ }
+                }
+                const questions = await dom.getBetaBatchQuestions(topic || undefined, { includeImages });
+                pendingBetaBatch = false;
+                if (questions.length) {
+                    await window.xdAnswers.prefetchQuestions(questions, { source: 'naurok-beta' });
+                }
+            } catch (error) {
+                console.warn('[xdAnswers/naurok] batch failed:', error);
+            }
+        }, delay);
+    }
+
+    initMessageListener(dom, () => {
+        pendingBetaBatch = true;
+        scheduleBetaBatch(700);
+    });
+
+    try {
+        chrome.runtime.onMessage.addListener((message) => {
+            if (message && message.type === 'settingsUpdated') {
+                window.xdAnswers.cancelBatchPrefetch();
+                window.xdAnswers.loadSettings()
+                    .then(() => {
+                        naurokSettingsReady = true;
+                        pendingBetaBatch = true;
+                        scheduleBetaBatch(400);
+                    })
+                    .catch(() => {});
+            }
+            return true;
+        });
+    } catch (e) { /* runtime unavailable */ }
 
     const waitForUtils = setInterval(async () => {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
             clearInterval(waitForUtils);
             await window.xdAnswers.loadSettings();
+            naurokSettingsReady = true;
             // Kick off topic discovery — parse ng-init for session ID, then API fetch
             fetchNaurokTopic(dom);
+            if (pendingBetaBatch) scheduleBetaBatch(0);
             initNaurok();
         }
     }, 50);
@@ -173,6 +227,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                             base64Images: images.filter((img): img is string => img !== null),
                             questionType: current.questionType,
                             isMultiQuiz: current.isMultiQuiz,
+                            batchKey: (current as { batchKey?: string }).batchKey,
                             topic: topic || undefined
                         };
                     };
@@ -210,6 +265,7 @@ import { applyNaurokTextAnswer, clickNaurokNextButton } from './autoanswer';
                         base64Images: [],
                         questionType: state.questionType,
                         isMultiQuiz: state.isMultiQuiz,
+                        batchKey: (state as { batchKey?: string }).batchKey,
                         topic: getNaurokTopic() || undefined
                     };
 

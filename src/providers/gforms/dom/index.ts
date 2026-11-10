@@ -3,13 +3,15 @@
 import { isHiddenOrDisabled, collectGrid } from './grid';
 import type { GformsGridPayload } from './grid';
 import { buildQuestionData } from './question';
+import type { GformsBuildOptions } from './question';
 
 export type { GformsGridPayload } from './grid';
+export type { GformsBuildOptions } from './question';
 
 export interface GformsDomApi {
     isHiddenOrDisabled(el: Element): boolean;
     collectGrid(container: Element): GformsGridPayload | null;
-    buildQuestionData(container: Element): Promise<XdQuestionData>;
+    buildQuestionData(container: Element, options?: GformsBuildOptions): Promise<XdQuestionData>;
 }
 
 (function() {

@@ -2,18 +2,33 @@
 // Google Forms question payload: title text, grid or option data, images.
 import { collectGrid } from './grid';
 
-export function buildQuestionData(container: Element): Promise<XdQuestionData> {
+export interface GformsBuildOptions {
+    /** Batch mode may skip expensive image downloads and solve them later. */
+    skipImages?: boolean;
+}
+
+function formCacheScope(): string | undefined {
+    const match = location.pathname.match(/\/forms\/(?:u\/\d+\/)?d\/(?:e\/)?([^/]+)/i);
+    if (match) return 'gforms:' + match[1];
+    const title = (document.title || '').replace(/\s*-\s*Google Forms\s*$/i, '').trim();
+    return title ? 'gforms-title:' + title : undefined;
+}
+
+export function buildQuestionData(container: Element, options?: GformsBuildOptions): Promise<XdQuestionData> {
     const titleEl = container.querySelector('.M7eMe, .GEHe6, [role="heading"]');
     const questionText = ((titleEl ? (titleEl as HTMLElement).innerText : (container as HTMLElement).innerText) || '').trim();
     const grid = collectGrid(container);
+    const hasImages = !!container.querySelector('img');
     const imgPromises: Array<Promise<string | null>> = [];
-    container.querySelectorAll('img').forEach(img => {
-        const src = img.src || img.getAttribute('data-src');
-        if (src && !src.startsWith('data:image/gif')) {
-            const absoluteSrc = new URL(src, window.location.href).href;
-            imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
-        }
-    });
+    if (!options?.skipImages) {
+        container.querySelectorAll('img').forEach(img => {
+            const src = img.src || img.getAttribute('data-src');
+            if (src && !src.startsWith('data:image/gif')) {
+                const absoluteSrc = new URL(src, window.location.href).href;
+                imgPromises.push(window.xdAnswers.imageToBase64(absoluteSrc));
+            }
+        });
+    }
     return Promise.all(imgPromises).then(images => {
         if (grid) {
             return {
@@ -21,7 +36,9 @@ export function buildQuestionData(container: Element): Promise<XdQuestionData> {
                 optionsText: grid.optionsText,
                 base64Images: images.filter((i): i is string => i !== null),
                 questionType: 'grid',
-                isMulti: grid.isMulti
+                isMulti: grid.isMulti,
+                cacheScope: formCacheScope(),
+                hasImages
             };
         }
         const optionEls = container.querySelectorAll('[data-xd-option="true"]');
@@ -32,7 +49,9 @@ export function buildQuestionData(container: Element): Promise<XdQuestionData> {
             optionsText: options.join('\n') || undefined,
             base64Images: images.filter((i): i is string => i !== null),
             questionType: options.length > 0 ? 'quiz' : 'general',
-            isMulti: hasCheckboxes
+            isMulti: hasCheckboxes,
+            cacheScope: formCacheScope(),
+            hasImages
         };
     });
 }

@@ -5,7 +5,7 @@
 import { getSceneBlocked, parseSessionIdFromDOM } from './session';
 import { getQuestionState } from './question';
 import type { NaurokQuestionState } from './question';
-import { betaQuestionContainer, getBetaQuestionState, isBetaTest, setBetaSession } from './beta/main';
+import { betaQuestionContainer, getBetaBatchQuestions, getBetaQuestionState, isBetaTest, setBetaSession } from './beta/main';
 import type { NaurokBetaQuestionState } from './beta/main';
 import { applyBetaAnswer } from './beta/apply';
 
@@ -20,6 +20,7 @@ export interface NaurokDomApi {
     getBetaQuestionState(): NaurokBetaQuestionState | null;
     betaQuestionContainer(): HTMLElement | null;
     setBetaSession(payload: unknown): void;
+    getBetaBatchQuestions(topic?: string, options?: { includeImages?: boolean }): Promise<XdQuestionData[]>;
     applyBetaAnswer(answerText: string): void;
 }
 
@@ -41,6 +42,7 @@ export interface NaurokDomApi {
         getBetaQuestionState,
         betaQuestionContainer,
         setBetaSession,
+        getBetaBatchQuestions,
         applyBetaAnswer
     } as NaurokDomApi;
 })();

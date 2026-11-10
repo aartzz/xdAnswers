@@ -15,6 +15,7 @@ export interface NaurokBetaQuestionState {
     isMultiQuiz: boolean;
     questionType: string;
     questionKey: string;
+    batchKey: string;
 }
 
 interface BetaSessionOption {
@@ -419,8 +420,90 @@ export function getBetaQuestionState(): NaurokBetaQuestionState | null {
         validImages: images,
         isMultiQuiz,
         questionType: aiQuestionType(type),
-        questionKey: key
+        questionKey: key,
+        batchKey: `n${num}${qId}`
     };
+}
+
+function batchType(kind: string): string | null {
+    switch (kind) {
+        case 'quiz':
+            return 'quiz';
+        case 'multiquiz':
+            return 'multiquiz';
+        case 'short':
+        case 'numeric':
+            return 'short_text';
+        default:
+            // Games, grids, ordering, matching and fill-ins stay on-demand:
+            // their session payload does not expose enough structure to build
+            // a reliable batch prompt.
+            return null;
+    }
+}
+
+export async function getBetaBatchQuestions(
+    topic?: string,
+    options?: { includeImages?: boolean }
+): Promise<XdQuestionData[]> {
+    const source = betaSession && betaSession.questions;
+    if (!Array.isArray(source) || !source.length) return [];
+
+    const includeImages = options?.includeImages === true;
+    const questions: XdQuestionData[] = [];
+
+    for (let index = 0; index < source.length; index++) {
+        const question = source[index];
+        const kind = (question.mode && question.mode.kind) || question.type || 'quiz';
+        const questionType = batchType(kind);
+        if (!questionType) continue;
+
+        const contentHtml = question.content || '';
+        const contentImageUrls: string[] = [];
+        const imageRe = /<img\b[^>]*\bsrc=["']([^"']+)["']/gi;
+        let imageMatch: RegExpExecArray | null;
+        while ((imageMatch = imageRe.exec(contentHtml))) contentImageUrls.push(imageMatch[1]);
+
+        const text = stripHtml(contentHtml) || (question.image ? '[запитання-зображення]' : '');
+        const optionsText = (question.options || [])
+            .map((option, index) => {
+                const label = BETA_OPTION_LABELS[index] || String(index + 1);
+                const value = stripHtml(option.value) || (option.image ? '[зображення]' : '');
+                return value ? `${label}: ${value}` : '';
+            })
+            .filter(Boolean)
+            .join('\n');
+
+        if (!text && !optionsText) continue;
+        if ((questionType === 'quiz' || questionType === 'multiquiz') && !optionsText) continue;
+
+        const hasImages = !!(question.image || contentImageUrls.length || (question.options || []).some(option => !!option.image));
+        let base64Images: string[] = [];
+        if (includeImages && hasImages && window.xdAnswers.imageToBase64) {
+            const urls = uniqueImages(
+                question.image ? [question.image] : [],
+                contentImageUrls,
+                ...(question.options || []).map(option => option.image ? [option.image] : [])
+            );
+            const loaded = await Promise.all(urls.map(url =>
+                window.xdAnswers.imageToBase64(url).catch(() => null)
+            ));
+            base64Images = loaded.filter((image): image is string => !!image);
+        }
+
+        questions.push({
+            text,
+            optionsText: optionsText || undefined,
+            base64Images,
+            topic,
+            questionType,
+            isMulti: questionType === 'multiquiz',
+            batchKey: `n${index + 1}${question.id ? `|q${question.id}` : ''}`,
+            hasImages
+        });
+    }
+
+    return questions;
 }
 
 export function betaQuestionContainer(): HTMLElement | null {

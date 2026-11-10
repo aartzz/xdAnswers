@@ -5,7 +5,7 @@ import type { NaurokDomApi } from './dom';
 export interface NaurokTopicManager {
     getTopic(): string | null;
     fetchTopic(dom: NaurokDomApi): Promise<string | null>;
-    initMessageListener(dom: NaurokDomApi): void;
+    initMessageListener(dom: NaurokDomApi, onBetaSession?: (payload: unknown) => void): void;
 }
 
 let _naurokTopic: string | null = null;
@@ -32,7 +32,7 @@ export function extractTopicFromSessionPayload(payload: unknown, dom?: NaurokDom
     }
 }
 
-export function initMessageListener(dom: NaurokDomApi): void {
+export function initMessageListener(dom: NaurokDomApi, onBetaSession?: (payload: unknown) => void): void {
     window.addEventListener('message', function (event) {
         if (event.source !== window) return;
         const data = event.data as { source?: string; provider?: string; type?: string; payload?: unknown } | null;
@@ -40,6 +40,7 @@ export function initMessageListener(dom: NaurokDomApi): void {
         if (data.type === 'beta-session') {
             dom.setBetaSession(data.payload);
             extractTopicFromSessionPayload(data.payload, dom);
+            if (onBetaSession) onBetaSession(data.payload);
             return;
         }
         if (data.type !== 'session-payload') return;

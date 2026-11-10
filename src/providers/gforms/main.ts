@@ -24,16 +24,114 @@ import type { GformsDomApi } from './dom';
 
         window.xdAnswers.onRefresh = () => console.log("Refreshed");
         chrome.runtime.onMessage.addListener((message) => {
-            if (message.type === "gform_url_changed") setTimeout(scanAndInjectButtons, 1500);
+            if (message.type === "gform_url_changed") {
+                batchSignature = '';
+                window.xdAnswers.cancelBatchPrefetch();
+                setTimeout(() => {
+                    scanAndInjectButtons();
+                    scheduleBatch(600);
+                }, 1500);
+            }
+            if (message.type === "settingsUpdated") {
+                batchSignature = '';
+                window.xdAnswers.cancelBatchPrefetch();
+                window.xdAnswers.loadSettings()
+                    .then(() => scheduleBatch(400))
+                    .catch(() => scheduleBatch(400));
+            }
             return true; // keep channel open for async responses
         });
 
-        function scanAndInjectButtons() {
-            let questionContainers: Element[] = Array.from(document.querySelectorAll('.geS5n'));
-            if (questionContainers.length === 0) {
-                questionContainers = Array.from(document.querySelectorAll('div[role="listitem"]'))
+        let batchSignature = '';
+        let batchTimer: ReturnType<typeof setTimeout> | null = null;
+        let batchRunning = false;
+        let batchPending = false;
+
+        function getQuestionContainers(): Element[] {
+            let containers: Element[] = Array.from(document.querySelectorAll('.geS5n'));
+            if (containers.length === 0) {
+                containers = Array.from(document.querySelectorAll('div[role="listitem"]'))
                     .filter(el => el.querySelector('[role="radio"], [role="checkbox"], [role="heading"]'));
             }
+            return containers;
+        }
+
+        async function collectBatchQuestions(): Promise<XdQuestionData[]> {
+            const includeImages = window.xdAnswers.settings.batchIncludeImages === true;
+            const containers = getQuestionContainers();
+            const questions = await Promise.all(containers.map(container =>
+                domApi.buildQuestionData(container, { skipImages: !includeImages })
+            ));
+            return questions.filter(question =>
+                question && (question.text || question.optionsText || (question.base64Images && question.base64Images.length))
+            );
+        }
+
+        function scheduleBatch(delay = 1200): void {
+            if (window.xdAnswers.settings.batchEnabled && !batchSignature) {
+                window.xdAnswers._internal.markBatchPending?.();
+            }
+            if (batchTimer) clearTimeout(batchTimer);
+            if (batchRunning) {
+                batchPending = true;
+                return;
+            }
+            batchTimer = setTimeout(runBatch, delay);
+        }
+
+        async function runBatch(): Promise<void> {
+            batchTimer = null;
+            if (batchRunning) {
+                batchPending = true;
+                return;
+            }
+            if (!window.xdAnswers.settings.batchEnabled) return;
+            if (window.xdAnswers.settings.answerCacheEnabled === false) return;
+            if (!window.xdAnswers.prefetchQuestions) return;
+
+            const containers = getQuestionContainers();
+            if (!containers.length) return;
+            const needsOptionScan = containers.some(container =>
+                !!container.querySelector('[role="radio"], [role="checkbox"], [role="option"]')
+                && !container.querySelector('[data-xd-option="true"]')
+            );
+            if (needsOptionScan) {
+                scheduleBatch(600);
+                return;
+            }
+            const signature = containers
+                .map(container => ((container as HTMLElement).innerText || '').trim())
+                .join('\u0000');
+            if (!signature || signature === batchSignature) return;
+
+            batchSignature = signature;
+            batchRunning = true;
+            try {
+                const questions = await collectBatchQuestions();
+                const currentSignature = getQuestionContainers()
+                    .map(container => ((container as HTMLElement).innerText || '').trim())
+                    .join('\u0000');
+                if (signature !== currentSignature) {
+                    batchSignature = '';
+                    scheduleBatch(600);
+                    return;
+                }
+                window.xdAnswers._internal.markBatchPending?.();
+                await window.xdAnswers.prefetchQuestions(questions, { source: 'gforms' });
+            } catch (error) {
+                console.warn('[xdAnswers] GForms batch failed:', error);
+                batchSignature = '';
+            } finally {
+                batchRunning = false;
+                if (batchPending) {
+                    batchPending = false;
+                    scheduleBatch(400);
+                }
+            }
+        }
+
+        function scanAndInjectButtons() {
+            const questionContainers = getQuestionContainers();
             const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
 
             questionContainers.forEach((container) => {
@@ -73,6 +171,8 @@ import type { GformsDomApi } from './dom';
                     container.appendChild(button);
                 }
             });
+
+            if (questionContainers.length && window.xdAnswers.settings.batchEnabled) scheduleBatch();
         }
 
         const observer = new MutationObserver(() => {

@@ -17,7 +17,7 @@
         }
 
         // When web search is enabled, append tool usage instructions to system prompt
-        if (settings.webSearchEnabled && getActiveSearchProvider(settings)) {
+        if (!questionData.disableTools && settings.webSearchEnabled && getActiveSearchProvider(settings)) {
             systemPrompt += '\n\nУ тебе є доступ до інструмента web_search для пошуку в інтернеті. Використовуй його, коли потрібно знайти актуальну інформацію, факти, дати або деталі, яких може не бути у твоїх навчальних даних. Це особливо корисно для питань про поточні події, історичні дати, наукові факти тощо. Не викликай пошук, якщо впевнений у відповіді.';
         }
 

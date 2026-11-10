@@ -75,6 +75,21 @@ interface XdStreamAnswerResult {
     calcCalls?: XdCalcCallInfo[];
 }
 
+interface XdBatchOptions {
+    source?: string;
+    /** Run even when batch mode is disabled. */
+    force?: boolean;
+}
+
+interface XdBatchState {
+    running: boolean;
+    source: string;
+    total: number;
+    done: number;
+    failed: number;
+    startedAt: number;
+}
+
 interface XdCustomization {
     glowEffect: boolean;
     borderColor: string;
@@ -93,6 +108,12 @@ interface XdSettings {
     autoAnswerCooldown: number;
     answerCacheEnabled: boolean;
     answerCacheTtlDays: number;
+    batchEnabled: boolean;
+    batchChunkSize: number;
+    batchMaxQuestions: number;
+    batchDelayMs: number;
+    batchConcurrency: number;
+    batchIncludeImages: boolean;
     highlightCorrect: boolean;
     showAnswerOnly: boolean;
     /** '' | 'indicators' | 'ghost' | 'stealth' | 'oneclick' */
@@ -135,6 +156,14 @@ interface XdQuestionData {
     isMultiple?: boolean;
     batchQuestions?: unknown;
     customPromptPrefix?: string;
+    /** Stable test/form identity used to scope cached answers. */
+    cacheScope?: string;
+    /** Stable per-test question identity (Naurok beta question number/id). */
+    batchKey?: string;
+    /** Provider detected an image in the question or its options. */
+    hasImages?: boolean;
+    /** Batch requests disable web search and calculator tools. */
+    disableTools?: boolean;
     [key: string]: unknown;
 }
 
@@ -356,6 +385,7 @@ interface XdAnswersInternal {
     extractFieldValue(text: string, fieldName: string): string;
     salvagePartialJSON(text: string): XdParsedResponse | null;
     parseAIResponse(text: string): XdParsedResponse;
+    stripToolMarkup(text: string): string;
     renderParsedResponse(parsed: XdParsedResponse): string;
 
     // AI answer pipeline (src/ai/process/, src/ai/answer/)
@@ -363,6 +393,13 @@ interface XdAnswersInternal {
     startWaitingStatus(startTime: number): void;
     buildConsensusTabs(answerContentDiv: HTMLElement, runs: XdConsensusRun[], setActiveTab: (tabIndex: number, shouldUpdateFooter: boolean) => void): void;
     runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<XdParsedResponse | null>;
+    prefetchQuestions(questions: XdQuestionData[], options?: XdBatchOptions): Promise<void>;
+    cancelBatchPrefetch(): void;
+    lookupBatchAnswer(questionData: XdQuestionData): string | null;
+    isBatchPlanned(questionData: XdQuestionData): boolean;
+    isBatchActive(): boolean;
+    markBatchPending(): void;
+    waitForBatchAnswer(questionData: XdQuestionData, timeoutMs: number, allowUnplanned?: boolean): Promise<string | null>;
     renderSingleResult(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void;
     executeAnswerTool(name: string, args: Record<string, any>): Promise<string>;
     answerGoogleFunctionCalls(s: XdEffectiveSettings, body: Record<string, unknown>, parts: any[]): Promise<string>;
@@ -371,6 +408,7 @@ interface XdAnswersInternal {
     findOptionElements(): Element[];
     isHiddenOrDisabled(el: Element | null): boolean;
     normalizeText(t: unknown): string;
+    normalizeConfusables(t: unknown): string;
     levenshtein(a: string, b: string): number;
     textSimilarity(a: string, b: string): number;
     matchAnswerToOptions(answerText: string, optionElements: Element[]): Element[];
@@ -469,6 +507,9 @@ interface XdAnswers {
     cancelProcessing(): void;
     /** Cancel the current run and re-ask the AI, bypassing the answer cache. */
     forceRefresh(): void;
+    /** Pre-solve a whole test in the background and write answers to the cache. */
+    prefetchQuestions(questions: XdQuestionData[], options?: XdBatchOptions): Promise<void>;
+    cancelBatchPrefetch(): void;
 
     createUI(): void;
     attachHelperEventListeners(): void;
