@@ -275,6 +275,22 @@
                             <span class="toggle-label">Show answer only</span>
                             <p class="field-hint">Ask AI to return only the answer — no explanation, no reasoning. Saves tokens.</p>
                         </div>
+                        <div class="form-group toggle-group" data-search-terms="кеш cache відповіді answers пам'ять">
+                            <label class="switch">
+                                <input type="checkbox" id="cache-toggle">
+                                <span></span>
+                            </label>
+                            <span class="toggle-label" id="cache-label">Answer cache</span>
+                            <p class="field-hint" id="cache-hint">Reuse answers for questions the AI already solved. Speeds up repeat tests and saves tokens.</p>
+                        </div>
+                        <div class="form-group" id="cache-ttl-group" data-search-terms="кеш cache ttl днів days термін">
+                            <label for="cache-ttl-days" id="cache-ttl-label">Cache TTL (days):</label>
+                            <input type="number" id="cache-ttl-days" min="1" max="365" step="1" placeholder="30">
+                        </div>
+                        <div class="form-group cache-actions" data-search-terms="очистити кеш clear flush cache видалити">
+                            <div class="field-hint" id="cache-status">Cache: 0 answers</div>
+                            <button type="button" id="cache-clear-btn" class="cache-clear-btn">Clear cache</button>
+                        </div>
                         <div class="form-group toggle-group" data-search-terms="disabler відключити перевірки списування">
                             <label class="switch">
                                 <input type="checkbox" id="disabler-toggle">

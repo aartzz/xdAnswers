@@ -1,10 +1,11 @@
 // src/popup/core/ui.ts
 // @ts-nocheck — popup UI module. Beer CSS select widgets and the main populateUI() pass.
-import { applyLanguage } from './i18n';
+import { applyLanguage, t } from './i18n';
 import { applyThemeToPopup, populateThemesGrid } from '../themes';
 import { renderActiveProviderSelector, renderProvidersTab } from '../providers';
 import { renderConsensusRuns } from '../consensus';
 import { renderModelList } from '../models';
+import { getAnswerCacheStats } from '../../core/answer-cache';
 import { settings, uiElements } from './state';
 
 
@@ -159,6 +160,19 @@ export function syncM3SelectTrigger(wrap, native) {
     });
 }
 
+export async function refreshAnswerCacheStatus() {
+    const el = uiElements;
+    if (!el.cacheStatus) return;
+    try {
+        const stats = await getAnswerCacheStats(settings.answerCacheTtlDays);
+        el.cacheStatus.textContent = stats.count > 0
+            ? `${t('cacheStats')}: ${stats.count}`
+            : t('cacheEmpty');
+    } catch {
+        el.cacheStatus.textContent = t('cacheEmpty');
+    }
+}
+
 export function populateUI() {
     const el = uiElements;
     renderActiveProviderSelector();
@@ -168,6 +182,9 @@ export function populateUI() {
     el.autoAnswerToggle.checked = settings.autoAnswer;
     el.autoAnswerCooldown.value = settings.autoAnswerCooldown;
     el.cooldownGroup.style.display = settings.autoAnswer ? 'block' : 'none';
+    if (el.cacheToggle) el.cacheToggle.checked = settings.answerCacheEnabled !== false;
+    if (el.cacheTtlDays) el.cacheTtlDays.value = settings.answerCacheTtlDays || 30;
+    if (el.cacheTtlGroup) el.cacheTtlGroup.style.display = settings.answerCacheEnabled !== false ? 'block' : 'none';
     el.highlightCorrectToggle.checked = settings.highlightCorrect;
     el.showAnswerOnlyToggle.checked = !!settings.showAnswerOnly;
     const silentModeValue = settings.silentMode || '';
@@ -214,4 +231,5 @@ export function populateUI() {
     renderProvidersTab();
     applyThemeToPopup();
     initM3Selects();
+    void refreshAnswerCacheStatus();
 }

@@ -71,6 +71,14 @@ export function applyLanguage() {
     document.querySelector('#highlight-correct-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('highlightCorrectHint');
     document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('showAnswerOnly');
     document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('showAnswerOnlyHint');
+    const cacheLabel = document.querySelector('#cache-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (cacheLabel) cacheLabel.textContent = t('cacheLabel');
+    const cacheHint = document.getElementById('cache-hint');
+    if (cacheHint) cacheHint.textContent = t('cacheHint');
+    const cacheTtlLabel = document.getElementById('cache-ttl-label');
+    if (cacheTtlLabel) cacheTtlLabel.textContent = t('cacheTtlLabel');
+    const cacheClearBtn = document.getElementById('cache-clear-btn');
+    if (cacheClearBtn) cacheClearBtn.textContent = t('cacheClear');
     document.querySelector('#silent-mode-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('silentMode');
     const silentModeLabel = document.querySelector('label[for="silent-mode-select"]');
     if (silentModeLabel) silentModeLabel.textContent = t('silentModeLabel');

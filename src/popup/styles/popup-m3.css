@@ -1372,6 +1372,19 @@ body.theme-material3 .add-consensus-run-btn:hover {
     border-color: var(--m3-primary) !important;
 }
 
+body.theme-material3 .cache-clear-btn {
+    background: var(--m3-error-container) !important;
+    border: 1px solid var(--m3-error) !important;
+    border-radius: var(--m3-r-l) !important;
+    color: var(--m3-on-error-container) !important;
+    font-weight: 500 !important;
+}
+
+body.theme-material3 .cache-clear-btn:hover {
+    background: var(--m3-error) !important;
+    color: var(--m3-on-error) !important;
+}
+
 /* ══════════════════════════════════════════════════════════
    CONSENSUS RUN CARDS
    ══════════════════════════════════════════════════════════ */

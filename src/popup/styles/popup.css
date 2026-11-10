@@ -2407,6 +2407,34 @@ input.invalid {
     border-color: var(--popup-border);
 }
 
+.cache-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cache-actions .field-hint {
+    margin: 0;
+}
+
+.cache-clear-btn {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 6px;
+    color: #f87171;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.cache-clear-btn:hover {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(239, 68, 68, 0.6);
+}
+
 
 /* ── Full-page mode ──
    The toolbar popup renders at exactly 420×580. When popup.html is opened in

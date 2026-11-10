@@ -114,6 +114,8 @@ export async function autoSave(overrides) {
     settings.language = el.languageSelect?.value || settings.language || 'uk';
     settings.autoAnswer = el.autoAnswerToggle.checked;
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
+    settings.answerCacheEnabled = el.cacheToggle?.checked ?? (settings.answerCacheEnabled !== false);
+    settings.answerCacheTtlDays = Math.max(1, parseInt(el.cacheTtlDays?.value, 10) || 30);
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
     settings.showAnswerOnly = el.showAnswerOnlyToggle.checked;
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';

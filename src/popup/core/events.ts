@@ -5,7 +5,8 @@ import { applyThemeToPopup, closeThemeEditor, normaliseHex, populateThemesGrid, 
 import { autoSave } from './settings';
 import { fetchModels, renderModelList } from '../models';
 import { generateId } from './utils';
-import { initM3Selects } from './ui';
+import { initM3Selects, refreshAnswerCacheStatus } from './ui';
+import { clearAnswerCache } from '../../core/answer-cache';
 import { renderConsensusRuns } from '../consensus';
 import { renderProvidersTab } from '../providers';
 import { settings, uiElements } from './state';
@@ -47,9 +48,11 @@ export function attachEventListeners() {
 
     const autoInputs = [
         { el: el.modelName, key: 'model' },
-        { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => parseInt(v, 10) || 2000 }
+        { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => parseInt(v, 10) || 2000 },
+        { el: el.cacheTtlDays, key: 'answerCacheTtlDays', parse: v => Math.max(1, parseInt(v, 10) || 30) }
     ];
     for (const { el: inp, key, parse } of autoInputs) {
+        if (!inp) continue;
         inp.addEventListener('change', () => autoSave({ [key]: parse ? parse(inp.value) : inp.value }));
     }
     el.modelName.addEventListener('input', () => {
@@ -72,6 +75,21 @@ export function attachEventListeners() {
         toggle.onchange = () => {
             el.cooldownGroup.style.display = el.autoAnswerToggle.checked ? 'block' : 'none';
             autoSave({ [key]: toggle.checked });
+        };
+    }
+
+    if (el.cacheToggle) {
+        el.cacheToggle.onchange = () => {
+            if (el.cacheTtlGroup) el.cacheTtlGroup.style.display = el.cacheToggle.checked ? 'block' : 'none';
+            autoSave({ answerCacheEnabled: el.cacheToggle.checked });
+        };
+    }
+
+    if (el.cacheClearBtn) {
+        el.cacheClearBtn.onclick = async () => {
+            if (!confirm(t('cacheClearConfirm'))) return;
+            await clearAnswerCache();
+            await refreshAnswerCacheStatus();
         };
     }
 
@@ -128,6 +146,7 @@ export function attachEventListeners() {
         renderProvidersTab();
         renderModelList();
         renderConsensusRuns();
+        void refreshAnswerCacheStatus();
         autoSave();
     };
 
