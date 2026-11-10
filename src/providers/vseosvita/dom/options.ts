@@ -11,7 +11,7 @@ function collectMatchingOptions(questionRoot: Element): string[] {
 
     wrapper.querySelectorAll('.v-block-answers-cross-block').forEach(block => {
         const key = getText(block.querySelector('.numb-item'));
-        const value = getText(block.querySelector('.n-kahoot-p, p'));
+        const value = getText(block.querySelector('.n-answer-p, p'));
         const combined = key && value ? `${key}. ${value}` : value || key;
         if (!combined || seen.has(combined)) return;
         seen.add(combined);
@@ -41,6 +41,7 @@ export function collectOptions(questionRoot: Element): string[] {
     if (matchingOptions.length) return matchingOptions;
 
     const optionSelectors = [
+        '[data-xd-option="true"]',
         '.answer-text',
         '.v-test-questions-select-block .t-text-guest',
         '.v-test-questions-select-block .t-text',
@@ -77,6 +78,46 @@ export function collectOptions(questionRoot: Element): string[] {
     return options;
 }
 
+// Google Forms-style widgets use stable ARIA roles while their CSS classes are
+// regenerated. Mark the text-bearing node (or the grid cell itself when it has
+// no visible text) so the generic option matcher can work without class names.
+function isHiddenOrDisabled(el: Element): boolean {
+    return !!el.closest('[aria-hidden="true"]') || el.getAttribute('aria-disabled') === 'true';
+}
+
+function optionTextTarget(el: Element): Element {
+    const text = (el.textContent || '').trim();
+    if (!text) return el;
+    const leaves = Array.from(el.querySelectorAll('*')).filter(child => {
+        if (child.closest('[aria-hidden="true"]')) return false;
+        if (child.children.length > 0) return false;
+        return (child.textContent || '').trim().length > 0;
+    });
+    if (leaves.length === 0) return el;
+    leaves.sort((a, b) => (b.textContent || '').trim().length - (a.textContent || '').trim().length);
+    return leaves[0];
+}
+
+function markStructuredChoices(questionRoot: Element): void {
+    questionRoot.querySelectorAll('[role="radio"], [role="checkbox"], [role="option"]').forEach(el => {
+        if (isHiddenOrDisabled(el)) return;
+
+        // Grid/likert cells must stay recognisable as grid cells: they carry
+        // data-field-index and are parsed as rows, not as text options.
+        const fieldContainer = el.closest('[data-field-index]');
+        if (fieldContainer) {
+            if (!el.hasAttribute('data-field-index') && fieldContainer !== el) {
+                const fieldIndex = fieldContainer.getAttribute('data-field-index');
+                if (fieldIndex !== null) el.setAttribute('data-field-index', fieldIndex);
+            }
+            el.setAttribute('data-xd-option', 'true');
+            return;
+        }
+
+        optionTextTarget(el).setAttribute('data-xd-option', 'true');
+    });
+}
+
 // Mark option elements with data-xd-option so findOptionElements()/matchAnswerToOptions()
 // in src/dom can find them for auto-answer and indicator modes
 export function markOptionElements(questionRoot: Element): void {
@@ -86,7 +127,7 @@ export function markOptionElements(questionRoot: Element): void {
     });
     // For matching questions: mark cross-block items
     questionRoot.querySelectorAll('.v-block-answers-cross-block').forEach(block => {
-        const textEl = block.querySelector('.n-kahoot-p, p') || block;
+        const textEl = block.querySelector('.n-answer-p, p') || block;
         textEl.setAttribute('data-xd-option', 'true');
     });
     // Fallback: mark generic option elements
@@ -102,8 +143,7 @@ export function markOptionElements(questionRoot: Element): void {
     questionRoot.querySelectorAll('.word-queue-test_question_sentence-item').forEach(token => {
         token.setAttribute('data-xd-option', 'true');
     });
-    // Grid / Matrix / Scale / Dropdown (Google Forms-style CSS)
-    questionRoot.querySelectorAll('.mxSrOe .uVccjd, .lLfZXe .Od2TWd, .N9Qcwe .T5pZmf, .MocG8c[role="option"]').forEach(el => {
-        el.setAttribute('data-xd-option', 'true');
-    });
+    // Google Forms-style grids, likert rows, radio/checkbox choices and
+    // dropdown options: structural marking only, no generated CSS classes.
+    markStructuredChoices(questionRoot);
 }
