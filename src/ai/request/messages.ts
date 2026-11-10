@@ -100,7 +100,8 @@
         if (questionData.optionsText) {
             userMsg += '\nВаріанти:\n' + questionData.optionsText;
             // Якщо є варіанти-зображення, підкажемо AI що вони серед прикріплених картинок
-            if (questionData.optionsText.includes('[зображення]') && (questionData.base64Images || []).length > 0) {
+            const isChoiceQuestion = questionData.questionType === 'quiz' || !!questionData.isMulti;
+            if (isChoiceQuestion && /\[зображення(?:\s+\d+)?\]/.test(questionData.optionsText) && (questionData.base64Images || []).length > 0) {
                 userMsg += '\nУВАГА: Варіанти позначені [зображення] — це картинки серед прикріплених зображень. Спочатку йде картинка запитання, потім картинки варіантів у порядку A, B, C...';
             }
             const specialAnswerTypes = new Set([

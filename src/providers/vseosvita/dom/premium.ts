@@ -8,6 +8,9 @@ import {
     collectFillBlanks,
     collectFillWord,
     collectFreeResponse,
+    collectImageArea,
+    collectImagePuzzle,
+    collectImageQuiz,
     collectMatchQuest,
     collectOrderWords,
     collectOrderingSelect,
@@ -29,6 +32,13 @@ export function detectRuntimeFormat(questionRoot: Element): VseosvitaMeta | null
     if (has('.v-block-answers-cross-wrapper')) return collectCrossPairs(vrQuest);
     if (has('.true-false_test-wrap')) return collectTrueFalse(vrQuest);
     if (has('.fillWord_table')) return collectFillWord(vrQuest);
+    if (has('.imageSearch_test')) return collectImageArea(vrQuest);
+    if (has('.imagePuzzle_test')) return collectImagePuzzle(vrQuest);
+
+    // Radio/checkbox questions normally go through the generic option path.
+    // Use a dedicated collector only when at least one answer is picture-only.
+    const imageQuiz = collectImageQuiz(vrQuest);
+    if (imageQuiz) return imageQuiz;
 
     // Queue ordering exposes two or more .v-test-questions-select-block items.
     if (has('.row_draggable-question, .draggable-question-box')) return collectOrderingSelect(vrQuest);
@@ -89,6 +99,9 @@ export function premiumOptionsText(meta: VseosvitaMeta | null): string | undefin
     if (meta.formatType === 'true_false') {
         return 'Твердження:\n' + meta.buttons.map((b: any, i: number) => `${String.fromCharCode(65 + i)}: ${b.text}`).join('\n');
     }
+    if (meta.formatType === 'image_quiz') {
+        return meta.options.map((option: any, i: number) => `${String.fromCharCode(65 + i)}: ${option.text}`).join('\n');
+    }
     if (meta.formatType === 'order_words') {
         if (meta.rows && meta.rows.length > 1) {
             return 'Рядки для впорядкування:\n' + meta.rows.map((row: any, idx: number) => {
@@ -148,6 +161,7 @@ export function premiumOptionsText(meta: VseosvitaMeta | null): string | undefin
 export function premiumQuestionType(formatType: string): string {
     switch (formatType) {
         case 'true_false':       return 'true_false';
+        case 'image_quiz':       return 'quiz';
         case 'text_input_single':return 'short_text';
         case 'text_input_multi': return 'text_input_multi';
         case 'fill_blank':       return 'fill_blank';
@@ -164,6 +178,8 @@ export function premiumQuestionType(formatType: string): string {
         case 'scale':            return 'scale';
         case 'dropdown':         return 'dropdown';
         case 'date_time':        return 'date_time';
+        case 'image_area':       return 'image_area';
+        case 'image_puzzle':     return 'image_puzzle';
         default:                 return 'unknown';
     }
 }

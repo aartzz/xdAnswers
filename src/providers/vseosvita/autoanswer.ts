@@ -95,6 +95,13 @@ export interface VseosvitaApplyApi {
         return items.find(item => matches(getText(item), wanted)) || null;
     }
 
+    function letterToIndex(letter: string): number {
+        const upper = letter.toUpperCase();
+        const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(upper);
+        if (latin >= 0) return latin;
+        return 'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ'.indexOf(upper);
+    }
+
     // ── true/false statement buttons ─────────────────────────────────
     function applyTrueFalse(meta: VseosvitaMeta, answerText: string): void {
         const buttons: any[] = meta.buttons || [];
@@ -106,7 +113,7 @@ export interface VseosvitaApplyApi {
         if (!target) {
             const letter = answer.match(/^[A-ZА-ЯІЇЄҐ]$/i)?.[0];
             if (letter) {
-                const idx = letter.toUpperCase().charCodeAt(0) - 65;
+                const idx = letterToIndex(letter);
                 target = buttons[idx]?.element || null;
             }
         }
@@ -121,6 +128,38 @@ export interface VseosvitaApplyApi {
             target = buttons.find(b => b.element.classList.contains('red'))?.element || null;
         }
         click(target);
+    }
+
+    // ── picture-only radio/checkbox answers ─────────────────────────
+    function applyImageQuiz(meta: VseosvitaMeta, answerText: string): void {
+        const options: any[] = meta.options || [];
+        if (!options.length) return;
+
+        const resolvePart = (part: string): any | null => {
+            const answer = normalize(part);
+            if (!answer) return null;
+
+            const byText = findFuzzy(options, option => option.text, answer);
+            if (byText) return byText;
+
+            const imageMatch = answer.match(/\[?зображення\s*(\d+)\]?/i);
+            if (imageMatch) {
+                const index = Number(imageMatch[1]) - 1;
+                if (options[index]) return options[index];
+            }
+
+            const letterMatch = answer.match(/^(?:варіант|option|variant)?\s*([A-ZА-ЯІЇЄҐ])(?:\s*[:.)-]|\s*$)/i);
+            if (letterMatch) {
+                const index = letterToIndex(letterMatch[1]);
+                if (options[index]) return options[index];
+            }
+            return null;
+        };
+
+        for (const part of answerText.split(/[;\n]/).map(s => s.trim()).filter(Boolean)) {
+            const target = resolvePart(part);
+            if (target) click(target.element);
+        }
     }
 
     // ── text inputs ──────────────────────────────────────────────────
@@ -276,14 +315,19 @@ export interface VseosvitaApplyApi {
             wanted = parts.map(part => sourceItems[Number(part) - 1]?.text).filter(Boolean);
         }
 
+        const findBlockIndex = (blocks: Element[], wantedText: string): number => {
+            const metaItem = findFuzzy((meta.items || []) as any[], item => item.text, wantedText);
+            if (metaItem?.id) {
+                const byId = blocks.findIndex(block => block.getAttribute('data-xd-vseosvita-order-id') === metaItem.id);
+                if (byId >= 0) return byId;
+            }
+            return blocks.findIndex(block => matches(block.querySelector('.t-text-guest, .t-text')?.textContent || '', wantedText));
+        };
+
         for (let targetIndex = 0; targetIndex < wanted.length; targetIndex++) {
             let blocks = getBlocks();
             if (targetIndex >= blocks.length) break;
-            let currentIndex = blocks.findIndex(block => matches(block.querySelector('.t-text-guest, .t-text')?.textContent || '', wanted[targetIndex]));
-            if (currentIndex < 0) {
-                const fuzzy = findFuzzy(blocks, block => block.querySelector('.t-text-guest, .t-text')?.textContent || '', wanted[targetIndex]);
-                currentIndex = fuzzy ? blocks.indexOf(fuzzy) : -1;
-            }
+            let currentIndex = findBlockIndex(blocks, wanted[targetIndex]);
             if (currentIndex < 0) continue;
 
             // Compatibility with the old select-based type 8 layout.
@@ -302,7 +346,7 @@ export interface VseosvitaApplyApi {
                 click(up);
                 await sleep(120);
                 blocks = getBlocks();
-                const nextIndex = blocks.findIndex(item => matches(item.querySelector('.t-text-guest, .t-text')?.textContent || '', wanted[targetIndex]));
+                const nextIndex = findBlockIndex(blocks, wanted[targetIndex]);
                 currentIndex = nextIndex < 0 ? currentIndex - 1 : nextIndex;
             }
         }
@@ -353,7 +397,8 @@ export interface VseosvitaApplyApi {
             if (!col) return [];
             return Array.from(col.querySelectorAll('.v-block-answers-cross-block')).map(block => ({
                 key: normalize(block.querySelector('.numb-item')?.textContent),
-                text: normalize(block.querySelector('.n-answer-p, p')?.textContent) || normalize(block.textContent),
+                text: normalize(block.querySelector('.n-answer-p, p')?.textContent),
+                id: block.getAttribute('data-xd-vseosvita-cross-id') || '',
                 element: block
             }));
         };
@@ -368,18 +413,23 @@ export interface VseosvitaApplyApi {
         };
 
         for (const pair of pairs) {
-            const current = crossItems(meta);
-            const left = resolve(current.left, pair.left);
-            const right = resolve(current.right, pair.right);
-            if (!left || !right) continue;
+            const leftMeta = resolve(meta.left || [], pair.left);
+            const rightMeta = resolve(meta.right || [], pair.right);
+            if (!leftMeta || !rightMeta) continue;
 
+            const current = crossItems(meta);
+            const left = current.left.find(item => item.id === leftMeta.id)
+                || resolve(current.left, pair.left);
+            if (!left) continue;
             click(left.element);
             await sleep(140);
-            // Re-query the right side: Vue may re-render the column after the
-            // first click, invalidating the old element reference.
+
+            // Re-query by the stable collector id. Image-only pairs may have
+            // empty text and renumbered fallback labels after each pairing.
             const refreshed = crossItems(meta);
-            const liveRight = resolve(refreshed.right, pair.right) || right;
-            click(liveRight.element);
+            const liveRight = refreshed.right.find(item => item.id === rightMeta.id)
+                || resolve(refreshed.right, pair.right);
+            if (liveRight) click(liveRight.element);
             await sleep(260);
         }
     }
@@ -396,9 +446,10 @@ export interface VseosvitaApplyApi {
         Array.from(container.querySelectorAll(':scope > .card.match-quest_card')).forEach((card: Element) => {
             if (card.closest('.match-quest_card-connected')) return;
             const text = normalize(card.querySelector('.matcher_item-content-box')?.textContent) || normalize(card.textContent);
-            if (!text) return;
-            if (card.classList.contains('title')) left.push({ text, element: card });
-            else if (card.classList.contains('description')) right.push({ text, element: card });
+            const id = card.getAttribute('data-xd-vseosvita-match-id') || '';
+            if (!text && !id) return;
+            if (card.classList.contains('title')) left.push({ text, id, element: card });
+            else if (card.classList.contains('description')) right.push({ text, id, element: card });
         });
         return { container, left, right };
     }
@@ -406,14 +457,18 @@ export interface VseosvitaApplyApi {
     async function applyMatchQuestPairs(meta: VseosvitaMeta, answerText: string): Promise<void> {
         const pairs = parsePairs(answerText);
         for (const pair of pairs) {
+            const leftMeta = findFuzzy((meta.left || []) as any[], item => item.text, pair.left);
+            const rightMeta = findFuzzy((meta.right || []) as any[], item => item.text, pair.right);
+            if (!leftMeta || !rightMeta) continue;
+
             const current = matchQuestCards(meta);
             if (!current.container) return;
-            const left = findFuzzy(current.left, item => item.text, pair.left);
-            const right = findFuzzy(current.right, item => item.text, pair.right);
-            if (!left || !right) continue;
+            const source = (current.left.find(item => item.id === leftMeta.id)
+                || current.left.find(item => item.text === leftMeta.text))?.element as Element | undefined;
+            const target = (current.right.find(item => item.id === rightMeta.id)
+                || current.right.find(item => item.text === rightMeta.text))?.element as Element | undefined;
+            if (!source || !target) continue;
 
-            const source = left.element as Element;
-            const target = right.element as Element;
             const sourceRect = source.getBoundingClientRect();
             const targetRect = target.getBoundingClientRect();
 
@@ -447,11 +502,17 @@ export interface VseosvitaApplyApi {
 
         const scope = meta.vrQuest || document;
         const getAreas = (): Array<{ title: string; addButton: Element | null; element: Element }> => {
-            return Array.from(scope.querySelectorAll('.vr-area_wrap')).map((area, idx) => ({
-                title: normalize(area.querySelector('.area_title, .area_title_con')?.textContent) || `Категорія ${idx + 1}`,
-                addButton: area.querySelector('.area-add_btn.vr-add, .area-add_btn, .vr-add'),
-                element: area
-            }));
+            return Array.from(scope.querySelectorAll('.vr-area_wrap')).map((area, idx) => {
+                const img = area.querySelector('img');
+                const title = normalize(area.querySelector('.area_title, .area_title_con')?.textContent)
+                    || normalize(img?.getAttribute('alt') || img?.getAttribute('title'))
+                    || `Категорія ${idx + 1}`;
+                return {
+                    title,
+                    addButton: area.querySelector('.area-add_btn.vr-add, .area-add_btn, .vr-add'),
+                    element: area
+                };
+            });
         };
 
         for (const [category, items] of categoryMap) {
@@ -473,14 +534,18 @@ export interface VseosvitaApplyApi {
                 const menu = scope.querySelector('.dlg_question-sort') || document.querySelector('.dlg_question-sort');
                 if (!menu) continue;
                 const rows = Array.from(menu.querySelectorAll('tr'));
-                const row = rows.find(tr => matches(
-                    tr.querySelector('.dlg-text')?.textContent
-                    || tr.querySelector('img')?.getAttribute('alt')
-                    || tr.querySelector('img')?.getAttribute('title')
-                    || tr.textContent
-                    || '',
-                    item
-                ));
+                const itemMeta = findFuzzy((meta.items || []) as any[], it => it.text, item);
+                const itemSrc = String(itemMeta?.src || '').split('?')[0];
+                const row = rows.find(tr => {
+                    const rowText = tr.querySelector('.dlg-text')?.textContent
+                        || tr.querySelector('img')?.getAttribute('alt')
+                        || tr.querySelector('img')?.getAttribute('title')
+                        || tr.textContent
+                        || '';
+                    if (matches(rowText, item)) return true;
+                    const rowSrc = String(tr.querySelector('img')?.src || '').split('?')[0];
+                    return !!itemSrc && !!rowSrc && rowSrc === itemSrc;
+                });
                 if (!row) continue;
                 const plus = row.querySelector('button.dlg-circle_btn.blue, button.dlg-circle_btn, button');
                 click(plus);
@@ -538,6 +603,7 @@ export interface VseosvitaApplyApi {
                 try {
                     switch (meta.formatType) {
                         case 'true_false':       applyTrueFalse(meta, answerText); break;
+                        case 'image_quiz':       applyImageQuiz(meta, answerText); break;
                         case 'text_input_single':applyTextInputSingle(meta, answerText); break;
                         case 'text_input_multi': applyTextInputMulti(meta, answerText); break;
                         case 'fill_blank':       applyFillBlanks(meta, answerText); break;
@@ -551,6 +617,8 @@ export interface VseosvitaApplyApi {
                             else await applyCrossPairs(meta, answerText);
                             break;
                         case 'range':            applyRange(meta, answerText); break;
+                        case 'image_area':
+                        case 'image_puzzle':
                         case 'fill_word':        applyFillWordNoop(); break;
                     }
                 } catch (e) {
@@ -565,6 +633,7 @@ export interface VseosvitaApplyApi {
     // the generic auto-selector; grid/likert/scale/dropdown are also left to it.
     const CUSTOM_APPLIER_FORMATS = new Set([
         'true_false',
+        'image_quiz',
         'text_input_single',
         'text_input_multi',
         'fill_blank',
@@ -575,6 +644,8 @@ export interface VseosvitaApplyApi {
         'match_pairs',
         'free_response',
         'range',
+        'image_area',
+        'image_puzzle',
         'fill_word'
     ]);
 

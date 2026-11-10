@@ -20,6 +20,11 @@ function imageText(el: Element): string {
     return normalize(img?.getAttribute('alt') || img?.getAttribute('title'));
 }
 
+function imageMarker(el: Element, index: number): string {
+    const alt = imageText(el);
+    return `[зображення ${index}]` + (alt ? ` (${alt})` : '');
+}
+
 export function findVrQuest(questionRoot: Element | null): Element | null {
     if (!questionRoot) return null;
     const marked = questionRoot.closest?.('.vr-quest[data-quest_type]')
@@ -33,13 +38,54 @@ export function findVrQuest(questionRoot: Element | null): Element | null {
 export function collectTrueFalse(vrQuest: Element): VseosvitaMeta | null {
     const buttons = Array.from(vrQuest.querySelectorAll('.true-false_test-wrap button.item-true-false, button.item-true-false'));
     if (buttons.length < 2) return null;
-    const items = buttons.map(btn => ({
-        text: firstText(btn, '.text-btn, .text-btn_row') || normalize(btn.textContent),
-        element: btn,
-        correctStyle: btn.classList.contains('green') ? 'green' : (btn.classList.contains('red') ? 'red' : '')
-    })).filter(item => item.text);
+    let imageIndex = 0;
+    const items = buttons.map(btn => {
+        let text = firstText(btn, '.text-btn, .text-btn_row') || normalize(btn.textContent);
+        if (!text && btn.querySelector('img')) {
+            imageIndex++;
+            text = imageMarker(btn, imageIndex);
+        }
+        return {
+            text,
+            element: btn,
+            correctStyle: btn.classList.contains('green') ? 'green' : (btn.classList.contains('red') ? 'red' : '')
+        };
+    }).filter(item => item.text);
     if (items.length < 2) return null;
     return { formatType: 'true_false', buttons: items };
+}
+
+// ── Type 1/2 with picture answers ─────────────────────────────────
+// Text-only radio/checkbox questions go through the generic path. This
+// collector is used only when at least one answer is an image with no text.
+export function collectImageQuiz(vrQuest: Element): VseosvitaMeta | null {
+    const blocks = Array.from(vrQuest.querySelectorAll('.v-test-questions-radio-block, .v-test-questions-checkbox-block'));
+    if (blocks.length < 2) return null;
+
+    let imageIndex = 0;
+    let hasImageOnly = false;
+    const options: Array<{ text: string; element: Element }> = [];
+
+    for (const block of blocks) {
+        const label = block.querySelector('label[for], label') || block;
+        const text = normalize(label.textContent);
+        if (text) {
+            options.push({ text, element: label });
+            continue;
+        }
+        const img = label.querySelector('img');
+        if (!img) continue;
+        hasImageOnly = true;
+        imageIndex++;
+        options.push({ text: imageMarker(label, imageIndex), element: label });
+    }
+
+    if (!hasImageOnly || options.length < 2) return null;
+    return {
+        formatType: 'image_quiz',
+        options,
+        isMulti: !!blocks[0].querySelector('input[type="checkbox"]')
+    };
 }
 
 // ── Type 3 / 5: single and multi text inputs ──────────────────────
@@ -141,11 +187,20 @@ export function collectSelectInText(vrQuest: Element): VseosvitaMeta | null {
 export function collectOrderingSelect(vrQuest: Element): VseosvitaMeta | null {
     const blocks = Array.from(vrQuest.querySelectorAll('.row_draggable-question .v-test-questions-select-block, .draggable-question-box .v-test-questions-select-block, .v-test-questions-select-block'));
     if (blocks.length < 2) return null;
+    let imageIndex = 0;
     const items = blocks.map((block, idx) => {
         const select = block.querySelector('select');
+        let text = firstText(block, '.t-text-guest, .t-text');
+        if (!text && block.querySelector('img')) {
+            imageIndex++;
+            text = imageMarker(block, imageIndex);
+        }
+        const id = block.getAttribute('data-xd-vseosvita-order-id') || String(idx);
+        block.setAttribute('data-xd-vseosvita-order-id', id);
         return {
             index: idx + 1,
-            text: firstText(block, '.t-text-guest, .t-text'),
+            id,
+            text,
             element: block,
             select
         };
@@ -186,13 +241,15 @@ export function collectOrderWords(vrQuest: Element): VseosvitaMeta | null {
 export function collectCategorization(vrQuest: Element): VseosvitaMeta | null {
     const wrapper = vrQuest.querySelector('.question-sort-category_wrap') || vrQuest;
     const areaEls = Array.from(wrapper.querySelectorAll('.vr-area_wrap'));
-    if (areaEls.length < 2) return null;
+    if (areaEls.length < 1) return null;
 
     const areas = areaEls.map((area, idx) => {
         const title = firstText(area, '.area_title, .area_title_con');
+        const titleImg = area.querySelector('.area_title_con img, .area_title img') || area.querySelector('img');
+        const titleImage = normalize(titleImg?.getAttribute('alt') || titleImg?.getAttribute('title'));
         const addButton = area.querySelector('.area-add_btn.vr-add, .area-add_btn, .vr-add');
         return {
-            text: title || imageText(area) || `Категорія ${idx + 1}`,
+            text: title || titleImage || `Категорія ${idx + 1}`,
             element: area,
             addButton,
             title
@@ -200,10 +257,20 @@ export function collectCategorization(vrQuest: Element): VseosvitaMeta | null {
     });
 
     const itemEls = Array.from(wrapper.querySelectorAll('.question-sort-category_items .question-sort-category_item'));
-    const items = itemEls.map(item => ({
-        text: firstText(item, '.icon-con .text, .text, .icon-con') || imageText(item),
-        element: item
-    })).filter(item => item.text);
+    let imageIndex = 0;
+    const items = itemEls.map(item => {
+        const img = item.querySelector('img');
+        let text = firstText(item, '.icon-con .text, .text, .icon-con') || imageText(item);
+        if (!text && img) {
+            imageIndex++;
+            text = imageMarker(item, imageIndex);
+        }
+        return {
+            text,
+            src: img?.src || '',
+            element: item
+        };
+    }).filter(item => item.text);
 
     if (items.length < 2) return null;
 
@@ -217,13 +284,24 @@ export function collectCategorization(vrQuest: Element): VseosvitaMeta | null {
 }
 
 // ── Type 4: matching / cross pairs ────────────────────────────────
-function collectCrossColumn(column: Element | null): Array<{ key: string; text: string; element: Element }> {
+function collectCrossColumn(column: Element | null, side: 'left' | 'right'): Array<{ key: string; text: string; id: string; element: Element }> {
     if (!column) return [];
-    return Array.from(column.querySelectorAll('.v-block-answers-cross-block')).map(block => ({
-        key: firstText(block, '.numb-item'),
-        text: firstText(block, '.n-answer-p, p') || normalize(block.textContent),
-        element: block
-    })).filter(item => item.text);
+    let imageIndex = 0;
+    return Array.from(column.querySelectorAll('.v-block-answers-cross-block')).map((block, idx) => {
+        let text = firstText(block, '.n-answer-p, p');
+        if (!text && block.querySelector('img')) {
+            imageIndex++;
+            text = imageMarker(block, imageIndex);
+        }
+        const id = block.getAttribute('data-xd-vseosvita-cross-id') || `${side}-${idx}`;
+        block.setAttribute('data-xd-vseosvita-cross-id', id);
+        return {
+            key: firstText(block, '.numb-item'),
+            text,
+            id,
+            element: block
+        };
+    }).filter(item => item.text);
 }
 
 export function collectCrossPairs(vrQuest: Element): VseosvitaMeta | null {
@@ -233,9 +311,9 @@ export function collectCrossPairs(vrQuest: Element): VseosvitaMeta | null {
     const columns = Array.from(row.querySelectorAll('.v-col-6'));
     const leftColumn = columns.find(col => !col.classList.contains('v-col-last')) || columns[0] || null;
     const rightColumn = columns.find(col => col.classList.contains('v-col-last')) || columns[1] || null;
-    const left = collectCrossColumn(leftColumn);
-    const right = collectCrossColumn(rightColumn);
-    if (left.length < 2 || right.length < 2) return null;
+    const left = collectCrossColumn(leftColumn, 'left');
+    const right = collectCrossColumn(rightColumn, 'right');
+    if (left.length < 1 || right.length < 1) return null;
     return {
         formatType: 'match_pairs',
         layout: 'cross',
@@ -251,16 +329,33 @@ export function collectMatchQuest(vrQuest: Element): VseosvitaMeta | null {
     const container = vrQuest.querySelector('.question-match-quest_container');
     if (!container) return null;
     const cards = Array.from(container.querySelectorAll(':scope > .card.match-quest_card'));
-    const left: Array<{ text: string; element: Element }> = [];
-    const right: Array<{ text: string; element: Element }> = [];
+    const left: Array<{ text: string; id: string; element: Element }> = [];
+    const right: Array<{ text: string; id: string; element: Element }> = [];
+    let titleIndex = 0;
+    let descIndex = 0;
+    let imageIndex = 0;
     cards.forEach(card => {
         if (card.closest('.match-quest_card-connected')) return;
-        const text = firstText(card, '.matcher_item-content-box') || normalize(card.textContent);
+        const isTitle = card.classList.contains('title');
+        const isDesc = card.classList.contains('description');
+        if (!isTitle && !isDesc) return;
+        let text = firstText(card, '.matcher_item-content-box');
+        if (!text && card.querySelector('img')) {
+            imageIndex++;
+            text = imageMarker(card, imageIndex);
+        }
         if (!text) return;
-        if (card.classList.contains('title')) left.push({ text, element: card });
-        else if (card.classList.contains('description')) right.push({ text, element: card });
+        let id = card.getAttribute('data-xd-vseosvita-match-id');
+        if (!id) {
+            id = isTitle ? `title-${titleIndex}` : `desc-${descIndex}`;
+            card.setAttribute('data-xd-vseosvita-match-id', id);
+        }
+        if (isTitle) titleIndex++;
+        else descIndex++;
+        if (isTitle) left.push({ text, id, element: card });
+        else right.push({ text, id, element: card });
     });
-    if (left.length < 2 || right.length < 2) return null;
+    if (left.length < 1 || right.length < 1) return null;
     return {
         formatType: 'match_pairs',
         layout: 'match_quest',
@@ -300,6 +395,21 @@ export function collectRange(vrQuest: Element): VseosvitaMeta | null {
         step,
         unit: unitMatch?.[1] || ''
     };
+}
+
+// ── Type 9: image search area ─────────────────────────────────────
+export function collectImageArea(vrQuest: Element): VseosvitaMeta | null {
+    const element = vrQuest.querySelector('.imageSearch_test')
+        || vrQuest.querySelector('.n-class-visually-impaired-img.test-img-con');
+    if (!element) return null;
+    return { formatType: 'image_area', element };
+}
+
+// ── Type 11: image puzzle ─────────────────────────────────────────
+export function collectImagePuzzle(vrQuest: Element): VseosvitaMeta | null {
+    const element = vrQuest.querySelector('.imagePuzzle_test');
+    if (!element) return null;
+    return { formatType: 'image_puzzle', element };
 }
 
 // ── Type 14 / 15: fillword / crossword (detect only) ──────────────

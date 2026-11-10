@@ -47,13 +47,17 @@ export function detectQuestionData(): VseosvitaQuestionData | null {
 
     const options = collectOptions(scope);
 
-    // Collect images from question title first, then from the rest of the question
-    const titleImgs = Array.from(
-        (titleNode || questionRoot).querySelectorAll('img')
-    ).map(img => img.src || img.getAttribute('data-src')).filter((s): s is string => !!s);
-    const otherImgs = Array.from(
-        questionRoot.querySelectorAll('img')
-    ).map(img => img.src || img.getAttribute('data-src')).filter((s): s is string => !!s);
+    // Collect images from question title first, then from the rest of the question.
+    // Prefer data-src because vseosvita lazy-loads question and answer images.
+    const collectImages = (root: Element): string[] => Array.from(root.querySelectorAll('img, image'))
+        .map(img => img.getAttribute('data-src')
+            || img.getAttribute('src')
+            || img.getAttribute('href')
+            || img.getAttribute('xlink:href')
+            || '')
+        .filter((src): src is string => !!src);
+    const titleImgs = collectImages(titleNode || questionRoot);
+    const otherImgs = collectImages(questionRoot);
     const imgs = [...new Set([...titleImgs, ...otherImgs])];
 
     // 1. Current runtime component classes. This is the authoritative path;
@@ -91,7 +95,8 @@ export function detectQuestionData(): VseosvitaQuestionData | null {
 
     if (vseosvitaMeta) {
         questionType = premiumQuestionType(vseosvitaMeta.formatType);
-        isMultiQuiz = vseosvitaMeta.formatType === 'checkbox_grid';
+        isMultiQuiz = vseosvitaMeta.formatType === 'checkbox_grid'
+            || (vseosvitaMeta.formatType === 'image_quiz' && !!vseosvitaMeta.isMulti);
         vseosvitaMeta.vrQuest = scope;
     } else {
         // 4. Legacy CSS heuristics for simple radio/checkbox/text/matching DOM.
