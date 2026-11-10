@@ -9,7 +9,7 @@ import { incrementStat } from '../../core/stats';
 
     const I = window.xdAnswers._internal;
 
-    I.runConsensusProcess = async function(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<void> {
+    I.runConsensusProcess = async function(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<XdParsedResponse | null> {
         const consensusSettings = window.xdAnswers.settings.consensus;
         const isCurrent = () => generation === undefined || window.xdAnswers._processGeneration === generation;
         // Main model always first, then extra runs
@@ -93,7 +93,7 @@ import { incrementStat } from '../../core/stats';
         });
 
         const runResults = await Promise.all(runPromises);
-        if (!isCurrent()) return;
+        if (!isCurrent()) return null;
         const consensusResult = I.computeConsensus(runResults);
 
         consensusFinalized = true;
@@ -138,7 +138,7 @@ import { incrementStat } from '../../core/stats';
         }
 
         if (consensusResult.majorityAnswer) {
-            if (!isCurrent()) return;
+            if (!isCurrent()) return null;
             incrementStat('answered');
             if (!isSilent) {
                 I.highlightCorrectAnswer(consensusResult.majorityAnswer);
@@ -150,5 +150,9 @@ import { incrementStat } from '../../core/stats';
             window.xdAnswers.isProcessingAI = false;
             window.xdAnswers._oneClickContainer = null;
         }
+
+        return consensusResult.majorityAnswer
+            ? { answer: consensusResult.majorityAnswer, raw: '', isStructured: true }
+            : null;
     };
 })();

@@ -12,6 +12,11 @@
         if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
         if (!window.xdAnswers.answerContentDiv) return;
         let html = '<div class="xd-elapsed"><span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed + '</div>';
+        if (parsed._cached) {
+            const lang = window.xdAnswers.settings.language || 'uk';
+            const cacheLabel = lang === 'uk' ? 'З кешу' : (lang === 'ru' ? 'Из кеша' : 'From cache');
+            html += '<div class="xd-cache-hit" style="font-size:11px;opacity:0.65;margin:0 0 6px;"><span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">bolt</span> ' + cacheLabel + '</div>';
+        }
         // Update footer elapsed too
         const footerElapsed = window.xdAnswers.helperContainer?.querySelector('#lbl-elapsed, #xd-footer-elapsed');
         if (footerElapsed) footerElapsed.innerHTML = '<span class="xd-icon" style="font-size:13px !important;vertical-align:middle;margin-right:2px;">schedule</span> ' + elapsed;

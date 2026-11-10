@@ -1,0 +1,375 @@
+// src/core/answer-cache.ts
+// Local answer cache shared by every provider and the popup.
+//
+// The cache key is a hash of the question text, answer options, question type
+// and image fingerprints. It never contains the raw question text. Choice
+// options are sorted (and their A/B/C labels stripped) so a shuffled question
+// still hits the same entry, while a different option set can never receive a
+// cached answer.
+
+export const ANSWER_CACHE_STORAGE_KEY = 'xdAnswers_answerCache';
+
+const CACHE_VERSION = 1;
+const MAX_ENTRIES = 1500;
+// chrome.storage.local is limited to 10 MB without unlimitedStorage. Keep a
+// margin for settings, stats and the browser's own serialization overhead.
+const MAX_STORE_CHARS = 4 * 1024 * 1024;
+const DEFAULT_TTL_DAYS = 30;
+const MAX_ANSWER_LENGTH = 8000;
+const MAX_EXPLANATION_LENGTH = 2000;
+const MAX_SOLUTION_LENGTH = 4000;
+
+export interface XdCachedAnswer {
+    answer: string;
+    explanation?: string;
+    solution?: string;
+    confidence?: string | number;
+    at: number;
+    model?: string;
+}
+
+interface XdAnswerCacheEntry extends XdCachedAnswer {
+    key?: string;
+}
+
+interface XdAnswerCacheStore {
+    version: number;
+    entries: Record<string, XdAnswerCacheEntry>;
+}
+
+export interface XdAnswerCacheStats {
+    count: number;
+    oldest: number | null;
+    newest: number | null;
+}
+
+function emptyStore(): XdAnswerCacheStore {
+    return { version: CACHE_VERSION, entries: {} };
+}
+
+// Serialize read-modify-write cycles inside one page. Without this, two quick
+// answers can race and the later write can drop the earlier cache entry.
+let writeChain: Promise<void> = Promise.resolve();
+
+function enqueueWrite(task: () => Promise<void>): Promise<void> {
+    const run = writeChain.then(task, task);
+    writeChain = run.catch(() => {});
+    return run;
+}
+
+function readStorage(): Promise<unknown> {
+    return new Promise((resolve) => {
+        try {
+            chrome.storage.local.get(ANSWER_CACHE_STORAGE_KEY, (data) => {
+                resolve(data && data[ANSWER_CACHE_STORAGE_KEY]);
+            });
+        } catch {
+            resolve(undefined);
+        }
+    });
+}
+
+function writeStorage(store: XdAnswerCacheStore): Promise<void> {
+    return new Promise((resolve) => {
+        try {
+            chrome.storage.local.set({ [ANSWER_CACHE_STORAGE_KEY]: store }, () => resolve());
+        } catch {
+            resolve();
+        }
+    });
+}
+
+function normalizeStore(raw: unknown): XdAnswerCacheStore {
+    if (!raw || typeof raw !== 'object') return emptyStore();
+    const value = raw as Partial<XdAnswerCacheStore>;
+    if (value.version !== CACHE_VERSION || !value.entries || typeof value.entries !== 'object' || Array.isArray(value.entries)) {
+        return emptyStore();
+    }
+    const entries: Record<string, XdAnswerCacheEntry> = {};
+    for (const [key, entry] of Object.entries(value.entries)) {
+        if (!entry || typeof entry !== 'object') continue;
+        const candidate = entry as XdAnswerCacheEntry;
+        if (typeof candidate.answer !== 'string' || !candidate.answer.trim()) continue;
+        entries[key] = candidate;
+    }
+    return { version: CACHE_VERSION, entries };
+}
+
+function ttlMs(days: unknown): number {
+    const value = Number(days);
+    const safeDays = Number.isFinite(value) && value >= 1 ? Math.min(value, 3650) : DEFAULT_TTL_DAYS;
+    return safeDays * 24 * 60 * 60 * 1000;
+}
+
+function normalizeText(value: unknown): string {
+    let text = String(value == null ? '' : value);
+    try {
+        text = text.normalize('NFKC');
+    } catch {
+        // Older engines without String.normalize still work with the raw text.
+    }
+    return text
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
+function splitOptionLines(optionsText: unknown): string[] {
+    return String(optionsText == null ? '' : optionsText)
+        .split(/\r?\n/)
+        .map(normalizeText)
+        .filter(Boolean);
+}
+
+// Providers prefix choice options with A:, B:, 1. etc. Strip that prefix for
+// the key only: the cached answer keeps the exact option text.
+function stripOptionLabel(line: string): string {
+    return line.replace(/^\s*(?:[a-zа-яіїєґ]|\d{1,2})\s*[:.)]\s+/iu, '').trim();
+}
+
+const IMAGE_PLACEHOLDER_RE = /^\[(?:запитання-зображення|зображення(?:\s+\d+)?|изображение(?:\s+\d+)?|image(?:\s+\d+)?)\]$/iu;
+
+function isPlaceholderImageQuestion(text: string, options: string[]): boolean {
+    if (IMAGE_PLACEHOLDER_RE.test(text)) return true;
+    return options.length > 0 && options.every(line => IMAGE_PLACEHOLDER_RE.test(stripOptionLabel(line)));
+}
+
+function hasImageOptionPlaceholders(options: string[]): boolean {
+    // Letter answers for image options are positional. A shuffled set has the
+    // same option text, so caching could apply the letter to the wrong image.
+    return options.some(line => IMAGE_PLACEHOLDER_RE.test(stripOptionLabel(line)));
+}
+
+function isChoiceQuestion(questionData: XdQuestionData): boolean {
+    const type = normalizeText(questionData.questionType || '');
+    const special = new Set([
+        'grid', 'match_pairs', 'match', 'true_false_multi', 'fill_blank',
+        'select_in_text', 'order_words', 'ordering', 'categorization',
+        'text_input_multi', 'range', 'fill_word', 'matching'
+    ]);
+    if (special.has(type)) return false;
+    if (type === 'quiz' || type === 'multiquiz' || type === 'true_false' || type === 'choice') return true;
+    if (questionData.isMulti || (questionData as { isMultiQuiz?: boolean }).isMultiQuiz) return true;
+    return !type && splitOptionLines(questionData.optionsText).length > 0;
+}
+
+function questionFlags(questionData: XdQuestionData): string {
+    return [
+        questionData.isMulti ? 'multi' : '',
+        (questionData as { isMultiQuiz?: boolean }).isMultiQuiz ? 'multiquiz' : ''
+    ].filter(Boolean).join(',');
+}
+
+function fallbackHash(text: string): string {
+    let h1 = 0x811c9dc5;
+    let h2 = 0x9e3779b9;
+    for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i);
+        h1 ^= code;
+        h1 = Math.imul(h1, 16777619);
+        h2 ^= code + i;
+        h2 = Math.imul(h2, 2246822519);
+    }
+    return (h1 >>> 0).toString(16).padStart(8, '0') + (h2 >>> 0).toString(16).padStart(8, '0');
+}
+
+async function hashText(text: string): Promise<string> {
+    try {
+        if (window.crypto && window.crypto.subtle) {
+            const bytes = new TextEncoder().encode(text);
+            const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+            return Array.from(new Uint8Array(digest))
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join('');
+        }
+    } catch {
+        // Non-secure contexts may not expose crypto.subtle; use the fallback.
+    }
+    return fallbackHash(text);
+}
+
+export async function buildAnswerCacheKey(questionData: XdQuestionData): Promise<string> {
+    const text = normalizeText(questionData.text || '');
+    const options = splitOptionLines(questionData.optionsText);
+    const images = (questionData.base64Images || []).filter((image): image is string => !!image);
+    if (!text && !options.length && !images.length) return '';
+    // Image-only questions with failed image loads must not share a key.
+    if (!images.length && isPlaceholderImageQuestion(text, options)) return '';
+    // Image options are answered by position, not text; never cache them.
+    if (hasImageOptionPlaceholders(options)) return '';
+
+    const choice = isChoiceQuestion(questionData);
+    const optionKey = choice
+        ? Array.from(new Set(options.map(stripOptionLabel).filter(Boolean))).sort().join('\u0001')
+        : options.join('\u0001');
+    const imageKey = images.length
+        ? (await Promise.all(images.map(image => hashText(image)))).join(',')
+        : '';
+
+    const fingerprint = [
+        'v1',
+        normalizeText(questionData.questionType || ''),
+        text,
+        optionKey,
+        questionFlags(questionData),
+        imageKey,
+        normalizeText(questionData.topic || ''),
+        normalizeText(questionData.topicDescription || ''),
+        normalizeText(questionData.customPromptPrefix || '')
+    ].join('\u0000');
+
+    return 'v1:' + await hashText(fingerprint);
+}
+
+function normalizeAnswerPart(value: string): string {
+    const cleaned = normalizeText(value)
+        .replace(/^(?:answer|відповідь|ответ)\s*:\s*/i, '')
+        .replace(/^[\s"'«»`*]+|[\s"'«»`*]+$/g, '')
+        .trim();
+    // Tolerate "B: exact option text" answers from models that echo the label.
+    return stripOptionLabel(cleaned) || cleaned;
+}
+
+function answerParts(answer: string): string[] {
+    const parts = String(answer || '')
+        .split(/;/)
+        .map(normalizeAnswerPart)
+        .filter(Boolean);
+    if (parts.length === 1 && /^[a-zа-яіїєґ](\s*[,;]\s*[a-zа-яіїєґ])+$/iu.test(parts[0])) {
+        return parts[0].split(',').map(normalizeAnswerPart).filter(Boolean);
+    }
+    return parts;
+}
+
+// A cached answer is usable only when every answer part still exists in the
+// current question's options. This is the last line of defence against a hash
+// collision or a question whose wording stayed the same but options changed.
+export function isAnswerCompatibleWithQuestion(questionData: XdQuestionData, answer: string): boolean {
+    if (!isChoiceQuestion(questionData)) return true;
+
+    const rawOptions = splitOptionLines(questionData.optionsText);
+    const options = rawOptions.map(stripOptionLabel).filter(Boolean);
+    if (!options.length) return true;
+
+    const parts = answerParts(answer);
+    if (!parts.length) return false;
+
+    return parts.every((part) => {
+        if (options.includes(part)) return true;
+        // Image options are answered with a letter: "A", "B"...
+        if (/^[a-zа-яіїєґ]$/iu.test(part)) {
+            return rawOptions.some(line => line.startsWith(part + ':') || line.startsWith(part + ')') || line.startsWith(part + '.'));
+        }
+        return false;
+    });
+}
+
+function trimText(value: unknown, limit: number): string {
+    const text = String(value == null ? '' : value).trim();
+    return text.length > limit ? text.slice(0, limit) : text;
+}
+
+function pruneStore(store: XdAnswerCacheStore, days: unknown): void {
+    const cutoff = Date.now() - ttlMs(days);
+    for (const [key, entry] of Object.entries(store.entries)) {
+        if (!entry.at || entry.at < cutoff) delete store.entries[key];
+    }
+
+    const keys = Object.keys(store.entries);
+    if (keys.length <= MAX_ENTRIES && JSON.stringify(store).length <= MAX_STORE_CHARS) return;
+
+    keys.sort((a, b) => (store.entries[a].at || 0) - (store.entries[b].at || 0));
+    let total = JSON.stringify(store).length;
+    let count = keys.length;
+    for (const key of keys) {
+        if (count <= MAX_ENTRIES && total <= MAX_STORE_CHARS) break;
+        total -= JSON.stringify(store.entries[key]).length + key.length + 6;
+        delete store.entries[key];
+        count--;
+    }
+}
+
+export async function lookupAnswerCache(
+    key: string,
+    questionData: XdQuestionData,
+    settings: XdSettings
+): Promise<XdCachedAnswer | null> {
+    if (!key || settings.answerCacheEnabled === false) return null;
+
+    const store = normalizeStore(await readStorage());
+    const entry = store.entries[key];
+    if (!entry) return null;
+
+    const cutoff = Date.now() - ttlMs(settings.answerCacheTtlDays);
+    if (!entry.at || entry.at < cutoff || !isAnswerCompatibleWithQuestion(questionData, entry.answer)) {
+        // Leave the entry alone here: another tab may be writing the same
+        // storage object right now. Pruning happens on the next cache write.
+        return null;
+    }
+
+    return {
+        answer: entry.answer,
+        explanation: entry.explanation,
+        solution: entry.solution,
+        confidence: entry.confidence,
+        at: entry.at,
+        model: entry.model
+    };
+}
+
+export async function storeAnswerCache(
+    key: string,
+    parsed: XdParsedResponse,
+    settings: XdSettings,
+    options?: { force?: boolean }
+): Promise<void> {
+    if (!key || settings.answerCacheEnabled === false || parsed._cached) return;
+
+    const answer = trimText(parsed.answer, MAX_ANSWER_LENGTH);
+    if (!answer || parsed.parseFailed) return;
+
+    // A manual refresh is an explicit user request: store its result even when
+    // the model reports low confidence.
+    const confidence = Number(parsed.confidence);
+    if (!options?.force && Number.isFinite(confidence) && confidence > 0 && confidence < 60) return;
+
+    await enqueueWrite(async () => {
+        const store = normalizeStore(await readStorage());
+        store.entries[key] = {
+            answer,
+            explanation: parsed.explanation ? trimText(parsed.explanation, MAX_EXPLANATION_LENGTH) : undefined,
+            solution: parsed.solution ? trimText(parsed.solution, MAX_SOLUTION_LENGTH) : undefined,
+            confidence: parsed.confidence,
+            at: Date.now(),
+            model: settings.model || ''
+        };
+        pruneStore(store, settings.answerCacheTtlDays);
+        await writeStorage(store);
+    });
+}
+
+export async function clearAnswerCache(): Promise<void> {
+    try {
+        await new Promise<void>((resolve) => {
+            chrome.storage.local.remove(ANSWER_CACHE_STORAGE_KEY, () => resolve());
+        });
+    } catch {
+        // Storage may be unavailable in a restricted context.
+    }
+}
+
+export async function getAnswerCacheStats(ttlDays: unknown): Promise<XdAnswerCacheStats> {
+    const store = normalizeStore(await readStorage());
+    const cutoff = Date.now() - ttlMs(ttlDays);
+    const entries = Object.values(store.entries).filter(entry => entry.at && entry.at >= cutoff);
+    if (!entries.length) return { count: 0, oldest: null, newest: null };
+
+    let oldest = entries[0].at;
+    let newest = entries[0].at;
+    for (const entry of entries) {
+        if (entry.at < oldest) oldest = entry.at;
+        if (entry.at > newest) newest = entry.at;
+    }
+    return { count: entries.length, oldest, newest };
+}

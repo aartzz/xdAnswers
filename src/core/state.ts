@@ -23,6 +23,7 @@
     window.xdAnswers._processGeneration = 0;
     window.xdAnswers._originalTitle = null;
     window.xdAnswers._customAutoAnswer = null;
+    window.xdAnswers._bypassAnswerCacheOnce = false;
 
     function genRandClass(): string {
         return '_' + Math.random().toString(36).slice(2, 8);

@@ -1,6 +1,8 @@
 // src/ai/process/main.ts
 // Main question processing pipeline. Runs consensus or a single streamed answer and applies the result.
 import { incrementStat } from '../../core/stats';
+import { buildAnswerCacheKey, lookupAnswerCache, storeAnswerCache } from '../../core/answer-cache';
+import type { XdCachedAnswer } from '../../core/answer-cache';
 
 (function() {
     'use strict';
@@ -43,25 +45,48 @@ import { incrementStat } from '../../core/stats';
         if (!isSilent) I.startWaitingStatus(startTime);
 
         try {
+            const settings = window.xdAnswers.settings;
+            const cacheEnabled = settings.answerCacheEnabled !== false;
+            const bypassCache = !!window.xdAnswers._bypassAnswerCacheOnce;
+            window.xdAnswers._bypassAnswerCacheOnce = false;
+            if (bypassCache) console.log('[xdAnswers] cache bypassed by explicit refresh');
+
+            let cacheKey = '';
+            let cached: XdCachedAnswer | null = null;
+            if (cacheEnabled) {
+                cacheKey = await buildAnswerCacheKey(questionData);
+                if (cacheKey && !bypassCache) {
+                    if (!isCurrent()) return;
+                    cached = await lookupAnswerCache(cacheKey, questionData, settings);
+                    if (cached) console.log('[xdAnswers] cache hit:', cacheKey.slice(0, 18) + '...');
+                }
+            }
+            if (!isCurrent()) return;
+
             let result: XdStreamAnswerResult;
-            const _cs = window.xdAnswers.settings.consensus;
+            const _cs = settings.consensus;
             console.log('[xdAnswers] consensus check:', JSON.stringify(_cs));
             const consensusEnabled = _cs && _cs.enabled && _cs.runs && _cs.runs.length >= 1;
-            if (consensusEnabled) {
-                await I.runConsensusProcess(questionData, startTime, isSilent, silentMode, generation);
-                return;
-            }
-            try {
-                result = await window.xdAnswers.streamAnswer(questionData, startTime);
-            } catch (streamErr) {
-                if ((streamErr as Error)?.name === 'AbortError') throw streamErr;
-                const s = I.getEffectiveSettings(window.xdAnswers.settings);
-                if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) {
-                    throw streamErr;
+            if (!cached) {
+                if (consensusEnabled) {
+                    const consensusParsed = await I.runConsensusProcess(questionData, startTime, isSilent, silentMode, generation);
+                    if (consensusParsed && cacheKey) void storeAnswerCache(cacheKey, consensusParsed, settings, { force: bypassCache }).catch(() => {});
+                    return;
                 }
-                console.warn('xdAnswers: Streaming failed, falling back:', (streamErr as Error).message);
-                const answer = await window.xdAnswers.getAnswer(questionData);
-                result = { content: answer, thinking: '' };
+                try {
+                    result = await window.xdAnswers.streamAnswer(questionData, startTime);
+                } catch (streamErr) {
+                    if ((streamErr as Error)?.name === 'AbortError') throw streamErr;
+                    const s = I.getEffectiveSettings(settings);
+                    if (I.isOpenCodeFreeModel && I.isOpenCodeFreeModel(s)) {
+                        throw streamErr;
+                    }
+                    console.warn('xdAnswers: Streaming failed, falling back:', (streamErr as Error).message);
+                    const answer = await window.xdAnswers.getAnswer(questionData);
+                    result = { content: answer, thinking: '' };
+                }
+            } else {
+                result = { content: '', thinking: '' };
             }
 
             // A refresh cancelled this request while it was in flight.
@@ -71,9 +96,22 @@ import { incrementStat } from '../../core/stats';
             if (window.xdAnswers._streamTimerInterval) { clearInterval(window.xdAnswers._streamTimerInterval); window.xdAnswers._streamTimerInterval = null; }
 
             const elapsed = I.getProcessElapsed(startTime);
-            const parsed = I.parseAIResponse(result.content);
+            const parsed: XdParsedResponse = cached
+                ? {
+                    answer: cached.answer,
+                    explanation: cached.explanation || '',
+                    solution: cached.solution || '',
+                    confidence: cached.confidence,
+                    raw: '',
+                    isStructured: true,
+                    _cached: true
+                }
+                : I.parseAIResponse(result.content);
             window.xdAnswers.lastParsedResponse = parsed;
-            if (parsed.answer) incrementStat('answered');
+            if (parsed.answer) {
+                incrementStat('answered');
+                if (!cached && cacheKey) void storeAnswerCache(cacheKey, parsed, settings, { force: bypassCache }).catch(() => {});
+            }
 
             if (isSilent) {
                 I.applySilentMode(parsed.answer || parsed.explanation || 'Parse error', parsed);

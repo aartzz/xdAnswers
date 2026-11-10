@@ -61,6 +61,8 @@
         language: 'uk',
         autoAnswer: false,
         autoAnswerCooldown: 2000,
+        answerCacheEnabled: true,
+        answerCacheTtlDays: 30,
         highlightCorrect: true,
         showAnswerOnly: false,
         silentMode: '',

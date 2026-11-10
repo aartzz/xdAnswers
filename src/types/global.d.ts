@@ -91,6 +91,8 @@ interface XdSettings {
     language: string;
     autoAnswer: boolean;
     autoAnswerCooldown: number;
+    answerCacheEnabled: boolean;
+    answerCacheTtlDays: number;
     highlightCorrect: boolean;
     showAnswerOnly: boolean;
     /** '' | 'indicators' | 'ghost' | 'stealth' | 'oneclick' */
@@ -155,6 +157,8 @@ interface XdParsedResponse {
     /** Marks a parsed response produced by the Wordwall provider. */
     _wordwall?: boolean;
     _wordwallShort?: string;
+    /** Set when the answer came from the local answer cache. */
+    _cached?: boolean;
 }
 
 /** Event emitted by `_internal.parseSSEChunks` for one API stream chunk. */
@@ -358,7 +362,7 @@ interface XdAnswersInternal {
     getProcessElapsed(startTime: number): string;
     startWaitingStatus(startTime: number): void;
     buildConsensusTabs(answerContentDiv: HTMLElement, runs: XdConsensusRun[], setActiveTab: (tabIndex: number, shouldUpdateFooter: boolean) => void): void;
-    runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<void>;
+    runConsensusProcess(questionData: XdQuestionData, startTime: number, isSilent: boolean, silentMode: string, generation?: number): Promise<XdParsedResponse | null>;
     renderSingleResult(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void;
     executeAnswerTool(name: string, args: Record<string, any>): Promise<string>;
     answerGoogleFunctionCalls(s: XdEffectiveSettings, body: Record<string, unknown>, parts: any[]): Promise<string>;
@@ -426,6 +430,8 @@ interface XdAnswers {
     _customAutoAnswer: ((answerText: string, parsed: XdParsedResponse) => void) | null;
     _oneClickUserTriggered: boolean;
     _oneClickContainer: HTMLElement | null;
+    /** Consumed by the next processQuestion after an explicit refresh. */
+    _bypassAnswerCacheOnce?: boolean;
 
     // Lazily created by their owning modules; `undefined` before first write.
     _autoSelecting?: boolean;
