@@ -38,6 +38,8 @@ export function applyLanguage() {
         'cat-desc-general': 'sectionGeneralDesc',
         'cat-title-automation': 'sectionAutomation',
         'cat-desc-automation': 'sectionAutomationDesc',
+        'cat-title-cache-batch': 'sectionCacheBatch',
+        'cat-desc-cache-batch': 'sectionCacheBatchDesc',
         'cat-title-ai-tools': 'sectionAiTools',
         'cat-desc-ai-tools': 'sectionAiToolsDesc',
         'cat-title-stealth': 'sectionStealth',
@@ -71,6 +73,10 @@ export function applyLanguage() {
     document.querySelector('#highlight-correct-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('highlightCorrectHint');
     document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('showAnswerOnly');
     document.querySelector('#show-answer-only-toggle').closest('.toggle-group').querySelector('.field-hint').textContent = t('showAnswerOnlyHint');
+    const cacheCardTitle = document.getElementById('cache-card-title');
+    if (cacheCardTitle) cacheCardTitle.textContent = t('cacheCardTitle');
+    const batchCardTitle = document.getElementById('batch-card-title');
+    if (batchCardTitle) batchCardTitle.textContent = t('batchCardTitle');
     const cacheLabel = document.querySelector('#cache-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
     if (cacheLabel) cacheLabel.textContent = t('cacheLabel');
     const cacheHint = document.getElementById('cache-hint');
@@ -79,6 +85,24 @@ export function applyLanguage() {
     if (cacheTtlLabel) cacheTtlLabel.textContent = t('cacheTtlLabel');
     const cacheClearBtn = document.getElementById('cache-clear-btn');
     if (cacheClearBtn) cacheClearBtn.textContent = t('cacheClear');
+    const batchLabel = document.querySelector('#batch-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (batchLabel) batchLabel.textContent = t('batchLabel');
+    const batchHint = document.getElementById('batch-hint');
+    if (batchHint) batchHint.textContent = t('batchHint');
+    const batchChunkLabel = document.getElementById('batch-chunk-label');
+    if (batchChunkLabel) batchChunkLabel.textContent = t('batchChunkLabel');
+    const batchChunkHint = document.getElementById('batch-chunk-hint');
+    if (batchChunkHint) batchChunkHint.textContent = t('batchChunkHint');
+    const batchMaxLabel = document.getElementById('batch-max-label');
+    if (batchMaxLabel) batchMaxLabel.textContent = t('batchMaxLabel');
+    const batchDelayLabel = document.getElementById('batch-delay-label');
+    if (batchDelayLabel) batchDelayLabel.textContent = t('batchDelayLabel');
+    const batchConcurrencyLabel = document.getElementById('batch-concurrency-label');
+    if (batchConcurrencyLabel) batchConcurrencyLabel.textContent = t('batchConcurrencyLabel');
+    const batchImagesLabel = document.querySelector('#batch-images-toggle')?.closest('.toggle-group')?.querySelector('.toggle-label');
+    if (batchImagesLabel) batchImagesLabel.textContent = t('batchImagesLabel');
+    const batchImagesHint = document.getElementById('batch-images-hint');
+    if (batchImagesHint) batchImagesHint.textContent = t('batchImagesHint');
     document.querySelector('#silent-mode-toggle').closest('.toggle-group').querySelector('.toggle-label').textContent = t('silentMode');
     const silentModeLabel = document.querySelector('label[for="silent-mode-select"]');
     if (silentModeLabel) silentModeLabel.textContent = t('silentModeLabel');

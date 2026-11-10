@@ -185,6 +185,12 @@ export function populateUI() {
     if (el.cacheToggle) el.cacheToggle.checked = settings.answerCacheEnabled !== false;
     if (el.cacheTtlDays) el.cacheTtlDays.value = settings.answerCacheTtlDays || 30;
     if (el.cacheTtlGroup) el.cacheTtlGroup.style.display = settings.answerCacheEnabled !== false ? 'block' : 'none';
+    if (el.batchToggle) el.batchToggle.checked = !!settings.batchEnabled;
+    if (el.batchChunkSize) el.batchChunkSize.value = settings.batchChunkSize || 6;
+    if (el.batchMaxQuestions) el.batchMaxQuestions.value = settings.batchMaxQuestions || 40;
+    if (el.batchDelay) el.batchDelay.value = settings.batchDelayMs ?? 400;
+    if (el.batchConcurrency) el.batchConcurrency.value = settings.batchConcurrency || 2;
+    if (el.batchImagesToggle) el.batchImagesToggle.checked = !!settings.batchIncludeImages;
     el.highlightCorrectToggle.checked = settings.highlightCorrect;
     el.showAnswerOnlyToggle.checked = !!settings.showAnswerOnly;
     const silentModeValue = settings.silentMode || '';

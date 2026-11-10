@@ -49,7 +49,14 @@ export function attachEventListeners() {
     const autoInputs = [
         { el: el.modelName, key: 'model' },
         { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => parseInt(v, 10) || 2000 },
-        { el: el.cacheTtlDays, key: 'answerCacheTtlDays', parse: v => Math.max(1, parseInt(v, 10) || 30) }
+        { el: el.cacheTtlDays, key: 'answerCacheTtlDays', parse: v => Math.max(1, parseInt(v, 10) || 30) },
+        { el: el.batchChunkSize, key: 'batchChunkSize', parse: v => Math.max(1, Math.min(30, parseInt(v, 10) || 6)) },
+        { el: el.batchMaxQuestions, key: 'batchMaxQuestions', parse: v => Math.max(1, Math.min(200, parseInt(v, 10) || 40)) },
+        { el: el.batchDelay, key: 'batchDelayMs', parse: v => {
+            const value = parseInt(v, 10);
+            return Number.isFinite(value) ? Math.max(0, Math.min(5000, value)) : 400;
+        } },
+        { el: el.batchConcurrency, key: 'batchConcurrency', parse: v => Math.max(1, Math.min(3, parseInt(v, 10) || 2)) }
     ];
     for (const { el: inp, key, parse } of autoInputs) {
         if (!inp) continue;
@@ -68,7 +75,9 @@ export function attachEventListeners() {
         { el: el.rememberDragToggle, key: 'rememberDragPosition' },
         { el: el.webSearchToggle, key: 'webSearchEnabled' },
         { el: el.calculatorToggle, key: 'calculatorEnabled' },
-        { el: el.disablerToggle, key: 'disablerEnabled' }
+        { el: el.disablerToggle, key: 'disablerEnabled' },
+        { el: el.batchToggle, key: 'batchEnabled' },
+        { el: el.batchImagesToggle, key: 'batchIncludeImages' }
     ];
     for (const { el: toggle, key } of autoToggles) {
         if (!toggle) continue;

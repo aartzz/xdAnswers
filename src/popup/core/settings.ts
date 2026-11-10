@@ -116,6 +116,13 @@ export async function autoSave(overrides) {
     settings.autoAnswerCooldown = parseInt(el.autoAnswerCooldown.value, 10) || 2000;
     settings.answerCacheEnabled = el.cacheToggle?.checked ?? (settings.answerCacheEnabled !== false);
     settings.answerCacheTtlDays = Math.max(1, parseInt(el.cacheTtlDays?.value, 10) || 30);
+    settings.batchEnabled = el.batchToggle?.checked ?? !!settings.batchEnabled;
+    settings.batchChunkSize = Math.max(1, Math.min(30, parseInt(el.batchChunkSize?.value, 10) || 6));
+    settings.batchMaxQuestions = Math.max(1, Math.min(200, parseInt(el.batchMaxQuestions?.value, 10) || 40));
+    const batchDelay = parseInt(el.batchDelay?.value, 10);
+    settings.batchDelayMs = Number.isFinite(batchDelay) ? Math.max(0, Math.min(5000, batchDelay)) : 400;
+    settings.batchConcurrency = Math.max(1, Math.min(3, parseInt(el.batchConcurrency?.value, 10) || 2));
+    settings.batchIncludeImages = el.batchImagesToggle?.checked ?? !!settings.batchIncludeImages;
     settings.highlightCorrect = el.highlightCorrectToggle.checked;
     settings.showAnswerOnly = el.showAnswerOnlyToggle.checked;
     settings.silentMode = el.silentModeToggle.checked ? (el.silentModeSelect.value || 'indicators') : '';

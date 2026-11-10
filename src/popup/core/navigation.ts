@@ -16,6 +16,7 @@ export function initAospSettingsNavigation() {
     const sections = {
         'general': { titleKey: 'sectionGeneral', el: document.getElementById('settings-section-general') },
         'automation': { titleKey: 'sectionAutomation', el: document.getElementById('settings-section-automation') },
+        'cache-batch': { titleKey: 'sectionCacheBatch', el: document.getElementById('settings-section-cache-batch') },
         'ai-tools': { titleKey: 'sectionAiTools', el: document.getElementById('settings-section-ai-tools') },
         'stealth': { titleKey: 'sectionStealth', el: document.getElementById('settings-section-stealth') },
         'appearance': { titleKey: 'sectionAppearance', el: document.getElementById('settings-section-appearance') }

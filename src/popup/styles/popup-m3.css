@@ -639,6 +639,7 @@ body.theme-material3 .aosp-icon-cyan   { background: #CFFAFE !important; color: 
 body.theme-material3 .aosp-icon-purple { background: var(--m3-primary-container) !important; color: var(--m3-primary) !important; }
 body.theme-material3 .aosp-icon-pink   { background: var(--m3-tertiary-container) !important; color: #9C2752 !important; }
 body.theme-material3 .aosp-icon-amber  { background: #FEF3C7 !important; color: #D97706 !important; }
+body.theme-material3 .aosp-icon-green  { background: #DCFCE7 !important; color: #15803D !important; }
 
 body.theme-material3 .aosp-category-info {
     flex: 1 !important;
