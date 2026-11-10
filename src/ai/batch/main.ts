@@ -52,11 +52,27 @@ interface BatchStateInternal extends XdBatchState {
     const memoryAnswers = new Map<string, BatchMemoryEntry>();
     const plannedKeys = new Set<string>();
 
+    interface PendingBatchAnswer {
+        token: number;
+        key: string;
+        settled: boolean;
+        answer: string | null;
+        promise: Promise<string | null>;
+        resolve: (answer: string | null) => void;
+    }
+
+    const pendingAnswers = new Map<string, PendingBatchAnswer>();
+    const pendingAliases = new Map<string, PendingBatchAnswer>();
+
     let runToken = 0;
     let activePromise: Promise<void> | null = null;
     let activeSignature = '';
     let lastSignature = '';
     let batchPendingUntil = 0;
+    let planningToken = 0;
+    let planningPromise: Promise<void> | null = null;
+    let planningResolve: (() => void) | null = null;
+    let planningDone = false;
     let state: BatchStateInternal = {
         running: false,
         source: '',
@@ -154,6 +170,77 @@ interface BatchStateInternal extends XdBatchState {
         return keys;
     }
 
+    function pendingAliasKeys(questionData: XdQuestionData, cacheKey: string): string[] {
+        const aliases: string[] = [];
+        if (cacheKey) aliases.push('key:' + cacheKey);
+        for (const key of memoryKeys(questionData)) aliases.push('memory:' + key);
+        return aliases;
+    }
+
+    function registerPendingAnswer(entry: BatchEntry, token: number): void {
+        const previous = pendingAnswers.get(entry.key);
+        if (previous) settlePendingAnswer(previous, null);
+
+        let resolve!: (answer: string | null) => void;
+        const promise = new Promise<string | null>(done => { resolve = done; });
+        const pending: PendingBatchAnswer = {
+            token,
+            key: entry.key,
+            settled: false,
+            answer: null,
+            promise,
+            resolve
+        };
+        pendingAnswers.set(entry.key, pending);
+        for (const alias of pendingAliasKeys(entry.questionData, entry.key)) {
+            pendingAliases.set(alias, pending);
+        }
+    }
+
+    function settlePendingAnswer(entry: PendingBatchAnswer, answer: string | null): void {
+        if (entry.settled) return;
+        entry.settled = true;
+        entry.answer = answer;
+        entry.resolve(answer);
+        if (answer) return;
+        // A failed entry must not hide a newer pending entry for the same
+        // question after a batch restart.
+        if (pendingAnswers.get(entry.key) === entry) pendingAnswers.delete(entry.key);
+        for (const [alias, candidate] of pendingAliases) {
+            if (candidate === entry) pendingAliases.delete(alias);
+        }
+    }
+
+    function settlePendingKey(key: string, token: number, answer: string | null): void {
+        const entry = pendingAnswers.get(key);
+        if (!entry || entry.token !== token) return;
+        settlePendingAnswer(entry, answer);
+    }
+
+    function findPendingAnswer(questionData: XdQuestionData, cacheKey: string): PendingBatchAnswer | null {
+        if (cacheKey) {
+            const exact = pendingAnswers.get(cacheKey);
+            if (exact) return exact;
+        }
+        for (const alias of pendingAliasKeys(questionData, '')) {
+            const entry = pendingAliases.get(alias);
+            if (entry) return entry;
+        }
+        return null;
+    }
+
+    function clearPendingAnswers(token?: number): void {
+        for (const [key, entry] of pendingAnswers) {
+            if (token !== undefined && entry.token !== token) continue;
+            settlePendingAnswer(entry, null);
+            pendingAnswers.delete(key);
+        }
+        for (const [alias, entry] of pendingAliases) {
+            if (token !== undefined && entry.token !== token) continue;
+            pendingAliases.delete(alias);
+        }
+    }
+
     function rememberBatchAnswer(questionData: XdQuestionData, answer: string): void {
         if (!answer) return;
         for (const key of memoryKeys(questionData)) {
@@ -180,38 +267,109 @@ interface BatchStateInternal extends XdBatchState {
 
     function markBatchPending(): void {
         batchPendingUntil = Date.now() + 4000;
+        // A provider schedules a new run before prefetchQuestions starts.
+        // If no run is active, the previous plan is stale.
+        if (!activePromise && !state.running) planningDone = false;
     }
 
     function isBatchActive(): boolean {
         return batchPendingUntil > Date.now() || !!activePromise || state.running;
     }
 
+    function beginPlanning(token: number): void {
+        if (planningResolve) planningResolve();
+        planningToken = token;
+        planningDone = false;
+        planningPromise = new Promise<void>(resolve => { planningResolve = resolve; });
+    }
+
+    function finishPlanning(token: number): void {
+        if (planningToken !== token) return;
+        planningDone = true;
+        const resolve = planningResolve;
+        planningResolve = null;
+        planningPromise = null;
+        if (resolve) resolve();
+    }
+
+    function cancelPlanning(): void {
+        planningToken = 0;
+        planningDone = true;
+        const resolve = planningResolve;
+        planningResolve = null;
+        planningPromise = null;
+        if (resolve) resolve();
+    }
+
     async function waitForBatchAnswer(
         questionData: XdQuestionData,
         timeoutMs: number,
-        allowUnplanned = false
+        allowUnplanned = false,
+        cacheKey = ''
     ): Promise<string | null> {
-        const immediate = lookupBatchAnswer(questionData);
-        if (immediate) return immediate;
+        const deadline = Date.now() + Math.max(0, timeoutMs);
+        const startupDeadline = Date.now() + Math.min(2000, Math.max(0, timeoutMs));
+        let matchedPending = false;
 
-        let planned = isBatchPlanned(questionData);
-        if (!planned && !allowUnplanned) return null;
-
-        const end = Date.now() + Math.max(0, timeoutMs);
-        const plannedDeadline = Date.now() + 1200;
-        while (Date.now() < end) {
-            await sleep(120);
+        while (true) {
             const answer = lookupBatchAnswer(questionData);
             if (answer) return answer;
 
-            if (isBatchPlanned(questionData)) planned = true;
-            if (!planned) {
-                if (!isBatchActive() || Date.now() > plannedDeadline) return null;
+            const pending = findPendingAnswer(questionData, cacheKey);
+            if (pending) {
+                matchedPending = true;
+                if (pending.settled) return pending.answer || null;
+                const remaining = deadline - Date.now();
+                if (remaining <= 0) return null;
+                let timedOut = false;
+                const settled = await Promise.race([
+                    pending.promise,
+                    sleep(remaining).then(() => {
+                        timedOut = true;
+                        return null;
+                    })
+                ]);
+                if (timedOut || Date.now() >= deadline) return null;
+                if (settled) return settled;
+                // A restarted batch may have replaced this entry with a new
+                // pending promise for the same question.
                 continue;
             }
-            if (!isBatchActive() && !isBatchPlanned(questionData)) return null;
+
+            // The batch may still be collecting questions and cache keys.
+            // Wait for that phase instead of guessing a fixed timeout.
+            if (planningPromise) {
+                const remaining = deadline - Date.now();
+                if (remaining <= 0) return null;
+                await Promise.race([
+                    planningPromise,
+                    sleep(Math.min(remaining, 250))
+                ]);
+                continue;
+            }
+
+            // Planning finished and this question is not part of the batch.
+            if (planningDone) return null;
+
+            if (!isBatchActive()) {
+                // This question's batch attempt just ended without an answer.
+                if (matchedPending) return null;
+                // The provider may schedule its first batch a moment after a
+                // question is detected. Give it a short startup window, then
+                // stop blocking a normal foreground request.
+                if (!allowUnplanned || Date.now() >= startupDeadline) return null;
+                const remaining = deadline - Date.now();
+                if (remaining <= 0) return null;
+                await sleep(Math.min(remaining, 100));
+                continue;
+            }
+
+            if (!allowUnplanned && !isBatchPlanned(questionData)) return null;
+
+            const remaining = deadline - Date.now();
+            if (remaining <= 0) return null;
+            await sleep(Math.min(remaining, 100));
         }
-        return null;
     }
 
     function batchEffectiveSettings(settings: XdSettings): XdEffectiveSettings {
@@ -457,14 +615,14 @@ interface BatchStateInternal extends XdBatchState {
         return parsed.answer || String(raw || '').replace(/^\s*(?:answer|відповідь|ответ)\s*[:\-]\s*/i, '').trim();
     }
 
-    async function saveAnswer(entry: BatchEntry, answer: string, settings: XdSettings): Promise<boolean> {
-        if (window.xdAnswers.settings.answerCacheEnabled === false) return false;
+    async function saveAnswer(entry: BatchEntry, answer: string, settings: XdSettings): Promise<string | null> {
+        if (window.xdAnswers.settings.answerCacheEnabled === false) return null;
         const clean = String(answer || '').trim();
-        if (!clean) return false;
+        if (!clean) return null;
         const normalized = normalizeAnswerForCache(entry.questionData, clean);
         if (!normalized || !isAnswerPlausiblyUsable(entry.questionData, normalized)) {
             console.warn('[xdAnswers/batch] answer does not match current options, skipping:', entry.questionData.text.slice(0, 60));
-            return false;
+            return null;
         }
         await storeAnswerCache(entry.key, entry.questionData, {
             answer: normalized,
@@ -473,10 +631,10 @@ interface BatchStateInternal extends XdBatchState {
         }, settings, { force: true });
         rememberBatchAnswer(entry.questionData, normalized);
         console.log('[xdAnswers/batch] cached:', entry.questionData.text.slice(0, 60));
-        return true;
+        return normalized;
     }
 
-    async function runBatch(
+    async function runBatchSteps(
         rawQuestions: XdQuestionData[],
         token: number,
         settings: XdSettings,
@@ -539,7 +697,11 @@ interface BatchStateInternal extends XdBatchState {
         plannedKeys.clear();
         for (const entry of pending) {
             for (const key of memoryKeys(entry.questionData)) plannedKeys.add(key);
+            registerPendingAnswer(entry, token);
         }
+        // Foreground question processing can now match these questions to the
+        // batch run. Do not make it wait for the whole run to finish.
+        finishPlanning(token);
 
         const chunks = chunkEntries(pending, chunkSize);
         state = {
@@ -553,6 +715,25 @@ interface BatchStateInternal extends XdBatchState {
         };
         console.log(`[xdAnswers/batch] ${source}: ${pending.length} questions in ${chunks.length} chunks (size=${chunkSize}, images=${includeImages}, concurrency=${concurrency})`);
 
+        const storeEntryAnswer = async (entry: BatchEntry, answer: string): Promise<void> => {
+            if (token !== runToken) return;
+            try {
+                const saved = await saveAnswer(entry, answer, settings);
+                if (token !== runToken) return;
+                if (saved) {
+                    state.done++;
+                    settlePendingKey(entry.key, token, saved);
+                } else {
+                    state.failed++;
+                    settlePendingKey(entry.key, token, null);
+                }
+            } catch {
+                if (token !== runToken) return;
+                state.failed++;
+                settlePendingKey(entry.key, token, null);
+            }
+        };
+
         const processChunk = async (chunk: BatchEntry[], index: number): Promise<void> => {
             const visionChunk = chunk.some(entry => hasImages(entry.questionData));
             console.log(`[xdAnswers/batch] chunk ${index + 1}/${chunks.length}: ${chunk.length} questions${visionChunk ? ' (vision)' : ''}`);
@@ -560,22 +741,21 @@ interface BatchStateInternal extends XdBatchState {
                 if (chunk.length === 1 && hasImages(chunk[0].questionData)) {
                     const answer = await solveSingle(chunk[0], settings);
                     if (token !== runToken) return;
-                    if (answer && await saveAnswer(chunk[0], answer, settings)) state.done++;
-                    else state.failed++;
+                    if (answer) await storeEntryAnswer(chunk[0], answer);
+                    else {
+                        state.failed++;
+                        settlePendingKey(chunk[0].key, token, null);
+                    }
                 } else {
-                    await solveChunk(chunk, settings, async (entry, answer) => {
-                        if (token !== runToken) return;
-                        try {
-                            if (await saveAnswer(entry, answer, settings)) state.done++;
-                            else state.failed++;
-                        } catch {
-                            state.failed++;
-                        }
-                    });
+                    await solveChunk(chunk, settings, storeEntryAnswer);
                 }
             } catch (error) {
-                state.failed += chunk.length;
+                if (token === runToken) state.failed += chunk.length;
                 console.warn('[xdAnswers/batch] chunk failed:', (error as Error)?.message || error);
+            } finally {
+                // Never leave a foreground request waiting for an answer this
+                // chunk did not produce.
+                for (const entry of chunk) settlePendingKey(entry.key, token, null);
             }
         };
 
@@ -597,9 +777,29 @@ interface BatchStateInternal extends XdBatchState {
             () => worker()
         ));
 
-        state.running = false;
-        plannedKeys.clear();
         console.log(`[xdAnswers/batch] finished: ${state.done} cached, ${state.failed} failed`);
+    }
+
+    async function runBatch(
+        rawQuestions: XdQuestionData[],
+        token: number,
+        settings: XdSettings,
+        force: boolean,
+        source: string
+    ): Promise<void> {
+        try {
+            await runBatchSteps(rawQuestions, token, settings, force, source);
+        } finally {
+            finishPlanning(token);
+            clearPendingAnswers(token);
+            if (token === runToken) {
+                state.running = false;
+                plannedKeys.clear();
+                // A changed page can schedule the next run without calling
+                // markBatchPending. Keep the short startup window available.
+                planningDone = false;
+            }
+        }
     }
 
     async function prefetchQuestions(questions: XdQuestionData[], options?: XdBatchOptions): Promise<void> {
@@ -619,14 +819,19 @@ interface BatchStateInternal extends XdBatchState {
         if (activePromise) {
             if (signature === activeSignature) return activePromise;
             // A new test/question set arrived: stop the old loop at its next
-            // checkpoint and start the new one.
+            // checkpoint, release its waiters and start the new one.
             runToken++;
+            clearPendingAnswers();
+            cancelPlanning();
+            plannedKeys.clear();
+            state.running = false;
         }
 
         lastSignature = signature;
         activeSignature = signature;
         batchPendingUntil = 0;
         const token = ++runToken;
+        beginPlanning(token);
         const promise = runBatch(usable, token, settings, !!options?.force, options?.source || 'test');
         activePromise = promise;
         try {
@@ -642,6 +847,8 @@ interface BatchStateInternal extends XdBatchState {
 
     function cancelBatchPrefetch(): void {
         runToken++;
+        clearPendingAnswers();
+        cancelPlanning();
         activePromise = null;
         activeSignature = '';
         lastSignature = '';

@@ -81,30 +81,25 @@ import type { XdCachedAnswer } from '../../core/answer-cache';
             // and the rendered question without trusting another test's data.
             if (!cached && !bypassCache && cacheEnabled) {
                 let batchAnswer = I.lookupBatchAnswer ? I.lookupBatchAnswer(questionData) : null;
+                const batchCandidate = !!(questionData.batchKey || questionData.cacheScope);
+                const batchActive = !!(I.isBatchActive && I.isBatchActive());
 
-                // The first question can be detected a moment before the
-                // provider starts its batch. Give the batch a short head start
-                // instead of asking the AI twice.
-                if (!batchAnswer && settings.batchEnabled && !(I.isBatchActive && I.isBatchActive())
-                    && (questionData.batchKey || questionData.cacheScope)) {
-                    await new Promise<void>(resolve => setTimeout(resolve, 700));
+                if (!batchAnswer && settings.batchEnabled && I.waitForBatchAnswer
+                    && (batchCandidate || batchActive)) {
+                    // A planned question owns one in-flight promise in the
+                    // batch. Wait for that exact answer instead of starting a
+                    // duplicate request while the batch is still streaming.
+                    const waited = await I.waitForBatchAnswer(questionData, 60000, true, cacheKey);
                     if (!isCurrent()) return;
-                    batchAnswer = I.lookupBatchAnswer ? I.lookupBatchAnswer(questionData) : null;
+                    if (waited) {
+                        batchAnswer = waited;
+                        console.log('[xdAnswers] batch answer arrived while waiting:', waited.slice(0, 60));
+                    }
                 }
 
                 if (batchAnswer) {
                     cached = { answer: batchAnswer, at: Date.now() };
                     console.log('[xdAnswers] batch memory hit:', batchAnswer.slice(0, 60));
-                } else if (I.isBatchActive && I.isBatchActive() && I.waitForBatchAnswer) {
-                    // Let the streaming batch answer this question instead of
-                    // starting a duplicate AI request. allowUnplanned covers
-                    // the short race before batch computes its question keys.
-                    const waited = await I.waitForBatchAnswer(questionData, 10000, true);
-                    if (!isCurrent()) return;
-                    if (waited) {
-                        cached = { answer: waited, at: Date.now() };
-                        console.log('[xdAnswers] batch answer arrived while waiting:', waited.slice(0, 60));
-                    }
                 }
             }
 

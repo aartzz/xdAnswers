@@ -399,7 +399,7 @@ interface XdAnswersInternal {
     isBatchPlanned(questionData: XdQuestionData): boolean;
     isBatchActive(): boolean;
     markBatchPending(): void;
-    waitForBatchAnswer(questionData: XdQuestionData, timeoutMs: number, allowUnplanned?: boolean): Promise<string | null>;
+    waitForBatchAnswer(questionData: XdQuestionData, timeoutMs: number, allowUnplanned?: boolean, cacheKey?: string): Promise<string | null>;
     renderSingleResult(result: XdStreamAnswerResult, parsed: XdParsedResponse, elapsed: string): void;
     executeAnswerTool(name: string, args: Record<string, any>): Promise<string>;
     answerGoogleFunctionCalls(s: XdEffectiveSettings, body: Record<string, unknown>, parts: any[]): Promise<string>;
