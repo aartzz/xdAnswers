@@ -25,6 +25,9 @@
             ? allOptionElements.filter(el => scopedContainer.contains(el))
             : allOptionElements;
         const elements = I.matchAnswerToOptions(answerText, optionElements);
+        if (!elements.length && optionElements.length > 0) {
+            console.warn('[xdAnswers] highlight: answer did not match any option:', String(answerText).slice(0, 80));
+        }
         for (const el of elements) {
             const target = (el.closest('.question-option, .answer-item, .tb-answer, .v-test-questions-select-block, .v-test-questions-radio-block, .v-test-questions-checkbox-block, .opt, label, [role="radio"], [role="checkbox"], [data-automation-id="choiceItem"]') || el) as HTMLElement;
             target.classList.add('xd-highlight-correct');

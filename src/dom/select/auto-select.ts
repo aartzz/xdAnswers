@@ -248,6 +248,8 @@
                         if (submit) setTimeout(() => submit.click(), 50);
                     }
                 }
+            } else if (answerText && optionElements.length > 0) {
+                console.warn('[xdAnswers] auto-select: answer did not match any option:', String(answerText).slice(0, 80));
             }
             // For multiquiz questions: click the "save answers" / "confirm" button after selecting options
             // Only when checkboxes are present (multiquiz) — single-answer questions don't need a save step

@@ -9,6 +9,21 @@
     const parseLabeledResponse = I.parseLabeledResponse;
     const salvagePartialJSON = I.salvagePartialJSON;
 
+    // Some providers serialize tool calls as literal text tokens
+    // (<｜...｜ calls>, <｜...｜ invoke ...>) instead of returning tool_calls.
+    // Remove those markers before parsing/rendering so they never reach the UI.
+    function stripToolMarkup(text: string): string {
+        if (!text) return '';
+        return text
+            .replace(/<[｜|][^>]*>/g, ' ')
+            .replace(/<\/[｜|][^>]*>/g, ' ')
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
+    I.stripToolMarkup = stripToolMarkup;
+
     function extractFinalAnswerRegex(text: string): XdParsedResponse | null {
         if (!text) return null;
         let m = text.match(/FINAL_ANSWER:\s*(.+?)(?:\n|$)/i);
@@ -64,6 +79,7 @@
     function parseAIResponse(text: string): XdParsedResponse {
         if (!text) return { answer: '', explanation: '', solution: '', confidence: '', raw: text, parseFailed: true };
 
+        text = stripToolMarkup(text);
         text = stripInlineThinking(text);
 
         const labeled = parseLabeledResponse(text);

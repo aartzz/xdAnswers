@@ -10,11 +10,26 @@
     function normalizeText(t: string | null | undefined): string {
         return (t || '').replace(/\s+/g, ' ').trim().toLowerCase()
             .replace(/[\u00A0\u200B\u200C\u200D\uFEFF\u2060]/g, '')  // zero-width / nbsp
+            .replace(/[₀₁₂₃₄₅₆₇₈₉]/g, ch => String('₀₁₂₃₄₅₆₇₈₉'.indexOf(ch)))
+            .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, ch => String('⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(ch)))
             .replace(/(\d),(\d)/g, '$1.$2')                    // decimal comma → dot (1,5 → 1.5)
             .replace(/(\d)\.(\d)/g, '$1_DOT_$2')               // protect decimal dots temporarily
             .replace(/[.,;:!?()\-–—]/g, '')                     // strip remaining punctuation
             .replace(/_DOT_/g, '.')                              // restore decimal dots
             .trim();
+    }
+
+    // Ukrainian text copied by a model often mixes Latin lookalikes into
+    // Cyrillic words ("синiй колip"). Fold both scripts to one skeleton for
+    // matching only; English text is folded consistently too.
+    function normalizeConfusables(t: string | null | undefined): string {
+        const map: Record<string, string> = {
+            a: 'а', c: 'с', e: 'е', h: 'н', i: 'і', k: 'к', m: 'м',
+            o: 'о', p: 'р', t: 'т', x: 'х', y: 'у',
+            A: 'А', C: 'С', E: 'Е', H: 'Н', I: 'І', K: 'К', M: 'М',
+            O: 'О', P: 'Р', T: 'Т', X: 'Х', Y: 'У'
+        };
+        return (t || '').replace(/[A-Za-z]/g, ch => map[ch] || ch);
     }
 
     function levenshtein(a: string, b: string): number {
@@ -51,6 +66,7 @@
     }
 
     I.normalizeText = normalizeText;
+    I.normalizeConfusables = normalizeConfusables;
     I.levenshtein = levenshtein;
     I.textSimilarity = textSimilarity;
 })();
