@@ -126,11 +126,10 @@
 
         refreshBtn.onclick = () => {
             if (window.xdAnswers.onRefresh) {
-                window.xdAnswers.cancelProcessing();
                 if (window.xdAnswers.answerContentDiv) {
                     window.xdAnswers.answerContentDiv.innerHTML = '<div class="xd-loader"></div>';
                 }
-                window.xdAnswers.onRefresh();
+                window.xdAnswers.forceRefresh();
             }
             else alert('No active question to refresh.');
         };

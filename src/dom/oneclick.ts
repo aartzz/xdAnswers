@@ -115,10 +115,9 @@
                 }
                 return;
             }
-            // Default: re-run the provider's refresh flow.
+            // Default: re-run the provider's refresh flow without the cache.
             if (typeof window.xdAnswers.onRefresh === 'function') {
-                window.xdAnswers.cancelProcessing();
-                window.xdAnswers.onRefresh();
+                window.xdAnswers.forceRefresh();
             }
         } catch (err) {
             console.warn('xdAnswers.triggerHotkey error:', err);

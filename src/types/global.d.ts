@@ -467,6 +467,8 @@ interface XdAnswers {
     streamAnswer(questionData: XdQuestionData, outerStartTime?: number, overrides?: XdStreamAnswerOverrides): Promise<XdStreamAnswerResult>;
     processQuestion(questionData: XdQuestionData): Promise<void>;
     cancelProcessing(): void;
+    /** Cancel the current run and re-ask the AI, bypassing the answer cache. */
+    forceRefresh(): void;
 
     createUI(): void;
     attachHelperEventListeners(): void;

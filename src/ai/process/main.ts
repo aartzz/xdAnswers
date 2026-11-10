@@ -176,4 +176,14 @@ import type { XdCachedAnswer } from '../../core/answer-cache';
         window.xdAnswers.isProcessingAI = false;
         window.xdAnswers._oneClickContainer = null;
     };
+
+    // Explicit refresh: cancel the running request, skip the cache for the next
+    // run, and let the active provider re-run its question detection.
+    window.xdAnswers.forceRefresh = function(): void {
+        window.xdAnswers._bypassAnswerCacheOnce = true;
+        window.xdAnswers.cancelProcessing();
+        if (typeof window.xdAnswers.onRefresh === 'function') {
+            window.xdAnswers.onRefresh();
+        }
+    };
 })();
