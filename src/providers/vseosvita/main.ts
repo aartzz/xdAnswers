@@ -53,11 +53,21 @@ import type { VseosvitaApplyApi } from './autoanswer';
             const questionData = dom.detectQuestionData();
             if (!questionData) return;
 
-            const keyOptions = ['ordering', 'matching'].includes(questionData.questionType)
-                ? [...questionData.options].sort((a, b) => a.localeCompare(b, 'uk'))
+            // Dynamic formats mutate their own option DOM when an answer is
+            // applied (paired cross items disappear, basket items move, queue
+            // positions change). Do not include those option snapshots in the
+            // question-change key, otherwise applying an answer looks like a
+            // brand-new question and triggers another AI request.
+            const dynamicOptionTypes = [
+                'matching', 'ordering', 'match_pairs', 'true_false',
+                'categorization', 'order_words', 'fill_word'
+            ];
+            const keyOptions = questionData.vseosvitaMeta || dynamicOptionTypes.includes(questionData.questionType)
+                ? []
                 : questionData.options;
 
             const currentKey = JSON.stringify({
+                id: questionData.root.id,
                 text: questionData.text,
                 options: keyOptions,
                 type: questionData.questionType,

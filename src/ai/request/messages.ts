@@ -36,7 +36,17 @@
         if (questionData.questionType === 'matching') {
             userMsg += 'Це завдання на відповідність. Зістав елементи.\n\n';
         } else if (questionData.questionType === 'true_false') {
-            userMsg += 'Це питання на "Правда / Неправда". Відповідай СТРОГО одним словом у полі answer: "Правда" АБО "Неправда".\n\n';
+            userMsg += 'Це завдання з кількома твердженнями, де треба вибрати ОДНЕ правильне. '
+                + 'У полі answer скопіюй ТОЧНИЙ текст обраного твердження зі списку нижче. '
+                + 'Якщо питання справді має відповідь лише "Правда" або "Неправда", тоді відповідай одним словом "Правда" або "Неправда".\n\n';
+        } else if (questionData.questionType === 'ordering') {
+            userMsg += 'Це завдання на впорядкування. Розташуй елементи у правильному порядку. '
+                + 'У полі answer перерахуй їх через крапку з комою у потрібному порядку: елемент1; елемент2; елемент3. '
+                + 'Використовуй точні тексти елементів зі списку нижче.\n\n';
+        } else if (questionData.questionType === 'range') {
+            userMsg += 'Це завдання з вибором числа на шкалі. У полі answer вкажи ОДНЕ число без одиниць вимірювання та без пояснень.\n\n';
+        } else if (questionData.questionType === 'fill_word') {
+            userMsg += 'Це завдання-філворд або кросворд. У полі answer вкажи потрібні слова через крапку з комою.\n\n';
         } else if (questionData.questionType === 'fill_blank') {
             userMsg += 'У питанні є пропуски з ключами A0, A1, A2 тощо (див. текст питання). '
                 + 'У полі answer перерахуй заповнення для кожного ключа у форматі: A0=значення1; A1=значення2; A2=значення3. '
@@ -46,7 +56,8 @@
                 + 'Обери ОДИН варіант зі списку для кожного пропуску. У полі answer вкажи: A0=обраний_варіант; A1=обраний_варіант.\n\n';
         } else if (questionData.questionType === 'order_words') {
             userMsg += 'Розташуй слова/фрагменти у правильному порядку. У полі answer перерахуй їх через крапку з комою у потрібному порядку: слово1; слово2; слово3. '
-                + 'Використовуй точно ті слова, що перелічені у варіантах.\n\n';
+                + 'Використовуй точно ті слова, що перелічені у варіантах. '
+                + 'Якщо у завданні кілька рядків, дай відповідь для кожного рядка окремим рядком, зберігаючи порядок рядків.\n\n';
         } else if (questionData.questionType === 'categorization') {
             userMsg += 'Це завдання на розподіл елементів по категоріях. '
                 + 'У полі answer вкажи результат у форматі: Категорія1: елемент1, елемент2; Категорія2: елемент3, елемент4. '
@@ -92,8 +103,12 @@
             if (questionData.optionsText.includes('[зображення]') && (questionData.base64Images || []).length > 0) {
                 userMsg += '\nУВАГА: Варіанти позначені [зображення] — це картинки серед прикріплених зображень. Спочатку йде картинка запитання, потім картинки варіантів у порядку A, B, C...';
             }
-            if (questionData.questionType !== 'true_false' && questionData.questionType !== 'grid'
-                && questionData.questionType !== 'match_pairs' && questionData.questionType !== 'true_false_multi') {
+            const specialAnswerTypes = new Set([
+                'true_false', 'grid', 'match_pairs', 'true_false_multi',
+                'fill_blank', 'select_in_text', 'order_words', 'ordering',
+                'categorization', 'text_input_multi', 'range', 'fill_word'
+            ]);
+            if (!specialAnswerTypes.has(questionData.questionType || '')) {
                 userMsg += '\n\nНагадування: твоя відповідь — ОДИН ІЗ ВАРІАНТІВ зі списку. Формат: answer: <скопіюй точний текст>';
             }
         }
