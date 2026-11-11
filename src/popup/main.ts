@@ -167,6 +167,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         /^schoolos-test\.vercel\.app$/,
         /^schoolos\.vercel\.app$/,
         /^schoolosua\.github\.io$/,
+        /^student\.amplify\.com$/,
+        /^learning\.amplify\.com$/,
         /^docs\.google\.com$/,
         /^forms\.office\.com$/,
     ];

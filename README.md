@@ -121,6 +121,7 @@ npx web-ext run -t chromium
 | Мрія | [school.mriia.gov.ua](https://school.mriia.gov.ua) | ❔️ | ✅ | ⚠️ | ✅ |
 | SchoolOS INTEGRITY | [schoolos-test.vercel.app](https://schoolos-test.vercel.app) | ❔️ | ✅ | ✅ | ✅ |
 | Testix | [testix.com.ua](https://testix.com.ua) | 🟢 | ✅ | ✅ | ✅ |
+| Amplify Classroom | [student.amplify.com](https://student.amplify.com) | ❔️ | ✅ | ➖ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |

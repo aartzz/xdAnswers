@@ -56,6 +56,11 @@
         } else if (questionData.questionType === 'select_in_text') {
             userMsg += 'У питанні є пропуски з ключами A0, A1, A2 — для кожного вказано список доступних варіантів у квадратних дужках [варіант1 | варіант2 | ...]. '
                 + 'Обери ОДИН варіант зі списку для кожного пропуску. У полі answer вкажи: A0=обраний_варіант; A1=обраний_варіант.\n\n';
+        } else if (questionData.questionType === 'inline_fill') {
+            userMsg += 'У питанні є інтерактивні поля з ключами A0, A1, A2 тощо: текстові поля, математичні поля, випадаючі списки та/або виділені фрагменти H0, H1. '
+                + 'Для кожного ключа дай значення у форматі: A0=значення; A1=значення; H0=точний_текст_фрагмента. '
+                + 'Для випадаючого списку або виділеного фрагмента використовуй ТОЧНИЙ текст одного з варіантів у квадратних дужках. '
+                + 'Для математичного поля відповідь — математичний вираз без пояснень.\n\n';
         } else if (questionData.questionType === 'order_words') {
             userMsg += 'Розташуй слова/фрагменти у правильному порядку. У полі answer перерахуй їх через крапку з комою у потрібному порядку: слово1; слово2; слово3. '
                 + 'Використовуй точно ті слова, що перелічені у варіантах. '
@@ -108,7 +113,7 @@
             }
             const specialAnswerTypes = new Set([
                 'true_false', 'grid', 'match_pairs', 'true_false_multi',
-                'fill_blank', 'select_in_text', 'order_words', 'ordering',
+                'fill_blank', 'select_in_text', 'inline_fill', 'order_words', 'ordering',
                 'categorization', 'text_input_multi', 'range', 'fill_word'
             ]);
             if (!specialAnswerTypes.has(questionData.questionType || '')) {
