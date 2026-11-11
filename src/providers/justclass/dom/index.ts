@@ -3,7 +3,7 @@
 import type { JustclassEntry } from '../api';
 import { applySelections, closePanels, isAlreadyCorrect, matchOption, selectWidget, selectedText } from './select';
 import { collectQuestionImages, questionRoot, questionStem, readWidgetOptions } from './question';
-import { getHash, getQuestionKey, getQuestionNumber, getSelect, getWidgets, isVisible, lower, norm, rowLabel, sameWidgets, sleep } from './shared';
+import { getHash, getQuestionKey, getQuestionNumber, getSelect, getTrainingRoot, getWidgetType, getWidgets, isVisible, lower, norm, rowLabel, sameWidgets, sleep } from './shared';
 
 export interface JustclassDomApi {
     norm(value: unknown): string;
@@ -11,6 +11,8 @@ export interface JustclassDomApi {
     sleep(ms: number): Promise<void>;
     isVisible(el: Element | null): boolean;
     getHash(): string | null;
+    getTrainingRoot(): Element | null;
+    getWidgetType(widget: Element): 'select' | 'dnd' | 'input' | 'unscramble' | 'choice';
     getQuestionNumber(): number;
     getWidgets(): Element[];
     getSelect(widget: Element | null): Element | null;
@@ -44,6 +46,8 @@ export interface JustclassDomApi {
         sleep,
         isVisible,
         getHash,
+        getTrainingRoot,
+        getWidgetType,
         getQuestionNumber,
         getWidgets,
         getSelect,

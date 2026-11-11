@@ -5,6 +5,15 @@ export const PANEL_SELECTOR = '.mat-select-panel';
 export const PANEL_WAIT_MS = 1400;
 export const OPTION_WAIT_MS = 1000;
 
+const TRAINING_ROOT_SELECTOR = 'justkids-training-preview, .preview-content, justkids-lesson-training-page';
+const WIDGET_SELECTOR = [
+    'justkids-select',
+    'justkids-input',
+    'justkids-dnd-text-answer-drop',
+    'justkids-image-set-dnd-answer-drop',
+    'justkids-dnd-image-answer-drop'
+].join(', ');
+
 export function norm(s: unknown): string {
     return String(s == null ? '' : s)
         .replace(/\u00a0/g, ' ')
@@ -33,15 +42,22 @@ export function getHash(): string | null {
     try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
 }
 
+export function getTrainingRoot(): Element | null {
+    const roots = Array.from(document.querySelectorAll(TRAINING_ROOT_SELECTOR)).filter(isVisible);
+    return roots.find(root => root.matches('justkids-training-preview, .preview-content')) || roots[0] || null;
+}
+
 export function getQuestionNumber(): number {
     const widgets = getWidgets();
     const scope = widgets.length
-        ? (widgets[0].closest('.preview-block') || widgets[0].closest('justkids-training-preview'))
+        ? (widgets[0].closest('.preview-block')
+            || widgets[0].closest('justkids-training-preview')
+            || widgets[0].closest('justkids-lesson-training-page'))
         : null;
 
     const candidates: Element[] = [];
     if (scope) candidates.push(scope);
-    document.querySelectorAll('.preview-block, justkids-training-preview').forEach(el => {
+    document.querySelectorAll('.preview-block, justkids-training-preview, justkids-homework-training, justkids-lesson-training-page').forEach(el => {
         if (isVisible(el)) candidates.push(el);
     });
     candidates.push(document.body);
@@ -55,22 +71,17 @@ export function getQuestionNumber(): number {
 }
 
 export function getWidgets(): Element[] {
-    const selectors = [
-        'justkids-select-dynamic',
-        'justkids-text-dnd',
-        'justkids-input-dynamic',
-        'justkids-image-set-input',
-        '.answer__content'
-    ];
-    return Array.from(document.querySelectorAll(selectors.join(', ')))
-        .filter(isVisible);
+    const root = getTrainingRoot();
+    if (!root) return [];
+    return Array.from(root.querySelectorAll(WIDGET_SELECTOR)).filter(isVisible);
 }
 
 export function getWidgetType(widget: Element): 'select' | 'dnd' | 'input' | 'unscramble' | 'choice' {
-    if (widget.matches('justkids-select-dynamic') || widget.querySelector('mat-select')) return 'select';
-    if (widget.matches('justkids-text-dnd') || widget.querySelector('justkids-dnd-text-answer-drop-dynamic')) return 'dnd';
-    if (widget.matches('justkids-input-dynamic') || widget.querySelector('input')) return 'input';
-    if (widget.matches('justkids-image-set-input') || widget.querySelector('.image-set-item')) return 'unscramble';
+    if (widget.matches('justkids-select') || widget.querySelector('mat-select')) return 'select';
+    if (widget.matches('justkids-input') || widget.querySelector('input')) return 'input';
+    if (widget.matches('justkids-dnd-text-answer-drop, justkids-image-set-dnd-answer-drop, justkids-dnd-image-answer-drop')
+        || widget.closest('justkids-text-dnd, justkids-image-set-dnd, justkids-dnd-image')) return 'dnd';
+    if (widget.closest('justkids-image-set-input, justkids-image-set-select, justkids-image-set-dnd')) return 'unscramble';
     return 'choice';
 }
 
@@ -79,8 +90,8 @@ export function getSelect(widget: Element | null): Element | null {
 }
 
 export function getQuestionKey(widgets: Element[]): string {
-    const ids = widgets.map(w => w.id || '').join(',');
-    return (getHash() || '') + '|' + getQuestionNumber() + '|' + ids;
+    const tags = widgets.map(widget => widget.tagName.toLowerCase()).join(',');
+    return (getHash() || '') + '|' + getQuestionNumber() + '|' + tags;
 }
 
 export function sameWidgets(a: Element[], b: Element[]): boolean {
@@ -96,7 +107,7 @@ export function rowLabel(widget: Element): string {
     for (let depth = 0; depth < 3 && node; depth++) {
         let prev = node.previousElementSibling;
         while (prev && !norm(prev.textContent)) prev = prev.previousElementSibling;
-        if (prev && !prev.querySelector('justkids-select-dynamic, mat-select, .select-wrapper')) {
+        if (prev && !prev.querySelector('justkids-select, justkids-input, justkids-dnd-text-answer-drop, mat-select, .select-wrapper, .input__wrapper')) {
             const text = norm(prev.textContent);
             if (text && text.length <= 180) return text;
         }

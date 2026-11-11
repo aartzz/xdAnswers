@@ -47,7 +47,9 @@ export interface JustclassUi {
         widgets.forEach((widget, index) => {
             const entry = entries[index];
             if (!entry || !entry.correctValues.length) return;
-            const value = entry.correctValues.join(' / ');
+            const value = entry.options.length
+                ? entry.correctValues.join(' / ')
+                : entry.correctValues[0];
             values.push(value);
 
             if (widgets.length > 1) {
@@ -122,7 +124,7 @@ export interface JustclassUi {
             (el as HTMLElement).style.removeProperty('border-radius');
         });
         document.querySelectorAll('.xd-jc-dot').forEach(el => el.remove());
-        document.querySelectorAll('justkids-select-dynamic').forEach(el => (el as HTMLElement).style.removeProperty('position'));
+        document.querySelectorAll('justkids-select, justkids-input, justkids-dnd-text-answer-drop, justkids-image-set-dnd-answer-drop').forEach(el => (el as HTMLElement).style.removeProperty('position'));
     }
 
     function markWidget(widget: Element, entry: JustclassEntry, indicator: boolean): void {

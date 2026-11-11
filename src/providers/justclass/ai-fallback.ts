@@ -113,6 +113,7 @@ export interface JustclassAiFallbackApi {
         const stem = d.questionStem(widgets);
         const rows: Array<{ label: string; options: string[] }> = [];
         let hasOptions = false;
+        let hasInputs = false;
 
         for (let i = 0; i < widgets.length; i++) {
             const widget = widgets[i];
@@ -121,6 +122,7 @@ export interface JustclassAiFallbackApi {
 
             if (!options.length) options = await d.readWidgetOptions(widget);
             if (options.length) hasOptions = true;
+            if (!options.length && d.getWidgetType(widget) === 'input') hasInputs = true;
 
             rows.push({
                 label: d.rowLabel(widget) || ('Пункт ' + (i + 1)),
@@ -128,7 +130,7 @@ export interface JustclassAiFallbackApi {
             });
         }
 
-        if (!hasOptions) return null;
+        if (!hasOptions && !hasInputs) return null;
 
         let text: string;
         let optionsText = '';
@@ -136,14 +138,18 @@ export interface JustclassAiFallbackApi {
         if (rows.length === 1) {
             text = stem || 'Завдання JustClass.';
             optionsText = rows[0].options.join('\n');
+            if (!optionsText) {
+                text += '\n\nДай коротку відповідь одним словом або числом, без пояснень.';
+            }
         } else {
-            text = 'Це завдання з кількома пунктами — для кожного пункту треба вибрати правильний варіант.\n'
-                + 'Відповідай СТРОГО у форматі: 1=варіант; 2=варіант; ... (номер пункту = вибраний варіант).\n'
+            text = 'Це завдання з кількома пунктами — для кожного пункту треба вибрати правильний варіант або вписати відповідь.\n'
+                + 'Відповідай СТРОГО у форматі: 1=варіант; 2=варіант; ... (номер пункту = вибраний варіант або вписаний текст).\n'
                 + 'Використовуй ТОЧНИЙ текст варіанту зі списку.\n\n';
             if (stem) text += 'Завдання: ' + stem + '\n\n';
             text += 'Пункти:';
             rows.forEach((row, index) => {
-                text += '\n' + (index + 1) + '. ' + row.label + ' — варіанти: ' + row.options.join(' | ');
+                text += '\n' + (index + 1) + '. ' + row.label
+                    + (row.options.length ? ' — варіанти: ' + row.options.join(' | ') : ' — впиши відповідь');
             });
         }
 

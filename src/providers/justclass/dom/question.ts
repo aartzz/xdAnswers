@@ -10,8 +10,14 @@ import { closePanels, getVisiblePanel, isDisabled, optionText, panelForSelect, w
 export function questionRoot(widgets: Element[]): Element | null {
     if (!widgets.length) return null;
     return widgets[0].closest('justkids-text-select')
-        || widgets[0].closest('.preview-content')
+        || widgets[0].closest('justkids-text-input')
+        || widgets[0].closest('justkids-text-dnd')
+        || widgets[0].closest('justkids-image-set-input')
+        || widgets[0].closest('justkids-image-set-select')
+        || widgets[0].closest('justkids-image-set-dnd')
+        || widgets[0].closest('justkids-dnd-image')
         || widgets[0].closest('justkids-training-preview')
+        || widgets[0].closest('.preview-content')
         || widgets[0].parentElement;
 }
 
@@ -19,17 +25,18 @@ export function questionStem(widgets: Element[]): string {
     const root = questionRoot(widgets);
     if (!root) return '';
     const clone = root.cloneNode(true) as Element;
-    clone.querySelectorAll('justkids-select-dynamic, .answer__content').forEach(el => el.remove());
+    clone.querySelectorAll([
+        'justkids-select',
+        'justkids-input',
+        'justkids-dnd-text-answer-drop',
+        'justkids-image-set-input',
+        'justkids-image-set-select',
+        'justkids-image-set-dnd',
+        'justkids-dnd-image',
+        '.answer__content'
+    ].join(', ')).forEach(el => el.remove());
 
-    // If unscramble question exists, add prompt hint
-    const unscramble = root.querySelector('justkids-image-set-input');
-    let extra = '';
-    if (unscramble) {
-        const letters = (unscramble.textContent || '').replace(/\s+/g, ' ').trim();
-        extra = `\n[Завдання: анаграма / unscramble: "${letters}"]`;
-    }
-
-    return norm((clone as HTMLElement).innerText || clone.textContent) + extra;
+    return norm((clone as HTMLElement).innerText || clone.textContent);
 }
 
 export async function collectQuestionImages(widgets: Element[]): Promise<string[]> {
@@ -39,7 +46,7 @@ export async function collectQuestionImages(widgets: Element[]): Promise<string[
     const urls: string[] = [];
     root.querySelectorAll('img').forEach(img => {
         if (!img.src || img.src.startsWith('data:image/gif')) return;
-        if (img.closest('justkids-select-dynamic')) return;
+        if (img.closest('justkids-select, justkids-input, mat-select, mat-option')) return;
         if ((img.width || img.naturalWidth || 0) < 30) return;
         if (!urls.includes(img.src)) urls.push(img.src);
     });
@@ -50,29 +57,34 @@ export async function collectQuestionImages(widgets: Element[]): Promise<string[
     return images.filter(Boolean) as string[];
 }
 
+function dndDragItems(widget: Element): string[] {
+    const root = widget.closest('justkids-text-dnd, justkids-image-set-dnd, justkids-dnd-image');
+    if (!root) return [];
+    const items = root.querySelectorAll([
+        '.answers justkids-dnd-answer-drag',
+        '.dnd-answers justkids-dnd-answer-drag',
+        '.answers justkids-image-set-dnd-answer-drag',
+        '.dnd-answers justkids-image-set-dnd-answer-drag',
+        '.dnd-answers justkids-dnd-image-answer-drag',
+        'justkids-dnd-answer-drag',
+        'justkids-image-set-dnd-answer-drag',
+        'justkids-dnd-image-answer-drag'
+    ].join(', '));
+    return Array.from(items).map(item => norm(item.textContent)).filter(Boolean);
+}
+
 export async function readWidgetOptions(widget: Element): Promise<string[]> {
-    // 1. Direct choice button (.answer__content)
-    if (widget.matches('.answer__content') || widget.closest('.answer__content')) {
-        const text = norm((widget as HTMLElement).innerText || widget.textContent);
-        return text ? [text] : [];
+    // 1. Drag and drop widget: choices live in the drag source row.
+    if (widget.matches('justkids-dnd-text-answer-drop, justkids-image-set-dnd-answer-drop, justkids-dnd-image-answer-drop')) {
+        return dndDragItems(widget);
     }
 
-    // 2. Drag and drop text widget
-    if (widget.matches('justkids-text-dnd') || widget.querySelector('justkids-dnd-text-answer-drop-dynamic')) {
-        const items = document.querySelectorAll(
-            'justkids-dnd-text-answer-item, .justkids-dnd-text-answer-item, .dnd-item, [class*="dnd-item"]'
-        );
-        const texts = Array.from(items).map(i => norm(i.textContent)).filter(Boolean);
-        if (texts.length) return texts;
+    // 2. Text input / image-set input: the answer is typed, not chosen.
+    if (widget.matches('justkids-input') || widget.querySelector('input')) {
+        return [];
     }
 
-    // 3. Dynamic input placeholder / blanks
-    if (widget.matches('justkids-input-dynamic') || widget.querySelector('input')) {
-        const ph = widget.getAttribute('placeholder') || widget.querySelector('input')?.getAttribute('placeholder') || '';
-        return ph ? [ph] : [];
-    }
-
-    // 4. mat-select driving
+    // 3. mat-select driving
     const select = getSelect(widget);
     if (!select || isDisabled(select)) return [];
 
