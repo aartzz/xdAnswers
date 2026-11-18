@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         /^schoolosua\.github\.io$/,
         /^student\.amplify\.com$/,
         /^learning\.amplify\.com$/,
+        /^(.*\.)?smileandtask\.com$/,
         /^docs\.google\.com$/,
         /^forms\.office\.com$/,
     ];

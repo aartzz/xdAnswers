@@ -122,6 +122,7 @@ npx web-ext run -t chromium
 | SchoolOS INTEGRITY | [schoolos-test.vercel.app](https://schoolos-test.vercel.app) | ❔️ | ✅ | ✅ | ✅ |
 | Testix | [testix.com.ua](https://testix.com.ua) | 🟢 | ✅ | ✅ | ✅ |
 | Amplify Classroom | [student.amplify.com](https://student.amplify.com) | ❔️ | ✅ | ➖ | ✅ |
+| S&T School | [school.smileandtask.com](https://school.smileandtask.com) | ❔️ | ✅ | ✅ | ✅ |
 
 #### Умовні позначення
 | Позначення | Пояснення |
