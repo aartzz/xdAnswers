@@ -189,10 +189,14 @@ export function renderConsensusRuns() {
     const container = uiElements.consensusRunsContainer;
     if (!container) return;
 
-    const enabled = !!(settings.consensus && settings.consensus.enabled);
+    // Popup checkbox is source of truth while its change handler persists settings.
+    const enabled = uiElements.consensusToggle
+        ? uiElements.consensusToggle.checked
+        : !!(settings.consensus && settings.consensus.enabled);
+    container.classList.toggle('hidden', !enabled);
     container.style.display = enabled ? 'block' : 'none';
     if (uiElements.addConsensusRunBtn) {
-        uiElements.addConsensusRunBtn.style.display = enabled ? 'inline-block' : 'none';
+        uiElements.addConsensusRunBtn.classList.toggle('hidden', !enabled);
     }
     if (!enabled) {
         container.innerHTML = '';

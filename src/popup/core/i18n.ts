@@ -38,8 +38,6 @@ export function applyLanguage() {
         'cat-desc-general': 'sectionGeneralDesc',
         'cat-title-automation': 'sectionAutomation',
         'cat-desc-automation': 'sectionAutomationDesc',
-        'cat-title-cache-batch': 'sectionCacheBatch',
-        'cat-desc-cache-batch': 'sectionCacheBatchDesc',
         'cat-title-ai-tools': 'sectionAiTools',
         'cat-desc-ai-tools': 'sectionAiToolsDesc',
         'cat-title-stealth': 'sectionStealth',
