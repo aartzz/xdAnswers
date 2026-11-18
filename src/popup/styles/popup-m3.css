@@ -43,7 +43,7 @@ body.theme-material3 {
 
     /* Motion */
     --m3-ease:    cubic-bezier(0.2, 0, 0, 1);
-    --m3-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+    --m3-spring:  cubic-bezier(0.2, 0, 0, 1);
 
     /* Icon font */
     --font-icon: "Material Symbols Outlined";
@@ -248,8 +248,8 @@ body.theme-material3 .tab-content.active {
 
 /* Hero Status Card */
 body.theme-material3 .m3-home-hero {
-    background: var(--m3-primary) !important;
-    border-radius: var(--m3-r-2xl) !important;
+    background: var(--m3-primary-container) !important;
+    border-radius: var(--m3-r-xl) !important;
     padding: 20px 20px !important;
     display: flex !important;
     align-items: center !important;
@@ -281,10 +281,14 @@ body.theme-material3 .m3-home-status-emoji {
     line-height: 1 !important;
     flex-shrink: 0 !important;
     display: block !important;
-    color: var(--m3-on-primary) !important;
+    color: var(--m3-on-primary-container) !important;
     font-style: normal !important;
     font-weight: 300 !important;
     font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' 0, 'opsz' 48;
+}
+
+body.theme-material3 .m3-home-status-emoji.material-icon {
+    font-size: 40px !important;
 }
 
 body.theme-material3 .m3-home-hero-text {
@@ -296,15 +300,15 @@ body.theme-material3 .m3-home-hero-text {
 
 body.theme-material3 .m3-home-status-label {
     font-size: 22px !important;
-    font-weight: 700 !important;
-    color: var(--m3-on-primary) !important;
+    font-weight: 500 !important;
+    color: var(--m3-on-primary-container) !important;
     line-height: 1.2 !important;
 }
 
 body.theme-material3 .m3-home-version-label {
     font-size: 13px !important;
-    color: var(--m3-on-primary) !important;
-    opacity: 0.85 !important;
+    color: var(--m3-on-primary-container) !important;
+    opacity: 0.8 !important;
     line-height: 1 !important;
 }
 
@@ -333,7 +337,7 @@ body.theme-material3 .m3-home-stats-row {
 body.theme-material3 .m3-home-stat-card {
     flex: 1 !important;
     background: var(--m3-surface-high) !important;
-    border-radius: var(--m3-r-2xl) !important;
+    border-radius: var(--m3-r-l) !important;
     padding: 16px 12px !important;
     display: flex !important;
     flex-direction: column !important;
@@ -353,9 +357,13 @@ body.theme-material3 .m3-home-stat-icon {
     line-height: 1 !important;
 }
 
+body.theme-material3 .m3-home-stat-icon.material-icon {
+    font-size: 20px !important;
+}
+
 body.theme-material3 .m3-home-stat-value {
     font-size: 22px !important;
-    font-weight: 700 !important;
+    font-weight: 500 !important;
     color: var(--m3-on-surface) !important;
     line-height: 1 !important;
 }
@@ -370,7 +378,7 @@ body.theme-material3 .m3-home-stat-label {
 /* Generic M3 Card */
 body.theme-material3 .m3-card {
     background: var(--m3-surface-high) !important;
-    border-radius: var(--m3-r-2xl) !important;
+    border-radius: var(--m3-r-l) !important;
     padding: 16px !important;
     margin-bottom: 12px !important;
     box-sizing: border-box !important;
@@ -405,6 +413,10 @@ body.theme-material3 .m3-home-info-icon {
     line-height: 1 !important;
 }
 
+body.theme-material3 .m3-home-info-icon.material-icon {
+    font-size: 20px !important;
+}
+
 body.theme-material3 .m3-home-info-text {
     display: flex !important;
     flex-direction: column !important;
@@ -414,10 +426,8 @@ body.theme-material3 .m3-home-info-text {
 
 body.theme-material3 .m3-home-info-title {
     font-size: 11px !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     color: var(--m3-on-surface-variant) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
     line-height: 1 !important;
 }
 
@@ -536,7 +546,8 @@ body.theme-material3 .aosp-search-wrapper {
 }
 
 body.theme-material3 .aosp-search-wrapper:focus-within {
-    box-shadow: 0 0 0 2px var(--m3-primary) !important;
+    outline: 2px solid var(--m3-primary) !important;
+    outline-offset: 2px !important;
 }
 
 body.theme-material3 .aosp-search-icon {
@@ -633,13 +644,16 @@ body.theme-material3 .aosp-category-icon .material-icon {
     font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Category icon color variants using M3 container roles */
-body.theme-material3 .aosp-icon-blue   { background: #DBEAFE !important; color: #2563EB !important; }
-body.theme-material3 .aosp-icon-cyan   { background: #CFFAFE !important; color: #0891B2 !important; }
-body.theme-material3 .aosp-icon-purple { background: var(--m3-primary-container) !important; color: var(--m3-primary) !important; }
-body.theme-material3 .aosp-icon-pink   { background: var(--m3-tertiary-container) !important; color: #9C2752 !important; }
-body.theme-material3 .aosp-icon-amber  { background: #FEF3C7 !important; color: #D97706 !important; }
-body.theme-material3 .aosp-icon-green  { background: #DCFCE7 !important; color: #15803D !important; }
+/* Category icons share one semantic accent. Category names, not rainbow tiles, carry grouping. */
+body.theme-material3 .aosp-icon-blue,
+body.theme-material3 .aosp-icon-cyan,
+body.theme-material3 .aosp-icon-purple,
+body.theme-material3 .aosp-icon-pink,
+body.theme-material3 .aosp-icon-amber,
+body.theme-material3 .aosp-icon-green {
+    background: var(--m3-secondary-container) !important;
+    color: var(--m3-on-secondary-container) !important;
+}
 
 body.theme-material3 .aosp-category-info {
     flex: 1 !important;
@@ -751,10 +765,8 @@ body.theme-material3 .settings-section-panel.hidden {
 /* Section title labels */
 body.theme-material3 .m3-section-title {
     font-size: 11px !important;
-    font-weight: 700 !important;
+    font-weight: 500 !important;
     color: var(--m3-primary) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.8px !important;
     margin: 16px 4px 8px 4px !important;
 }
 
@@ -798,6 +810,20 @@ body.theme-material3 .settings-card > .form-group:not(.toggle-group) {
     display: flex !important;
     flex-direction: column !important;
     gap: 6px !important;
+}
+
+/* Component rule above has higher specificity than global `.hidden`. */
+body.theme-material3 .settings-card > .form-group.hidden {
+    display: none !important;
+}
+
+body.theme-material3 .settings-card > .form-group.toggle-group.hidden {
+    display: none !important;
+}
+
+/* Hidden dependent rows do not count as a visible next row. */
+body.theme-material3 .settings-card > .form-group:not(:has(~ .form-group:not(.hidden))) {
+    border-bottom: none !important;
 }
 
 body.theme-material3 .settings-card > .form-group:not(.toggle-group) > label:first-child {
@@ -918,11 +944,11 @@ body.theme-material3 .settings-card > .form-group.toggle-group label.switch span
     top: 50% !important;
     left: 6px !important;
     transform: translateY(-50%) !important;
-    width: 16px !important;
-    height: 16px !important;
+    width: 20px !important;
+    height: 20px !important;
     border-radius: 50% !important;
     background: var(--m3-on-surface-variant) !important;
-    transition: left 0.25s, width 0.15s, height 0.15s, background 0.2s !important;
+    transition: transform 0.2s var(--m3-ease), background 0.2s var(--m3-ease) !important;
 }
 
 /* Checked track */
@@ -933,11 +959,9 @@ body.theme-material3 .settings-card > .form-group.toggle-group label.switch inpu
 
 /* Checked knob */
 body.theme-material3 .settings-card > .form-group.toggle-group label.switch input[type="checkbox"]:checked + span::after {
-    left: calc(100% - 29px) !important;
-    width: 24px !important;
-    height: 24px !important;
+    left: 6px !important;
+    transform: translate(20px, -50%) !important;
     background: var(--m3-on-primary) !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
 }
 
 /* Focus ring */
@@ -964,11 +988,120 @@ body.theme-material3 input[type="password"] {
     box-sizing: border-box !important;
 }
 
+body.theme-material3 .m3-slider-field {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) max-content !important;
+    align-items: center !important;
+    gap: 0 !important;
+}
+
+body.theme-material3 .m3-slider-field input[type="number"] {
+    min-width: 0 !important;
+    width: 40px !important;
+    text-align: end !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 8px 4px !important;
+    appearance: textfield !important;
+    -moz-appearance: textfield !important;
+}
+
+body.theme-material3 .m3-slider-field input[type="number"]::-webkit-inner-spin-button,
+body.theme-material3 .m3-slider-field input[type="number"]::-webkit-outer-spin-button {
+    appearance: none !important;
+    margin: 0 !important;
+}
+
+body.theme-material3 .m3-slider-field input[type="number"]:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+body.theme-material3 .m3-slider-field .slider {
+    position: relative !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+body.theme-material3 .m3-slider-field .slider span {
+    position: absolute !important;
+    inset-inline: 0 !important;
+    top: 14px !important;
+    height: 8px !important;
+    border-radius: var(--m3-r-full) !important;
+    pointer-events: none !important;
+}
+
+/* BeerCSS-style break around thumb keeps both track segments visually separate. */
+body.theme-material3 .m3-slider-field .slider span::before,
+body.theme-material3 .m3-slider-field .slider span::after {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    height: 8px !important;
+}
+
+body.theme-material3 .m3-slider-field .slider span::before {
+    left: 0 !important;
+    width: max(0px, calc(var(--m3-slider-position) - 8px)) !important;
+    border-radius: var(--m3-r-full) 0 0 var(--m3-r-full) !important;
+    background: var(--m3-primary) !important;
+}
+
+body.theme-material3 .m3-slider-field .slider span::after {
+    left: calc(var(--m3-slider-position) + 8px) !important;
+    right: 0 !important;
+    border-radius: 0 var(--m3-r-full) var(--m3-r-full) 0 !important;
+    background: var(--m3-outline-variant) !important;
+}
+
+body.theme-material3 .m3-slider-field .slider input[type="range"] {
+    appearance: none !important;
+    position: relative !important;
+    z-index: 1 !important;
+    width: 100% !important;
+    height: 32px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    cursor: pointer !important;
+}
+
+body.theme-material3 .m3-slider-field .slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none !important;
+    width: 6px !important;
+    height: 32px !important;
+    border: 0 !important;
+    border-radius: var(--m3-r-full) !important;
+    background: var(--m3-primary) !important;
+}
+
+body.theme-material3 .m3-slider-field .slider input[type="range"]::-moz-range-thumb {
+    width: 6px !important;
+    height: 32px !important;
+    border: 0 !important;
+    border-radius: var(--m3-r-full) !important;
+    background: var(--m3-primary) !important;
+}
+
+body.theme-material3 .m3-slider-field .slider input[type="range"]::-moz-range-track {
+    background: transparent !important;
+}
+
+body.theme-material3 .m3-slider-field .slider:focus-within:has(input:focus-visible) {
+    outline: 2px solid var(--m3-primary) !important;
+    outline-offset: 4px !important;
+}
+
 body.theme-material3 input[type="text"]:focus,
 body.theme-material3 input[type="number"]:focus,
 body.theme-material3 input[type="password"]:focus {
     border-color: var(--m3-primary) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent) !important;
+    outline: 2px solid var(--m3-primary) !important;
+    outline-offset: 2px !important;
 }
 
 body.theme-material3 input[type="text"]:hover,
@@ -1025,7 +1158,8 @@ body.theme-material3 .m3-select-trigger:hover {
 
 body.theme-material3 .m3-select-wrap.m3-open .m3-select-trigger {
     border-color: var(--m3-primary) !important;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--m3-primary) 20%, transparent) !important;
+    outline: 2px solid var(--m3-primary) !important;
+    outline-offset: 2px !important;
 }
 
 body.theme-material3 .m3-select-arrow {
@@ -1239,9 +1373,7 @@ body.theme-material3 .fetch-models-btn:hover {
    ══════════════════════════════════════════════════════════ */
 body.theme-material3 .providers-section-header {
     font-size: 10px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.8px !important;
-    text-transform: uppercase !important;
+    font-weight: 500 !important;
     color: var(--m3-primary) !important;
     padding: 6px 0 4px !important;
     display: flex !important;
@@ -1352,10 +1484,10 @@ body.theme-material3 .provider-card-btn:hover {
 
 body.theme-material3 .add-provider-btn,
 body.theme-material3 .add-consensus-run-btn {
-    background: var(--m3-surface-high) !important;
-    border: 1.5px dashed var(--m3-outline) !important;
-    border-radius: var(--m3-r-l) !important;
-    color: var(--m3-primary) !important;
+    background: var(--m3-primary-container) !important;
+    border: none !important;
+    border-radius: var(--m3-r-full) !important;
+    color: var(--m3-on-primary-container) !important;
     font-weight: 500 !important;
     font-size: 13px !important;
     padding: 10px !important;
@@ -1367,10 +1499,13 @@ body.theme-material3 .add-consensus-run-btn {
     box-sizing: border-box !important;
 }
 
+body.theme-material3 .add-consensus-run-btn.hidden {
+    display: none !important;
+}
+
 body.theme-material3 .add-provider-btn:hover,
 body.theme-material3 .add-consensus-run-btn:hover {
-    background: var(--m3-primary-container) !important;
-    border-color: var(--m3-primary) !important;
+    background: color-mix(in srgb, var(--m3-primary-container) 88%, var(--m3-on-primary-container)) !important;
 }
 
 body.theme-material3 .cache-clear-btn {
@@ -1517,8 +1652,6 @@ body.theme-material3 .pf-type-option .provider-option-hint {
    the rest of the popup instead of falling back to the legacy dark card. */
 body.theme-material3 .provider-form-overlay {
     background: rgba(0, 0, 0, 0.55) !important;
-    backdrop-filter: blur(6px) !important;
-    -webkit-backdrop-filter: blur(6px) !important;
 }
 
 body.theme-material3 .provider-form-overlay .provider-form {
@@ -1566,7 +1699,7 @@ body.theme-material3 .pf-save-btn {
 }
 
 body.theme-material3 .pf-save-btn:hover {
-    box-shadow: 0 2px 8px color-mix(in srgb, var(--m3-primary) 35%, transparent) !important;
+    background: color-mix(in srgb, var(--m3-primary) 88%, black) !important;
 }
 
 body.theme-material3 .pf-cancel-btn {
@@ -1828,10 +1961,8 @@ body.theme-material3 .form-group {
 
 body.theme-material3 .form-group:not(.settings-card .form-group) > label:first-child {
     font-size: 12px !important;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
     color: var(--m3-on-surface-variant) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
     margin-bottom: 5px !important;
     display: block !important;
 }

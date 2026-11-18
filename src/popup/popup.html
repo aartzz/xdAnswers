@@ -24,7 +24,7 @@
                 <div class="m3-home-hero-left">
                     <span class="m3-home-status-emoji material-icon" id="home-status-emoji">sentiment_satisfied</span>
                     <div class="m3-home-hero-text">
-                        <span class="m3-home-status-label" id="home-status-label">Working!</span>
+                        <span class="m3-home-status-label" id="home-status-label">Active</span>
                         <span class="m3-home-version-label xd-popup-version-home"></span>
                     </div>
                 </div>
@@ -74,8 +74,8 @@
             <!-- GitHub Bug Report -->
             <a href="https://github.com/artzabaz/xdAnswers/issues" target="_blank" rel="noopener" class="m3-card m3-home-github-card">
                 <div class="m3-home-github-left">
-                    <span class="m3-home-github-title">Found a bug?</span>
-                    <span class="m3-home-github-sub">Create an issue on GitHub and we'll fix it</span>
+                    <span class="m3-home-github-title">Report an issue</span>
+                    <span class="m3-home-github-sub">Open an issue on GitHub</span>
                 </div>
                 <svg class="m3-home-github-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="currentColor" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2Z"/>
@@ -156,16 +156,6 @@
                     <div class="aosp-category-info">
                         <div class="aosp-category-title" id="cat-title-automation">Автоматизація й відповіді</div>
                         <div class="aosp-category-desc" id="cat-desc-automation">Автовідповідь, підсвічування, обмеження</div>
-                    </div>
-                </div>
-
-                <div class="aosp-category-card" data-category="cache-batch">
-                    <div class="aosp-category-icon aosp-icon-green">
-                        <span class="material-icon">database</span>
-                    </div>
-                    <div class="aosp-category-info">
-                        <div class="aosp-category-title" id="cat-title-cache-batch">Кеш і Batch</div>
-                        <div class="aosp-category-desc" id="cat-desc-cache-batch">Збережені відповіді та фонове розв'язування</div>
                     </div>
                 </div>
 
@@ -266,8 +256,15 @@
                             <p class="field-hint">Automatically select the correct answer on the page.</p>
                         </div>
                         <div class="form-group" id="cooldown-group" data-search-terms="затримка cooldown speed">
-                            <label for="auto-answer-cooldown">Cooldown (ms):</label>
-                            <input type="number" id="auto-answer-cooldown" min="0" step="100" placeholder="1500">
+                            <label for="auto-answer-cooldown">Затримка (с):</label>
+                            <div class="m3-slider-field">
+                                <div class="slider">
+                                    <input type="range" id="auto-answer-cooldown-range" min="0.1" max="10" step="0.1" aria-label="Затримка від 0,1 до 10 секунд">
+                                    <span></span>
+                                </div>
+                                <input type="number" id="auto-answer-cooldown" min="0.1" max="10" step="0.1" inputmode="decimal" aria-label="Власне значення затримки в секундах">
+                            </div>
+                            <p class="field-hint">Від 0,1 до 10 с. Можна ввести власне значення.</p>
                         </div>
                         <div class="form-group toggle-group" data-search-terms="підсвічування highlight correct answer">
                             <label class="switch">
@@ -294,9 +291,6 @@
                             <p class="field-hint" id="disabler-hint">Відключає перевірки сайту, щоб дозволити легше списування.</p>
                         </div>
                     </div>
-                </div>
-
-                <div id="settings-section-cache-batch" class="settings-section-panel hidden" style="display: none;">
                     <div class="m3-section-title settings-section-label" id="cache-card-title">Кеш відповідей</div>
                     <div class="settings-card">
                         <div class="form-group toggle-group" data-search-terms="кеш cache відповіді answers пам'ять">
@@ -309,9 +303,16 @@
                         </div>
                         <div class="form-group" id="cache-ttl-group" data-search-terms="кеш cache ttl днів days термін">
                             <label for="cache-ttl-days" id="cache-ttl-label">Cache TTL (days):</label>
-                            <input type="number" id="cache-ttl-days" min="1" max="365" step="1" placeholder="30">
+                            <div class="m3-slider-field">
+                                <div class="slider">
+                                    <input type="range" id="cache-ttl-days-range" min="1" max="90" step="1" aria-label="Термін кешу від 1 до 90 днів">
+                                    <span></span>
+                                </div>
+                                <input type="number" id="cache-ttl-days" min="1" step="1" inputmode="numeric" aria-label="Власний термін кешу в днях">
+                            </div>
+                            <p class="field-hint">Від 1 до 90 днів. Можна ввести власне значення.</p>
                         </div>
-                        <div class="form-group cache-actions" data-search-terms="очистити кеш clear flush cache видалити">
+                        <div class="form-group cache-actions cache-dependent" data-search-terms="очистити кеш clear flush cache видалити">
                             <div class="field-hint" id="cache-status">Cache: 0 answers</div>
                             <button type="button" id="cache-clear-btn" class="cache-clear-btn">Clear cache</button>
                         </div>
@@ -327,24 +328,24 @@
                             <span class="toggle-label" id="batch-label">Batch mode</span>
                             <p class="field-hint" id="batch-hint">Pre-solve the whole test in the background and cache the answers. Requires answer cache.</p>
                         </div>
-                        <div class="form-group" data-search-terms="batch chunk розмір size питань questions">
+                        <div class="form-group batch-dependent" data-search-terms="batch chunk розмір size питань questions">
                             <label for="batch-chunk-size" id="batch-chunk-label">Questions per request:</label>
-                            <input type="number" id="batch-chunk-size" min="1" max="30" step="1" placeholder="6">
+                            <div class="m3-slider-field"><div class="slider"><input type="range" id="batch-chunk-size-range" min="1" max="30" step="1"><span></span></div><input type="number" id="batch-chunk-size" min="1" step="1" inputmode="numeric"></div>
                             <p class="field-hint" id="batch-chunk-hint">Set this to the test size (up to 30) to send everything in one request. Image questions still go one per request.</p>
                         </div>
-                        <div class="form-group" data-search-terms="batch максимум max questions питання">
+                        <div class="form-group batch-dependent" data-search-terms="batch максимум max questions питання">
                             <label for="batch-max-questions" id="batch-max-label">Max questions per test:</label>
-                            <input type="number" id="batch-max-questions" min="1" max="200" step="1" placeholder="40">
+                            <div class="m3-slider-field"><div class="slider"><input type="range" id="batch-max-questions-range" min="1" max="200" step="1"><span></span></div><input type="number" id="batch-max-questions" min="1" step="1" inputmode="numeric"></div>
                         </div>
-                        <div class="form-group" data-search-terms="batch затримка delay пауза requests">
-                            <label for="batch-delay" id="batch-delay-label">Delay between requests (ms):</label>
-                            <input type="number" id="batch-delay" min="0" max="5000" step="100" placeholder="400">
+                        <div class="form-group batch-dependent" data-search-terms="batch затримка delay пауза requests">
+                            <label for="batch-delay" id="batch-delay-label">Delay between requests (s):</label>
+                            <div class="m3-slider-field"><div class="slider"><input type="range" id="batch-delay-range" min="0" max="5" step="0.1"><span></span></div><input type="number" id="batch-delay" min="0" step="0.1" inputmode="decimal"></div>
                         </div>
-                        <div class="form-group" data-search-terms="batch паралельно concurrency потоки requests">
+                        <div class="form-group batch-dependent" data-search-terms="batch паралельно concurrency потоки requests">
                             <label for="batch-concurrency" id="batch-concurrency-label">Concurrent requests:</label>
-                            <input type="number" id="batch-concurrency" min="1" max="3" step="1" placeholder="2">
+                            <div class="m3-slider-field"><div class="slider"><input type="range" id="batch-concurrency-range" min="1" max="3" step="1"><span></span></div><input type="number" id="batch-concurrency" min="1" step="1" inputmode="numeric"></div>
                         </div>
-                        <div class="form-group toggle-group" data-search-terms="batch зображення images vision картинки">
+                        <div class="form-group toggle-group batch-dependent" data-search-terms="batch зображення images vision картинки">
                             <label class="switch">
                                 <input type="checkbox" id="batch-images-toggle">
                                 <span></span>

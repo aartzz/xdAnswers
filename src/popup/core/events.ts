@@ -48,13 +48,13 @@ export function attachEventListeners() {
 
     const autoInputs = [
         { el: el.modelName, key: 'model' },
-        { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => parseInt(v, 10) || 2000 },
+        { el: el.autoAnswerCooldown, key: 'autoAnswerCooldown', parse: v => Math.round(Math.max(0.1, Math.min(10, parseFloat(v) || 2)) * 1000) },
         { el: el.cacheTtlDays, key: 'answerCacheTtlDays', parse: v => Math.max(1, parseInt(v, 10) || 30) },
         { el: el.batchChunkSize, key: 'batchChunkSize', parse: v => Math.max(1, Math.min(30, parseInt(v, 10) || 6)) },
         { el: el.batchMaxQuestions, key: 'batchMaxQuestions', parse: v => Math.max(1, Math.min(200, parseInt(v, 10) || 40)) },
         { el: el.batchDelay, key: 'batchDelayMs', parse: v => {
-            const value = parseInt(v, 10);
-            return Number.isFinite(value) ? Math.max(0, Math.min(5000, value)) : 400;
+            const value = parseFloat(v);
+            return Number.isFinite(value) ? Math.max(0, Math.min(5, value)) * 1000 : 400;
         } },
         { el: el.batchConcurrency, key: 'batchConcurrency', parse: v => Math.max(1, Math.min(3, parseInt(v, 10) || 2)) }
     ];
@@ -62,6 +62,40 @@ export function attachEventListeners() {
         if (!inp) continue;
         inp.addEventListener('change', () => autoSave({ [key]: parse ? parse(inp.value) : inp.value }));
     }
+
+    function syncSliderField(range, number, min, max) {
+        if (!range || !number) return;
+        const setProgress = () => {
+            const value = parseFloat(range.value);
+            const slider = range.parentElement;
+            const fraction = (value - min) / (max - min);
+            const thumbWidth = 6;
+            const position = thumbWidth / 2 + fraction * (range.clientWidth - thumbWidth);
+            slider?.style.setProperty('--m3-slider-position', `${position}px`);
+        };
+        setProgress();
+        range.addEventListener('input', () => {
+            number.value = range.value;
+            setProgress();
+            autoSave({});
+        });
+        range.addEventListener('change', () => autoSave({}));
+        number.addEventListener('input', () => {
+            const value = parseFloat(number.value);
+            if (Number.isFinite(value) && value >= min && value <= max) {
+                range.value = String(value);
+                setProgress();
+            }
+        });
+        number.addEventListener('change', () => autoSave({}));
+        window.addEventListener('resize', setProgress);
+    }
+    syncSliderField(el.autoAnswerCooldownRange, el.autoAnswerCooldown, 0.1, 10);
+    syncSliderField(el.cacheTtlDaysRange, el.cacheTtlDays, 1, 90);
+    syncSliderField(el.batchChunkSizeRange, el.batchChunkSize, 1, 30);
+    syncSliderField(el.batchMaxQuestionsRange, el.batchMaxQuestions, 1, 200);
+    syncSliderField(el.batchDelayRange, el.batchDelay, 0, 5);
+    syncSliderField(el.batchConcurrencyRange, el.batchConcurrency, 1, 3);
     el.modelName.addEventListener('input', () => {
         clearTimeout(autoSave._modelTimer);
         autoSave._modelTimer = setTimeout(() => autoSave({ model: el.modelName.value.trim() }), 300);
@@ -79,17 +113,31 @@ export function attachEventListeners() {
         { el: el.batchToggle, key: 'batchEnabled' },
         { el: el.batchImagesToggle, key: 'batchIncludeImages' }
     ];
+    function setBatchDependentVisibility() {
+        document.querySelectorAll('.batch-dependent').forEach(group => {
+            group.classList.toggle('hidden', !el.batchToggle?.checked);
+        });
+    }
+    function setCacheDependentVisibility() {
+        document.querySelectorAll('.cache-dependent').forEach(group => {
+            group.classList.toggle('hidden', !el.cacheToggle?.checked);
+        });
+    }
+    setBatchDependentVisibility();
+    setCacheDependentVisibility();
     for (const { el: toggle, key } of autoToggles) {
         if (!toggle) continue;
         toggle.onchange = () => {
-            el.cooldownGroup.style.display = el.autoAnswerToggle.checked ? 'block' : 'none';
+            el.cooldownGroup.classList.toggle('hidden', !el.autoAnswerToggle.checked);
+            if (toggle === el.batchToggle) setBatchDependentVisibility();
             autoSave({ [key]: toggle.checked });
         };
     }
 
     if (el.cacheToggle) {
         el.cacheToggle.onchange = () => {
-            if (el.cacheTtlGroup) el.cacheTtlGroup.style.display = el.cacheToggle.checked ? 'block' : 'none';
+            if (el.cacheTtlGroup) el.cacheTtlGroup.classList.toggle('hidden', !el.cacheToggle.checked);
+            setCacheDependentVisibility();
             autoSave({ answerCacheEnabled: el.cacheToggle.checked });
         };
     }

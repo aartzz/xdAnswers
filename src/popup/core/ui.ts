@@ -180,16 +180,34 @@ export function populateUI() {
     renderModelList();
 
     el.autoAnswerToggle.checked = settings.autoAnswer;
-    el.autoAnswerCooldown.value = settings.autoAnswerCooldown;
-    el.cooldownGroup.style.display = settings.autoAnswer ? 'block' : 'none';
+    el.autoAnswerCooldown.value = ((settings.autoAnswerCooldown || 2000) / 1000).toString();
+    if (el.autoAnswerCooldownRange) el.autoAnswerCooldownRange.value = Math.min(10, Math.max(0.1, (settings.autoAnswerCooldown || 2000) / 1000)).toString();
+    if (el.autoAnswerCooldownRange) el.autoAnswerCooldownRange.dispatchEvent(new Event('input'));
+    el.cooldownGroup.classList.toggle('hidden', !settings.autoAnswer);
     if (el.cacheToggle) el.cacheToggle.checked = settings.answerCacheEnabled !== false;
     if (el.cacheTtlDays) el.cacheTtlDays.value = settings.answerCacheTtlDays || 30;
-    if (el.cacheTtlGroup) el.cacheTtlGroup.style.display = settings.answerCacheEnabled !== false ? 'block' : 'none';
+    if (el.cacheTtlDaysRange) el.cacheTtlDaysRange.value = Math.min(90, Math.max(1, settings.answerCacheTtlDays || 30)).toString();
+    if (el.cacheTtlDaysRange) el.cacheTtlDaysRange.dispatchEvent(new Event('input'));
+    if (el.cacheTtlGroup) el.cacheTtlGroup.classList.toggle('hidden', settings.answerCacheEnabled === false);
+    document.querySelectorAll('.cache-dependent').forEach(group => {
+        group.classList.toggle('hidden', settings.answerCacheEnabled === false);
+    });
     if (el.batchToggle) el.batchToggle.checked = !!settings.batchEnabled;
+    document.querySelectorAll('.batch-dependent').forEach(group => {
+        group.classList.toggle('hidden', !settings.batchEnabled);
+    });
     if (el.batchChunkSize) el.batchChunkSize.value = settings.batchChunkSize || 6;
+    if (el.batchChunkSizeRange) el.batchChunkSizeRange.value = Math.min(30, Math.max(1, settings.batchChunkSize || 6)).toString();
+    if (el.batchChunkSizeRange) el.batchChunkSizeRange.dispatchEvent(new Event('input'));
     if (el.batchMaxQuestions) el.batchMaxQuestions.value = settings.batchMaxQuestions || 40;
-    if (el.batchDelay) el.batchDelay.value = settings.batchDelayMs ?? 400;
+    if (el.batchMaxQuestionsRange) el.batchMaxQuestionsRange.value = Math.min(200, Math.max(1, settings.batchMaxQuestions || 40)).toString();
+    if (el.batchMaxQuestionsRange) el.batchMaxQuestionsRange.dispatchEvent(new Event('input'));
+    if (el.batchDelay) el.batchDelay.value = ((settings.batchDelayMs ?? 400) / 1000).toString();
+    if (el.batchDelayRange) el.batchDelayRange.value = Math.min(5, Math.max(0, (settings.batchDelayMs ?? 400) / 1000)).toString();
+    if (el.batchDelayRange) el.batchDelayRange.dispatchEvent(new Event('input'));
     if (el.batchConcurrency) el.batchConcurrency.value = settings.batchConcurrency || 2;
+    if (el.batchConcurrencyRange) el.batchConcurrencyRange.value = Math.min(3, Math.max(1, settings.batchConcurrency || 2)).toString();
+    if (el.batchConcurrencyRange) el.batchConcurrencyRange.dispatchEvent(new Event('input'));
     if (el.batchImagesToggle) el.batchImagesToggle.checked = !!settings.batchIncludeImages;
     el.highlightCorrectToggle.checked = settings.highlightCorrect;
     el.showAnswerOnlyToggle.checked = !!settings.showAnswerOnly;

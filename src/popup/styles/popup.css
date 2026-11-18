@@ -797,6 +797,116 @@ input[type="checkbox"] {
     accent-color: var(--popup-border);
 }
 
+/* Slider fields are shared by both popup themes. Keep Legacy controls compact
+   and aligned instead of exposing an unstyled native range input. */
+body.theme-legacy .m3-slider-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 56px;
+    align-items: center;
+    gap: 8px;
+}
+
+body.theme-legacy .m3-slider-field .slider {
+    position: relative;
+    height: 28px;
+    display: flex;
+    align-items: center;
+}
+
+body.theme-legacy .m3-slider-field .slider span {
+    position: absolute;
+    inset-inline: 0;
+    top: 12px;
+    height: 4px;
+    pointer-events: none;
+}
+
+body.theme-legacy .m3-slider-field .slider span::before,
+body.theme-legacy .m3-slider-field .slider span::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 4px;
+}
+
+body.theme-legacy .m3-slider-field .slider span::before {
+    left: 0;
+    width: max(0px, calc(var(--m3-slider-position) - 6px));
+    border-radius: 4px 0 0 4px;
+    background: var(--popup-border);
+}
+
+body.theme-legacy .m3-slider-field .slider span::after {
+    left: calc(var(--m3-slider-position) + 6px);
+    right: 0;
+    border-radius: 0 4px 4px 0;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+body.theme-legacy .m3-slider-field input[type="range"] {
+    appearance: none;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 28px;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+body.theme-legacy .m3-slider-field input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 6px;
+    height: 28px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--popup-border);
+}
+
+body.theme-legacy .m3-slider-field input[type="range"]::-moz-range-thumb {
+    width: 6px;
+    height: 28px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--popup-border);
+}
+
+body.theme-legacy .m3-slider-field input[type="range"]:focus-visible {
+    outline: 2px solid var(--popup-border);
+    outline-offset: 3px;
+}
+
+body.theme-legacy .m3-slider-field input[type="number"] {
+    width: 56px;
+    min-width: 0;
+    padding: 4px 6px;
+    text-align: end;
+}
+
+/* M3 groups place switch label before text. Restore Legacy row alignment. */
+body.theme-legacy .settings-card > .form-group.toggle-group {
+    position: relative;
+    display: block;
+    padding-right: 52px;
+}
+
+body.theme-legacy .settings-card > .form-group.toggle-group label.switch {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    margin: 0;
+}
+
+body.theme-legacy .settings-card > .form-group.toggle-group .toggle-label {
+    display: block;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+body.theme-legacy .settings-card > .form-group.toggle-group .field-hint {
+    margin: 6px 0 0;
+}
+
 select {
     width: 100%;
     padding: 7px 32px 7px 12px;
