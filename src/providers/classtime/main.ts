@@ -1,14 +1,18 @@
 // src/providers/classtime/main.ts
-// Classtime provider entry: watches the page and forwards questions to the AI pipeline.
-import type { ClasstimeDomApi } from './dom';
+// Classtime provider entry: detects the active student question, builds the AI
+// payload for every Classtime question kind and installs the matching applier.
+import type { ClasstimeDomApi, ClasstimeQuestionState } from './dom';
 
 (function() {
     'use strict';
 
     const modules = window.xdAnswers._internal.providerModules;
-    const domApi = (modules && modules.classtime && modules.classtime.dom) as ClasstimeDomApi;
+    const domApi = (modules && modules.classtime && modules.classtime.dom) as ClasstimeDomApi | undefined;
 
-    let lastQuestionText = '';
+    let lastQuestionKey = '';
+    let lastQuestionSignature = '';
+    let isChecking = false;
+    let checkScheduled = false;
 
     const waitForUtils = setInterval(async function() {
         if (window.xdAnswers && window.xdAnswers.loadSettings) {
@@ -18,71 +22,90 @@ import type { ClasstimeDomApi } from './dom';
         }
     }, 50);
 
+    function buildQuestionData(state: ClasstimeQuestionState, images: string[]): XdQuestionData {
+        return {
+            text: state.text,
+            optionsText: state.options.length > 0 ? state.options.join('\n') : undefined,
+            base64Images: images,
+            questionType: state.questionType,
+            isMulti: state.isMulti || undefined,
+            hasImages: images.length > 0
+        };
+    }
+
     function initClasstime(): void {
         if (!domApi) {
             console.warn('[xdAnswers] Classtime: dom module missing');
             return;
         }
 
-        // Show helper window when session is active
+        // Show helper window when session is active.
         if (!window.xdAnswers.settings.silentMode) {
             window.xdAnswers.createUI();
             window.xdAnswers.attachAndPositionHelper();
         }
 
-        window.xdAnswers.onRefresh = function() { lastQuestionText = ''; checkQuestion(); };
+        window.xdAnswers.onRefresh = function() {
+            lastQuestionKey = '';
+            lastQuestionSignature = '';
+            void checkQuestion();
+        };
 
-        const observer = new MutationObserver(function() { checkQuestion(); });
+        function scheduleCheck(): void {
+            if (checkScheduled) return;
+            checkScheduled = true;
+            window.setTimeout(function() {
+                checkScheduled = false;
+                void checkQuestion();
+            }, 250);
+        }
+
+        const observer = new MutationObserver(scheduleCheck);
         observer.observe(document.body, { childList: true, subtree: true });
-        setInterval(checkQuestion, 1000);
 
-        function checkQuestion(): void {
-            if (window.xdAnswers.isProcessingAI) return;
+        setInterval(scheduleCheck, 1500);
+        void checkQuestion();
 
-            const state = domApi.readQuestion();
-            if (!state) return;
-            if (state.text === lastQuestionText) return;
-            lastQuestionText = state.text;
+        async function checkQuestion(): Promise<void> {
+            if (!domApi || isChecking || window.xdAnswers.isProcessingAI) return;
+            const signature = domApi.readSignature();
+            if (!signature || signature === lastQuestionSignature) return;
 
-            domApi.loadImages(state.imageContainer).then(function(images) {
-                let text = state.text;
+            isChecking = true;
+            try {
+                const state = await domApi.readQuestion();
+                if (!state) return;
+                lastQuestionSignature = signature;
+                const questionKey = state.key + '\u0000' + signature;
+                if (questionKey === lastQuestionKey) return;
+                lastQuestionKey = questionKey;
 
-                const questionData: XdQuestionData = {
-                    text: text,
-                    optionsText: state.options.length > 0 ? state.options.join('\n') : undefined,
-                    base64Images: images,
-                    questionType: state.questionType
+                const images = await domApi.loadImages(state.imageRoots);
+                if (!domApi.isQuestionCurrent(state)) return;
+                const questionData = buildQuestionData(state, images);
+
+                // Every custom kind goes through the provider applier so text,
+                // essays, sorting, gaps and hotspot clicks use the exact DOM
+                // interaction the React components expect.
+                window.xdAnswers._customAutoAnswer = function(answerText: string): void {
+                    domApi!.applyAnswer(state, answerText);
                 };
-
-                if (state.isCategorization) {
-                    text = state.text + '\n\nКатегорії: ' + state.categories.join(', ') +
-                        '\nЕлементи: ' + state.items.join(', ') +
-                        '\n\nВкажи, який елемент до якої категорії належить (формат: "Назва категорії: елемент1, елемент2; Інша категорія: елемент3")';
-                    questionData.text = text;
-                    window.xdAnswers._customAutoAnswer = function(answerText) {
-                        domApi.applyCategorization(answerText);
-                        window.xdAnswers._customAutoAnswer = null;
-                    };
-                } else if (state.isDND) {
-                    window.xdAnswers._customAutoAnswer = function() {
-                        domApi.applyDndDrag();
-                        window.xdAnswers._customAutoAnswer = null;
-                    };
-                } else {
-                    window.xdAnswers._customAutoAnswer = null;
-                }
 
                 const isOneClick = window.xdAnswers.settings.silentMode === 'oneclick';
                 if (isOneClick) {
-                    const cont = state.oneclickContainer;
-                    if (cont && !cont.classList.contains('xd-oneclick-ready')) {
+                    const container = state.oneclickContainer || state.root;
+                    if (container) {
                         window.xdAnswers.clearOneClickHandlers();
-                        window.xdAnswers.setupOneClickHandler(cont, async function() { return questionData; });
+                        window.xdAnswers.setupOneClickHandler(container, async function() { return questionData; });
                     }
                 } else {
                     window.xdAnswers.processQuestion(questionData);
                 }
-            });
+            } catch (error) {
+                console.warn('[xdAnswers] Classtime question detection failed:', error);
+            } finally {
+                isChecking = false;
+            }
         }
     }
 })();

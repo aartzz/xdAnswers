@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const SUPPORTED_HOSTS: RegExp[] = [
         /^(.*\.)?vseosvita\.ua$/,
         /^kahoot\.it$/,
-        /^classtime\.com$/,
+        /^(.*\.)?classtime\.com$/,
         /^justclass\.com\.ua$/,
         /^justclass\.me$/,
         /^miyklas\.com\.ua$/,

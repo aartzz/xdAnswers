@@ -107,7 +107,7 @@ npx web-ext run -t chromium
 | Всеосвіта | [vseosvita.ua](https://vseosvita.ua) | 🟡 | ✅ | ✅ | ✅ |
 | JustClass | [justclass.com.ua](https://justclass.com.ua) | 🟡 | ✅ | ⚠️ | ✅ |
 | Kahoot! | [kahoot.it](https://kahoot.it) | ❔️ | ✅ | ✅ | ✅ |
-| Classtime | [classtime.com](https://classtime.com) | ❔️ | ✅ | ⚠️ | ✅ |
+| Classtime | [classtime.com](https://classtime.com) | 🟡 | ✅ | ✅ | ✅ |
 | МійКлас | [miyklas.com.ua](https://miyklas.com.ua) | ❔️ | ✅ | ⚠️ | ✅ |
 | LCloud | [lcloud.in.ua](https://lcloud.in.ua) | ❔️ | ⚠️ | ⚠️ | ✅ |
 | Google Forms | [docs.google.com/forms](https://docs.google.com/forms) | 🟢 | ✅ | ➖ | ✅ |

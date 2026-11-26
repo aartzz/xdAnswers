@@ -72,6 +72,12 @@
         } else if (questionData.questionType === 'text_input_multi') {
             userMsg += 'Це питання з кількома полями для відповідей (перелічені у варіантах). '
                 + 'У полі answer дай відповіді у тому ж порядку через крапку з комою: відповідь1; відповідь2; відповідь3.\n\n';
+        } else if (questionData.questionType === 'hotspot' || questionData.questionType === 'hotspot_multi') {
+            userMsg += 'Це завдання з вибором точки на зображенні. '
+                + 'Визнач потрібну точку (або кілька точок, якщо це передбачено умовою) на прикріпленому зображенні. '
+                + 'У полі answer вкажи координати у відсотках від ширини та висоти зображення: x,y. '
+                + 'Для кількох точок розділяй їх крапкою з комою: x1,y1; x2,y2. '
+                + 'Координати — числа від 0 до 100 без символу % (0,0 — лівий верхній кут, 100,100 — правий нижній).\n\n';
         } else if (questionData.questionType === 'grid') {
             userMsg += 'Це завдання типу "таблиця" (сітка): для КОЖНОГО рядка треба вибрати стовпець, '
                 + 'тобто встановити відповідність між рядком і стовпцем. '
@@ -107,7 +113,7 @@
         if (questionData.optionsText) {
             userMsg += '\nВаріанти:\n' + questionData.optionsText;
             // Якщо є варіанти-зображення, підкажемо AI що вони серед прикріплених картинок
-            const isChoiceQuestion = questionData.questionType === 'quiz' || !!questionData.isMulti;
+            const isChoiceQuestion = questionData.questionType === 'quiz' || !!questionData.isMulti || !!questionData.hasImages;
             if (isChoiceQuestion && /\[зображення(?:\s+\d+)?\]/.test(questionData.optionsText) && (questionData.base64Images || []).length > 0) {
                 userMsg += '\nУВАГА: Варіанти позначені [зображення] — це картинки серед прикріплених зображень. Спочатку йде картинка запитання, потім картинки варіантів у порядку A, B, C...';
             }

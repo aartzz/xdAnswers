@@ -65,6 +65,7 @@
         "*://vseosvita.ua/test/start/*",
         "*://kahoot.it/*",
         "*://classtime.com/*",
+        "*://*.classtime.com/*",
         "*://justclass.com.ua/*",
         "*://justclass.me/*",
         "*://miyklas.com.ua/*",
@@ -610,7 +611,8 @@
     },
     {
       "matches": [
-        "*://classtime.com/*"
+        "*://classtime.com/*",
+        "*://*.classtime.com/*"
       ],
       "js": [
         "src/core/constants.ts",
