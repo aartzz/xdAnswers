@@ -21,16 +21,39 @@ function findStructuredFormRoot(): Element | null {
     return null;
 }
 
-function findQuestionRoot(): Element | null {
-    return document.querySelector('#i-test-question-uwj219, .v-test-question, .v-test-go-bg, .v-test-go-body, .v-test-questions-block, .test-question-text, .vseosvita-test-content')
+function findSingleQuestionRoot(): Element | null {
+    return document.querySelector('[id^="i-test-question-"], .v-test-question, .v-test-go-bg, .v-test-go-body, .v-test-questions-block, .test-question-text, .vseosvita-test-content')
         || findStructuredFormRoot();
 }
 
-export function detectQuestionData(): VseosvitaQuestionData | null {
-    const questionRoot = findQuestionRoot();
+// Wall-mode tests render every question into one page instead of fetching
+// them one at a time through the test-pupil API. Keep the roots separate so
+// each question can be scoped to its own options and text inputs.
+export function detectQuestionRoots(): Element[] {
+    const wall = document.querySelector('.n-is-wall-mode');
+    if (wall) {
+        const roots = Array.from(wall.querySelectorAll('.v-test-go-bg'))
+            .filter(root => !root.parentElement?.closest('.v-test-go-bg'));
+        if (roots.length > 1) return roots;
+    }
+
+    const idRoots = Array.from(document.querySelectorAll('[id^="i-test-question-"]'));
+    if (idRoots.length > 1) return idRoots;
+
+    const bgRoots = Array.from(document.querySelectorAll('.v-test-go-bg'))
+        .filter(root => !root.parentElement?.closest('.v-test-go-bg'));
+    if (bgRoots.length > 1) return bgRoots;
+
+    const single = findSingleQuestionRoot();
+    return single ? [single] : [];
+}
+
+export function detectQuestionData(root?: Element | null): VseosvitaQuestionData | null {
+    const questionRoot = root || detectQuestionRoots()[0] || findStructuredFormRoot();
     if (!questionRoot) return null;
 
-    const titleNode = questionRoot.querySelector('.v-test-questions-title .content-box, .v-test-questions-title p, .v-test-questions-title, .test-question-text, .question-text, [role="heading"]');
+    const titleNode = questionRoot.querySelector('.v-test-questions-title .content-box, .v-test-questions-title p, .test-question-text, .question-text, [role="heading"]')
+        || questionRoot.querySelector('.v-test-questions-title');
     let text = getText(titleNode || questionRoot);
     if (!text) return null;
 

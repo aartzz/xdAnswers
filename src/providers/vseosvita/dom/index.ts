@@ -3,7 +3,7 @@
 // formats (data-quest_type 3/5/6/7/8/10/12/13/18 plus Google Forms-style grids,
 // scales, dropdowns and date inputs) and images. Publishes its API on
 // window.xdAnswers._internal.providerModules.vseosvita.dom for apply.ts and main.ts.
-import { detectQuestionData } from './detect';
+import { detectQuestionData, detectQuestionRoots } from './detect';
 import { markOptionElements } from './options';
 
 export interface VseosvitaMeta {
@@ -26,7 +26,8 @@ export interface VseosvitaQuestionData {
 }
 
 export interface VseosvitaDomApi {
-    detectQuestionData(): VseosvitaQuestionData | null;
+    detectQuestionData(root?: Element | null): VseosvitaQuestionData | null;
+    detectQuestionRoots(): Element[];
     markOptionElements(questionRoot: Element): void;
 }
 
@@ -42,6 +43,7 @@ export interface VseosvitaDomApi {
 
     ns.dom = {
         detectQuestionData,
+        detectQuestionRoots,
         markOptionElements
     } as VseosvitaDomApi;
 })();

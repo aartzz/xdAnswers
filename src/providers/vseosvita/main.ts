@@ -4,7 +4,7 @@
 // Extraction lives in ./dom.ts, answer application in ./apply.ts; the topic
 // sniffing fetch/XHR patches live in ./disabler.ts (page world) and post the
 // sniffed topic/description through a window.postMessage bridge.
-import type { VseosvitaDomApi } from './dom';
+import type { VseosvitaDomApi, VseosvitaQuestionData } from './dom';
 import type { VseosvitaApplyApi } from './autoanswer';
 
 (function () {
@@ -43,12 +43,141 @@ import type { VseosvitaApplyApi } from './autoanswer';
         let lastProcessedKey = "";
         let debounceTimer: number | undefined;
 
+        // Wall-mode tests render every question into a single page. The queue
+        // below solves them one at a time, scoping each answer to its own root
+        // so duplicate option texts from other questions cannot be clicked.
+        let wallRunToken = 0;
+        let wallRunning = false;
+        const wallDone = new Set<string>();
+        const wallOneClickRoots = new WeakSet<Element>();
+
+        function sleep(ms: number): Promise<void> {
+            return new Promise(resolve => window.setTimeout(resolve, ms));
+        }
+
+        function wallQuestionKey(data: VseosvitaQuestionData): string {
+            const testRoot = data.root.closest('[id^="test"]') as HTMLElement | null;
+            return (testRoot?.id || location.pathname) + '\u0000'
+                + ((data.root as HTMLElement).id || '') + '\u0000' + data.text;
+        }
+
+        function buildWallPayload(data: VseosvitaQuestionData): Promise<XdQuestionData> {
+            return Promise.all(data.base64ImageSources.map(src => window.xdAnswers.imageToBase64(src)))
+                .then(images => ({
+                    text: data.text,
+                    optionsText: data.optionsText,
+                    base64Images: images.filter((image): image is string => !!image),
+                    questionType: data.questionType,
+                    isMultiQuiz: data.isMultiQuiz,
+                    isMulti: data.isMulti,
+                    topic: _vseosvitaTopic || undefined,
+                    topicDescription: _vseosvitaDescription || undefined,
+                    batchKey: (data.root as HTMLElement).id || undefined,
+                    hasImages: data.base64ImageSources.length > 0
+                }));
+        }
+
+        function findNextWallQuestion(): { data: VseosvitaQuestionData; key: string } | null {
+            for (const root of dom.detectQuestionRoots()) {
+                const data = dom.detectQuestionData(root);
+                if (!data) continue;
+                const key = wallQuestionKey(data);
+                if (wallDone.has(key)) continue;
+                return { data, key };
+            }
+            return null;
+        }
+
+        function registerWallOneClick(): void {
+            for (const root of dom.detectQuestionRoots()) {
+                if (wallOneClickRoots.has(root)) continue;
+                wallOneClickRoots.add(root);
+                window.xdAnswers.setupOneClickHandler(root as HTMLElement, async () => {
+                    const data = dom.detectQuestionData(root);
+                    if (!data) return null;
+                    applyApi.installCustomApplier(data.vseosvitaMeta);
+                    return buildWallPayload(data);
+                });
+            }
+        }
+
+        async function runWallQueue(): Promise<void> {
+            if (wallRunning || window.xdAnswers.isProcessingAI) return;
+            const token = ++wallRunToken;
+            wallRunning = true;
+            try {
+                while (token === wallRunToken) {
+                    if (window.xdAnswers.isProcessingAI) {
+                        await sleep(250);
+                        continue;
+                    }
+
+                    const next = findNextWallQuestion();
+                    if (!next) return;
+
+                    let payload: XdQuestionData;
+                    try {
+                        payload = await buildWallPayload(next.data);
+                    } catch (error) {
+                        console.warn('[xdAnswers vseosvita] wall payload failed:', error);
+                        wallDone.add(next.key);
+                        continue;
+                    }
+                    if (token !== wallRunToken) return;
+
+                    window.xdAnswers._answerContainer = next.data.root as HTMLElement;
+                    applyApi.installCustomApplier(next.data.vseosvitaMeta);
+                    try {
+                        await window.xdAnswers.processQuestion(payload);
+                    } catch (error) {
+                        console.warn('[xdAnswers vseosvita] wall question failed:', error);
+                    } finally {
+                        if (window.xdAnswers._answerContainer === next.data.root) {
+                            window.xdAnswers._answerContainer = null;
+                        }
+                    }
+
+                    if (token !== wallRunToken) return;
+                    wallDone.add(next.key);
+
+                    // processQuestion schedules the actual click after the
+                    // configured cooldown. Wait it out before moving to the next
+                    // question so the two answers never race in the same DOM.
+                    const cooldown = Number(window.xdAnswers.settings.autoAnswerCooldown) || 0;
+                    await sleep(Math.max(600, cooldown + 500));
+                }
+            } finally {
+                if (token === wallRunToken) wallRunning = false;
+            }
+        }
+
+        function handleWallMode(force = false): void {
+            if (window.xdAnswers.settings.silentMode === 'oneclick') {
+                registerWallOneClick();
+                return;
+            }
+            if (force) {
+                wallRunToken++;
+                wallRunning = false;
+                wallDone.clear();
+            }
+            void runWallQueue();
+        }
+
         window.xdAnswers.onRefresh = () => {
             lastProcessedKey = "";
+            if (dom.detectQuestionRoots().length > 1) {
+                handleWallMode(true);
+                return;
+            }
             checkQuestion(true);
         };
 
         function checkQuestion(force = false): void {
+            if (dom.detectQuestionRoots().length > 1) {
+                handleWallMode(force);
+                return;
+            }
             if (window.xdAnswers.isProcessingAI && !force) return;
             const questionData = dom.detectQuestionData();
             if (!questionData) return;
